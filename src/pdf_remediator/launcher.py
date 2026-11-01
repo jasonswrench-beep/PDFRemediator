@@ -38,6 +38,28 @@ def _running(session,expected=None):
     except (OSError,ValueError,KeyError,http.client.HTTPException):return None
 
 
+# What Windows means by the codes a program that crashed ends with. A program that ended by itself, however it was meant to, ends with a small number.
+_CRASH_CODES = {
+    0xC0000005: 'an access violation (the program touched memory it may not use)',
+    0xC0000409: 'a stack buffer overrun, which Windows stops a program for at once',
+    0xC000013A: 'Ctrl+C, or its window being closed',
+    0xC0000142: 'a library that would not start',
+    0xC0000135: 'a library it needs was not found',
+    0xC00000FD: 'a stack overflow',
+    0xC0000374: 'damage to the program\'s memory (a corrupted heap)',
+}
+
+
+def describe_exit_code(code):
+    """In plain words, how a program that has ended did so, from the number it ended with. An unrecognised number is still given, in the form Windows' own messages use."""
+    if code is None:return 'It was still running.'
+    if code == 0:return 'It ended normally, with code 0.'
+    unsigned=code & 0xFFFFFFFF
+    if unsigned in _CRASH_CODES:return 'It crashed: Windows reports %s (code 0x%08X).'%(_CRASH_CODES[unsigned],unsigned)
+    if unsigned >= 0xC0000000:return 'It crashed: Windows reports an error it has no short name for (code 0x%08X).'%unsigned
+    return 'It ended with code %d.'%code
+
+
 def stop(data_dir=None):
     """Ask the running private service to stop, as the page's Stop application button does. A service that is not running is not an error."""
     root=Path(data_dir or RuntimeConfig().project_root/'output/review-app').resolve()
@@ -74,7 +96,8 @@ def launch(data_dir=None,config_path=None,open_browser=True):
         child=subprocess.Popen(command,stdout=log,stderr=log,stdin=subprocess.DEVNULL,
             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),close_fds=True)
     for _ in range(100):
-        if child.poll() is not None:raise RuntimeError('The review application could not start. See '+str(root/'application.log'))
+        ended=child.poll()
+        if ended is not None:raise RuntimeError('The review application could not start: it ended at once. '+describe_exit_code(ended)+' See '+str(root/'application.log')+' for what it printed.')
         url=_running(session,expected)
         if url:
             if open_browser:webbrowser.open(url)
