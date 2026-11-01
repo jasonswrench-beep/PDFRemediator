@@ -32,7 +32,22 @@ function action(handler){return async event=>{if(stopped)return;try{await handle
 function reviewer(){const value=$('reviewer').value.trim();if(!value)throw new Error('Enter your name before approving a value or check.');return value;}
 function statusText(status){return status==='approved'?'Accepted':status==='blocked'?'Problem reported':'Pending';}
 function button(text,handler,cls='secondary'){const b=element('button',text,cls);b.type='button';b.addEventListener('click',action(handler));return b;}
-function evidence(data){const d=element('details',undefined,'evidence');d.append(element('summary','Occurrence and evidence'),element('pre',JSON.stringify(data,null,2)));return d;}
+const OCR_GRADE_WORDS={poor:'many words were unsure','check':'some words were unsure','little-text':'too little text to judge','no-words':'no words were found'};
+function plainEvidenceLines(data){const lines=[];if(!data||typeof data!=='object'||Array.isArray(data))return lines;
+ if(Array.isArray(data.flagged)&&data.rule&&typeof data.rule==='object'){const rule=data.rule;
+  for(const row of data.flagged){if(!row||!Number.isInteger(row.page))continue;const how=OCR_GRADE_WORDS[row.grade]||'needs a closer look';let detail='';
+   if((row.grade==='poor'||row.grade==='check')&&Number.isInteger(row.words)&&row.words>0&&Number.isInteger(row.sure_words))detail=' ('+Math.floor(100*row.sure_words/row.words)+' percent of its '+row.words+' words were read confidently)';
+   else if(row.grade==='little-text'&&Number.isInteger(row.words))detail=' ('+row.words+(row.words===1?' word':' words')+' counted)';
+   lines.push('Page '+row.page+': '+how+detail+'.');}
+  const missing=Array.isArray(data.not_measured_pages)?data.not_measured_pages.filter(Number.isInteger):[];
+  if(missing.length)lines.push('The text recognition\'s confidence could not be measured on '+(missing.length===1?'page ':'pages ')+missing.join(', ')+'.');
+  if(Number.isInteger(data.pages_read))lines.push(data.pages_read+(data.pages_read===1?' page was':' pages were')+' read in all.');
+  if(['sure_at_least','counts_words_of_at_least_letters','few_words_below','many_unsure_below','some_unsure_below'].every(key=>Number.isFinite(rule[key])))
+   lines.push('How pages are rated: a word counts as read confidently when the text recognition is at least '+rule.sure_at_least+' percent sure of it. Words of fewer than '+rule.counts_words_of_at_least_letters+' letters, numbers and marks are not counted. A page with fewer than '+rule.few_words_below+' counted words is too short to judge. Under '+Math.round(rule.many_unsure_below*100)+' percent confident means many words are probably misread, and under '+Math.round(rule.some_unsure_below*100)+' percent means some are. This is a guide to where to look first, never a check that the text is right.');}
+ return lines;}
+function evidence(data){const d=element('details',undefined,'evidence');d.append(element('summary','Occurrence and evidence'));const lines=plainEvidenceLines(data);
+ if(lines.length){const list=element('ul',undefined,'evidence-facts');for(const line of lines)list.append(element('li',line));d.append(list);const raw=element('details',undefined,'evidence-raw');raw.append(element('summary','The recorded data, as the program keeps it'),element('pre',JSON.stringify(data,null,2)));d.append(raw);}
+ else d.append(element('pre',JSON.stringify(data,null,2)));return d;}
 function endpoint(actionName){return '/api/workspaces/'+currentId+'/'+actionName;}
 function data(actionData={}){return {revision:view.revision,...actionData};}
 function workspaceAction(){if(!view||!currentId)throw new Error('Open a review before changing it.');return {id:currentId,generation:workspaceGeneration,revision:view.revision};}

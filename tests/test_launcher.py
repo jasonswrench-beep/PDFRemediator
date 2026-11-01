@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import sys
 import time
 import pytest
 from pdf_remediator import cli,doctor,launcher,pipeline
@@ -172,3 +173,102 @@ def test_stop_button_closes_an_own_window_after_the_service_has_stopped():
     script=(Path(__file__).resolve().parents[1]/'src/pdf_remediator/web_assets/app.js').read_text(encoding='utf-8')
     handler=script[script.index("$('stop').addEventListener"):]
     assert handler.index("await api('/api/stop',{})")<handler.index('stopped=true;')<handler.index('window.close()')
+
+
+@pytest.mark.parametrize('code,words',[
+    (0,'ended normally'),(1,'ended with code 1'),(3,'ended with code 3'),
+    (0xC0000005,'access violation'),(-1073741819,'access violation'),(0xC0000409,'stack buffer overrun'),(0xC000013A,'Ctrl+C'),
+    (0xC0000142,'would not start'),(0xC0000374,'corrupted heap'),
+])
+def test_how_a_program_ended_is_said_in_words(code,words):
+    said=launcher.describe_exit_code(code)
+    assert words in said,said
+
+
+def test_an_unrecognised_crash_code_is_still_given_in_the_form_windows_uses():
+    said=launcher.describe_exit_code(0xC0000999)
+    assert 'crashed' in said and '0xC0000999' in said
+    assert launcher.describe_exit_code(None)=='It was still running.'
+
+
+def test_a_service_that_ends_at_once_says_how_it_ended_and_where_to_look(tmp_path,monkeypatch):
+    monkeypatch.setattr(launcher,'_running',lambda *args:None)
+    class Child:
+        def poll(self):return 0xC0000005
+    monkeypatch.setattr(launcher.subprocess,'Popen',lambda command,**kwargs:Child())
+    with pytest.raises(RuntimeError) as raised:launcher.launch(tmp_path)
+    said=str(raised.value)
+    assert 'could not start' in said and 'ended at once' in said and 'access violation' in said
+    assert str(tmp_path/'application.log') in said
+
+
+def test_the_service_turns_on_the_crash_report_and_says_it_is_starting(tmp_path,monkeypatch,capsys):
+    import faulthandler
+    from pdf_remediator import web
+    turned_on=[]
+    monkeypatch.setattr(faulthandler,'enable',lambda **kwargs:turned_on.append(kwargs))
+    class Stub:
+        origin='http://127.0.0.1:1'
+        def serve_forever(self,poll_interval=.2):raise KeyboardInterrupt
+        def server_close(self):pass
+    class App:
+        token='t';config=None
+        def __init__(self,*args):pass
+        def close(self):pass
+    monkeypatch.setattr(web,'Application',App)
+    monkeypatch.setattr(web,'ReviewServer',lambda application,port:Stub())
+    web.serve(tmp_path)
+    assert turned_on==[{'all_threads':True}]
+    said=capsys.readouterr().out
+    assert 'PDF Remediator service starting (process ' in said
+    assert 'PDF Remediator service closing.' in said
+
+
+def test_a_service_with_no_standard_error_still_starts(tmp_path,monkeypatch):
+    """A window with no console has no standard error, and Python then refuses to turn the crash report on. That must not stop the service."""
+    import faulthandler
+    from pdf_remediator import web
+    def refuse(**kwargs):raise RuntimeError('sys.stderr is None')
+    monkeypatch.setattr(faulthandler,'enable',refuse)
+    class Stub:
+        origin='http://127.0.0.1:1'
+        def serve_forever(self,poll_interval=.2):raise KeyboardInterrupt
+        def server_close(self):pass
+    class App:
+        token='t';config=None
+        def __init__(self,*args):pass
+        def close(self):pass
+    monkeypatch.setattr(web,'Application',App)
+    monkeypatch.setattr(web,'ReviewServer',lambda application,port:Stub())
+    web.serve(tmp_path)
+
+
+def test_a_hard_crash_of_the_service_leaves_where_it_was_in_its_log(tmp_path):
+    """The case the crash report is for: a crash Python cannot catch, in a process whose output goes to a file, as the launcher starts it."""
+    import subprocess,textwrap
+    script=textwrap.dedent("""
+        import ctypes,os,sys
+        if os.name=='nt':ctypes.windll.kernel32.SetErrorMode(0x0003)   # no crash dialog while the test runs
+        from pdf_remediator import web
+        class Stub:
+            origin='http://127.0.0.1:1'
+            def serve_forever(self,poll_interval=.2):ctypes.string_at(0)   # an access violation
+            def server_close(self):pass
+        class App:
+            token='t';config=None
+            def __init__(self,*args):pass
+            def close(self):pass
+        web.Application=App
+        web.ReviewServer=lambda application,port:Stub()
+        web.serve(sys.argv[1])
+    """)
+    log=tmp_path/'application.log'
+    src=Path(__file__).resolve().parents[1]/'src'
+    env={**os.environ,'PYTHONPATH':str(src)+os.pathsep+os.environ.get('PYTHONPATH','')}
+    with log.open('wb') as out:
+        done=subprocess.run([sys.executable,'-c',script,str(tmp_path)],stdout=out,stderr=out,stdin=subprocess.DEVNULL,env=env,timeout=60)
+    text=log.read_text(encoding='utf-8',errors='replace')
+    assert done.returncode!=0
+    assert 'service starting' in text
+    assert 'fatal' in text.lower(),text
+    assert 'serve_forever' in text or 'in serve' in text,text

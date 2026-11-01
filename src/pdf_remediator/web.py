@@ -778,6 +778,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(data_dir,config=None,port=0,open_browser=True,import_bundle=None,session_file=None):
+    # A crash that Python cannot catch (an access violation, for one) writes where the program was to the same log the service writes to, instead of ending without a word.
+    # The log is the service's standard error when the launcher started it. Where there is none (a window with no console), nothing is turned on and nothing is lost.
+    try:
+        import faulthandler
+        faulthandler.enable(all_threads=True)
+    except (AttributeError,OSError,RuntimeError,ValueError):pass
+    _lifecycle('PDF Remediator service starting (process %d).'%__import__('os').getpid())
     application=Application(data_dir,config);server=None
     try:
         server=ReviewServer(application,port)

@@ -91,3 +91,9 @@ The full suite is expected to end with only the environment failures listed belo
 - [ ] The local service process exited once, without any message, in about 25 cancel-then-rescan runs of the long guide (the rescan began about three seconds before the page reported
   "The local service is not responding"). It did not come back in 11 later runs with the crash tracer on (`PYTHONFAULTHANDLER=1` in the service's environment writes the native stack to its log).
   If it happens again, keep the service log of that run.
+  Since 2026-11-01 the service turns the crash tracer on by itself (`faulthandler`, writing to the same `application.log`), says "PDF Remediator service starting (process N)" when it starts and "closing" when it ends normally,
+  and the launcher's "could not start" message now says how the service ended (for example "an access violation", with the code) and where the log is. So a silent exit now leaves one of three traces:
+  a native stack, a "closing" line, or neither (which means Windows ended the process from outside). Tested with a real hard crash in a child process; not yet seen on a real silent exit.
+- [ ] **OCR evidence in plain words.** On a review item that carries the text recognition's page-by-page evidence, the page now shows one sentence per unsure page
+  ("Page 3: many words were unsure (40 percent of its 120 words were read confidently).") with the rating rule in words, and keeps the recorded data underneath in a closed section. Tested by running the shipped function alone in Node
+  (`scripts/test-plain-evidence.cjs`, 8 cases). Not looked at in a real browser on a real scan: open a scan that has pages the program flagged and read the sentences against the page images.

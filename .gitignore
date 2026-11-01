@@ -48,6 +48,7 @@
 !/scripts/*.py
 !/scripts/*.sh
 !/scripts/test-web-assets.cjs
+!/scripts/test-plain-evidence.cjs
 !/scripts/e2e-browser.cjs
 !/scripts/windows-installer.cs
 !/scripts/windows-launcher.cs
