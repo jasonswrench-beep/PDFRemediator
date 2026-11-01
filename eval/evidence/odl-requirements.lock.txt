@@ -1,0 +1,3 @@
+opendataloader-pdf==2.5.13
+pip==24.0
+setuptools==65.5.0

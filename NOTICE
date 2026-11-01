@@ -1,0 +1,36 @@
+PDF Remediator
+Copyright 2026 Jason S. Wrench and the PDF Remediator contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+---
+
+Third-party components:
+
+Data files in this source (src/pdf_remediator/data), each kept unchanged with its own licence text:
+
+Noto Sans Regular 2.007 (the font of the OCR text editor)
+  Copyright 2015-2021 Google LLC. SIL Open Font License 1.1.
+  Text: NotoSans-OFL.txt. Where it came from: NotoSans-PROVENANCE.txt.
+
+TeX glyph-name mapping (glyphtounicode-cmr, from the CTAN pdfx package 1.6.5f)
+  Copyright (c) 2008 Han The Thanh; (c) 2014 Peter Selinger; (c) 2018 Ross Moore.
+  LaTeX Project Public License, version 1.2 or later. LPPL-1.3c.txt is supplied; see TEX-MAPPING-NOTICE.txt.
+
+Programs and libraries that a packaged copy runs alongside the source (not part of this source):
+
+  Python and its packages (pikepdf, pypdfium2, Pillow, PyYAML, psutil, fontTools, lxml, and for OCR: OCRmyPDF and the
+  packages it needs), a Java runtime (Eclipse Temurin), OpenDataLoader PDF, veraPDF and Tesseract with its English and
+  orientation models. Each keeps its own licence, and a packaged copy must carry their licence texts and notices.
+  What each one requires is set out in docs/LICENCE-REVIEW.md. The combined THIRD-PARTY-NOTICES file for a packaged copy
+  is not written yet.

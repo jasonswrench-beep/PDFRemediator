@@ -1,0 +1,11 @@
+Noto Sans Regular 2.007
+Font SHA-256: 2ec33f84606cbaa0a1a944488e14f97faf2f6a25ecdd8354f5358f06da13c7d9
+Retained from the qualified local OCRmyPDF 17.13.0 data component.
+The complete original font bytes are unchanged. No font download occurred.
+Embedded font name/copyright/license records identify SIL OFL 1.1.
+Font copyright: Copyright 2015-2021 Google LLC. All Rights Reserved.
+Upstream font project: https://github.com/notofonts/noto-fonts
+License text source: https://raw.githubusercontent.com/notofonts/noto-fonts/main/LICENSE
+License source SHA-256: 0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb
+See NotoSans-OFL.txt for the complete accompanying notice and license.
+This program font is independently bundled; OCR recognition need not be enabled.

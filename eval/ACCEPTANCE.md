@@ -1,0 +1,14 @@
+# Phase 0 acceptance criteria
+
+Declared before scoring the engines. Evaluation scope is Windows, no AI, no cloud document processing, no paid engine. These criteria select feasibility; they do not award product candidate or verified status.
+
+- Run OpenDataLoader 2.5.13 and accesspdf 1.2.1 in isolated environments. Preserve raw outputs and independently normalized outputs. a proprietary tagging SDK is not evaluated without established license eligibility.
+- Use standalone veraPDF 1.30.3 with explicit ua1 profile, unlimited failure reporting, one validation process, and the selected working Java runtime. Zero failed rules/checks is a strict machine pass. Validator errors never become passes.
+- Normalization changes only title/language/export metadata, document-title display, MarkInfo and page tab order. It must not change text, fonts, content marking, or structural semantics. Record it separately from engine performance.
+- Preserve every page and its dimensions, all normalized PDFium text tokens, annotations, page labels, bookmarks, and named destinations. Compare every page using PDFium 5.14.0 at 96 dpi, white RGB background, annotations enabled. Allow zero changed pixels and zero per-channel tolerance. Report ordering separately; semantic reading order is not established by content-token equality.
+- A calibration self-comparison and metadata-only comparison must pass. Deliberate content loss, empty tag trees, broken ParentTree references, and untagged painting must be rejected by their appropriate controls. Scan OCR must report expected added text separately from preservation of prior digital text.
+- Engine selection requires successful basic text/chapter cases, preserved synthetic 200-page book and published 244-page book, no phantom trees, and a credible documented path through remaining semantic checks. Do not select an engine solely by tag counts or validator counts. Any failed preservation measure is a blocker for that supported case.
+- Capture process wall time, peak observed process-tree RSS, completion/timeout/error, exact arguments, all package/runtime versions, source and output hashes, and full validator reports. Engine timeout is 600 seconds with a 4 GiB observed-RSS cap; Java engine heap is separately capped at 2 GiB. Validator timeout is 180 seconds per artifact. RSS sampling is an observed limit, not an OS hard allocation guarantee.
+- Contrast, semantic reading order, description quality, OCR accuracy, complex table meaning, and complete WCAG coverage remain manual or untested. Phase 0 never manufactures a complete supplemental-check pass.
+- The artifacting spike must preserve rendering/text and structure integrity with no new validator failures. Success on a bounded fixture does not establish a general artifact repair algorithm.
+- Freeze the environment after installation and record any failed version resolution or changed criteria. No source or original input file may be modified.
