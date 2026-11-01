@@ -1,0 +1,17 @@
+[runtime]
+engine = "opendataloader"
+document_kind = "unknown"
+language = "en-US"
+ocr_mode = "off" # "textless" adds text only on wholly scanned pages; existing-text pages stay unchanged.
+ocr_profile = "standard" # Or "table-lines" for visible grids; "angles" for tilted or vertical text.
+timeout_seconds = 600
+validator_timeout_seconds = 180
+memory_limit_bytes = 4294967296
+java_heap_mb = 2048
+preserve_painting = true
+allow_tag_regrouping = false
+repair_source_mappings = false
+bookmark_min_pages = 20
+# Optional paths may be absolute or relative to this configuration file.
+# java_home = "C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot"
+# No API keys or cloud-provider settings belong in this file.

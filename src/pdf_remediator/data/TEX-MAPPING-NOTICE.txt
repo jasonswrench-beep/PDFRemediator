@@ -1,0 +1,19 @@
+Unchanged reference data: glyphtounicode-cmr.tex from the CTAN pdfx package,
+package version 1.6.5f; file's last recorded revision 2018/09/18.
+Original source URL:
+https://ctan.math.illinois.edu/macros/latex/contrib/pdfx/glyphtounicode-cmr.tex
+Package page: https://ctan.org/pkg/pdfx
+Original SHA-256:
+4390c8bfb8a6f709b90b7502ae4accb74815a5269d99f18bb97c1dde95c16c2a
+
+The unchanged source is stored as glyphtounicode-cmr-4390c8bf.tex so its pinned
+identity is visible. No TeX code in this data file is executed. The processor
+reads only the exact mapsto and radicalBig mapping declarations.
+
+Copyright (c) 2008 Han The Thanh; (c) 2014 Peter Selinger; (c) 2018 Ross Moore.
+The source header permits distribution/modification under LPPL version 1.2 or
+any later version. LPPL-1.3c.txt is supplied with this reference data.
+
+This data establishes glyph-name mappings only. Composite mathematical symbol
+meaning, variation-selector support and assistive-technology behavior still
+require human review. Existing PDF Unicode mappings are never overwritten.

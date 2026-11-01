@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-pdf-remediator"
+version = "0.3.0"
+description = "Local PDF accessibility candidates with strict validation and preservation evidence"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+dependencies = [
+  "pikepdf==10.17.0",
+  "pypdfium2==5.14.0",
+  "Pillow==13.0.0",
+  "PyYAML==6.0.3",
+  "psutil==7.2.2",
+  "fontTools==4.67.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1", "reportlab==5.0.1", "charset-normalizer==3.5.2"]
+
+[project.scripts]
+remediator = "pdf_remediator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pdf_remediator = ["data/*.tex", "data/*.txt", "data/NotoSans-Regular.ttf", "web_assets/*.html", "web_assets/*.css", "web_assets/*.js", "web_assets/*.svg", "web_assets/*.ico"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

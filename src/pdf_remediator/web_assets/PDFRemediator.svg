@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1024" height="1024" viewBox="0 0 1024 1024" version="1.1" role="img" aria-labelledby="title description">
+  <title id="title">PDFRemediator — Open Frame icon</title>
+  <desc id="description">An open folded-corner document with branching structure and three content bars. Editable vector artwork. Transparent outside the navy rounded tile.</desc>
+  <defs>
+    <linearGradient id="navy" x1="0" y1="0" x2="768" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#102037"/>
+      <stop offset="1" stop-color="#0B172A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="180" y1="160" x2="844" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6CADFF"/>
+      <stop offset="1" stop-color="#5899EF"/>
+    </linearGradient>
+  </defs>
+  <g id="Tile" inkscape:label="Navy tile">
+    <rect id="navy-tile" x="0" y="0" width="1024" height="1024" rx="164" fill="url(#navy)"/>
+  </g>
+  <g id="Symbol" inkscape:label="PDFRemediator symbol" fill="none" stroke="url(#accent)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <path id="document-outline" d="M530 160 H304 C264 160 232 192 232 232 V800 C232 839 265 868 306 868 H760 C800 868 824 834 824 794 V348 L642 160"/>
+      <path id="page-fold" d="M642 160 V306 Q642 338 674 338 H814"/>
+      <path id="structure-bracket" d="M394 360 H354 V724 H394"/>
+      <path id="structure-branch" d="M354 586 H394"/>
+      <path id="content-line-1" d="M484 456 H672"/>
+      <path id="content-line-2" d="M484 586 H672"/>
+      <path id="content-line-3" d="M484 724 H672"/>
+  </g>
+</svg>

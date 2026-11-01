@@ -1,0 +1,83 @@
+# Auto-fix results: optional automatic application
+
+Recorded October 16, 2026 for PDF Remediator **0.3.0** on the prepared Windows computer. The frozen implementation digest is `a7354943ad8605635c4301be9141052bdce3b13fc5ce04ce5a46a75840a93df5`.
+
+**The optional Auto-fix workflow passes the recorded internal release checks.** One explicit action handles eligible mechanical repair records and, when separately authorized, generates and applies local-model title and figure guesses. The 244-page book changes from 630 displayed pending items to **623 automatically handled and 7 actionable checks**. All 630 original pending records remain in the raw review export. The result is still an unverified candidate, with **zero human approvals**.
+
+The separate [Phase 2 report](PHASE2-RESULTS.md) and its historical evidence remain unchanged. This report covers the new automatic workflow, not a new general accessibility guarantee. Actual-user studies, external assistive-technology acceptance, and the LMS accessibility checker testing remain Phase 3 work.
+
+## Release conditions
+
+| Condition | Recorded result | Evidence and boundary |
+|---|---|---|
+| One action handles proved mechanical repairs | **Pass** | Book: 623 occurrence-bound automatic dispositions, 7 actionable checks, 630 raw pending items, zero human approvals. The PDF is byte-identical to the prior candidate. |
+| Explicitly selected local AI guesses are applied without individual acceptance | **Pass, controlled fixture** | One fresh `qwen3.5:latest` vision request generates the chapter title and two context-specific figure alternatives. All three choices are automatically accepted and applied to a new PDF; all release gates pass. |
+| Repeat operation retains origin and requires fresh authority | **Pass** | AI-off repetition produces the same chapter PDF under a different authorization ID, with zero new model requests. |
+| Unsafe or unsupported input does not gain a released PDF | **Pass** | Known unsupported form remains `needs-manual`, with its blocker and no PDF in the result bundle. |
+| Human edits, blockers, consent, and current revisions take precedence | **Pass, regressions** | Application/pipeline tests exercise stale queued work, edits during generation/processing, protected human values, prior unselected drafts, cancellation, and provider failure. |
+| Candidate validation and preservation remain mandatory | **Pass** | Three final candidate bundles pass real strict PDF/UA-1, supplemental checks, independent linked-content inspection, and all-page preservation. No gate waiver is introduced. |
+| Automatic handling does not imply human approval or verification | **Pass** | Full required pending review exports remain; automatic authority and origin are separate; the ledger refuses verification for every tested candidate. |
+| Normal dashboard polling can overlap automatic work | **Pass, regression and developer browser check** | Deterministic real-file-lock regression and final browser run both complete after workspace access was serialized. |
+| Software and package verification | **Pass** | 494 tests pass in 79.49 seconds; final wheel matches all 31 package assets and all 35 RECORD entries. |
+| Actual-user, assistive-technology acceptance, and the LMS checker results | **Deferred to Phase 3** | No such trials, actual accessibility approvals, LMS upload, or verified record occurred. |
+
+## Actual native trials
+
+The [final summary](../output/auto-fix/release-final/summary.json), [CSV](../output/auto-fix/release-final/summary.csv), and [reproduction runner](run_auto_fix_release.py) record **four cases in 118.734 seconds**. All case invariants pass. Every source, previous manifest, and previous output hash remains unchanged. The complete source/UI/data inventory and implementation digest stay unchanged before and after the run. [Run provenance](../output/auto-fix/release-final/run-provenance.json), [build provenance](../output/auto-fix/release-final/build-provenance.json).
+
+| Case | Result | Strict passed rules / checks | Automatic handling / values | Actionable / raw pending | New model document requests | Time | Peak sampled runner + descendants RSS |
+|---|---|---:|---|---:|---:|---:|---:|
+| Published book, 244 pages, AI off | Candidate | 106 / 1,088,472 | 623 handled records; 0 automatic text choices | 7 / 630 | 0 | 90.281 s | 1,820,692,480 bytes |
+| Structured chapter, 4 pages, local vision on | Candidate | 106 / 9,496 | 3 automatically accepted title/figure choices | 11 / 11 | 1 | 18.672 s | 420,569,088 bytes |
+| Same chapter repeated, AI off | Candidate | 106 / 9,496 | Same 3 choices rebound to fresh authority | 11 / 11 | 0 | 5.032 s | 430,731,264 bytes |
+| Unsupported form | Needs manual; no PDF | Not run after refusal | 0 | 0 / 0; separate preflight blocker remains | 0 | 0.797 s | 178,982,912 bytes |
+
+All three candidate runs have **zero failing strict rules and zero failing assertions**. Their strict validator and preservation evidence name the exact published output hash. All four bundles verify. Independent candidate inspection passes content linkage and coverage with no phantom structure. No PDF is published without passing preservation; the form bundle contains no PDF. Full raw reports, job summaries, independent inspections, workspace snapshots, automatic summaries, and raw/automatic review exports are retained by case under the final-trial directory.
+
+These are real `Application.auto_fix` calls with real spawned processing workers, standalone veraPDF 1.30.3, PDFium comparisons, and an actual installed loopback model. They reuse the verified, hash-bound preparations produced with OpenDataLoader in the recorded Phase 2 trials. Original-baseline validation, final strict validation, supplemental inspection, and preservation run again; old assessment passes are not inherited. These timings measure checkpoint reuse and automatic application, not cold engine preparation. The 18-case Phase 2 corpus was not rerun as a new 0.3 corpus; its historical result remains separately labeled.
+
+The configured process-tree memory limit is **4,294,967,296 bytes**; no sampled trial exceeds it. Trial-level RSS samples run every 0.15 seconds during queued/running jobs. They include the trial runner and descendants, exclude brief synchronous preflight and the independently running Ollama/model-service processes, and are not an operating-system hard allocation cap. Consequently the table is not a measurement of total computer memory needed by the vision model. Raw native tool reports retain their own timing and process sampling.
+
+## What the 623 count means
+
+The book's 623 bounded painting regroupings were already present in the earlier candidate PDF. Auto-fix reruns the required checks and records their eligible mechanical disposition in a separate automatic record; it does not make 623 new visible changes or invent 623 human reviews. The final PDF SHA-256 remains `9649449d9967ecb063f9e6047341b9fec2df1f034f0c75789434501aa44418ac`.
+
+Eligibility requires an unchanged applied artifact, the preservation repair's actual occurrence inventory, complete strict and relevant supplemental results, passing every-page fidelity, and the matching page/MCID/text fingerprint. Human-touched, blocked, stale, missing, or unmatched occurrences are excluded. Workspace views overlay `automatic_handled`; the required human review export retains every original occurrence as pending. Source/output changes invalidate reuse. The book therefore has seven actionable checks in the normal view, all 630 raw pending records, and no human-approved records.
+
+Automatic title/figure values are separate again: they have status `auto-accepted`, exact decision IDs, model/request/context origins, and explicit source/prepared-document-bound authorization. The chapter gains three required human checks for these automatic semantic choices, giving **11 pending human items**. It reaches automated candidacy without individual review, while all required human obligations remain visible/exportable. Repeat application creates a new authorization; it neither invents a reviewer nor turns automatic values into human-approved ones.
+
+## Actual local model and its limits
+
+The [final assistance envelope](../output/auto-fix/release-final/assistance-envelope.json) is an unchanged copy of the cache record, with [copy/hash evidence](../output/auto-fix/release-final/assistance-evidence.json). It records a **fresh cache miss** against the already-installed `qwen3.5:latest` at `http://127.0.0.1:11434/v1`, using explicitly included safe crops and `reasoning_effort=none`. There is **one document request**, two provider calls including model inventory, **3,190 text characters**, **two images totaling 12,271 bytes**, and **21,355 request bytes**. No whole PDF, cloud provider, model download, paid request, or LMS upload is involved.
+
+The model proposes the title “Chapter 1. Observing the garden” and distinguishes the same orange-circle/blue-square drawing in two occurrences: two garden plots in the first context and two archive bins in the second. The original generation envelope retains these as drafts. The subsequent explicitly authorized automatic action adopts and applies exactly these three choices; no named human acceptance is fabricated. Applied reports retain three prior-assistance origin entries while correctly recording zero model calls in the deterministic PDF-processing stage. The repeat makes no new model request and retains those origins under a fresh authorization.
+
+Origin evidence includes the provider/model, advertised model metadata hash, prompt/context/schema versions, request/response hashes, cache key, selected occurrence context, and draft/current value hashes. The generic local model API does not expose the model-weight bytes; advertised metadata is not a weight-level reproducibility guarantee. One successful controlled chapter does not measure description accuracy, semantic completeness, or mathematical meaning.
+
+The earlier [caption-only trial](../output/auto-fix/final-trial/summary.json) is preserved as an unsuccessful quality attempt. `qwen2.5:1.5b` returned the existing title and placeholder figure values, leaving the chapter and its repeat correctly `needs-manual` despite automatic application. Its safety invariants held, but its expected-candidate conditions did not. The earlier [vision prototype](../output/auto-fix/vision-trial/summary.json) passed all four case conditions but recorded implementation drift while the dashboard mutex fix landed; it is not the frozen release proof. The fresh final trial above repeats the vision generation and all four cases under the stable final digest.
+
+## Preservation and verification boundaries
+
+The chapter's four pages preserve the original under the unchanged exact policy. The book retains the existing declared `authoritative-character-mapping` policy: two missing TeX mappings affect nine recorded glyph occurrences, using the pinned authority documented in [Phase 2](PHASE2-RESULTS.md). Original-to-result painting stays exact; original-to-reference and reference-to-result comparisons remain separately recorded. Raw original text differences remain failures where those nine fallback characters intentionally change; reference token multiset passes, while semantic ordering remains human work. This is not unchanged original text or general equation remediation.
+
+Rendering still uses pinned PDFium at 96 dpi, RGB on white, annotations enabled, with zero permitted changed pixels. Geometry, annotations, navigation, and text checks retain their separate evidence. Auto-fix introduces no pixel threshold change, guessed glyph, font substitution, or validation exemption.
+
+Developer visual spot-checks viewed the final book page 16 and chapter page 3 previews. Contents alignment, dot leaders and page numbers remain intact; both chapter drawings, distinct captions, headings, and footer are legible without clipping or overlap. The [visual QA record](../output/auto-fix/release-final/visual-qa.json) binds those observations to exact PDF and PNG hashes. It supplements the automated all-page comparisons and is not a human accessibility approval.
+
+Every candidate remains `not-verified`. The release runner explicitly confirms that the verification ledger still refuses it with required human checks incomplete. The new mode reduces repetitive interaction and permits informed best-guess application; it does not establish expert semantic review, WCAG conformance, a predicted the LMS checker score, or final accessibility.
+
+## Interface, regressions, and package
+
+The [final developer browser record](../output/auto-fix/ui-smoke.json) and [workspace image](../output/auto-fix/auto-fix-workspace.jpg) record a real book Auto-fix action while the dashboard polls. The resulting view shows **623 handled, 7 remaining, and 0 human approvals**. Review checks shows seven groups by default; including checks handled automatically shows all 17 manual groups. The raw 630-item review remains separate. These are developer-operated browser checks, not an actual-user usability or keyboard/assistive-technology acceptance study.
+
+The [final full regression record](../output/auto-fix/release-tests.json) reports **494 passed in 79.49 seconds**, using `.venvs/app/Scripts/python.exe -m pytest -q --basetemp output/auto-fix/test-final-synchronized`. The 24-case application integration scope includes real pipeline/manifest/preview/workspace handling while explicitly stubbing the expensive external validator/model calls. The final native trials above use no such stubs.
+
+Regressions cover literal consent and strict revisions; zero model traffic for stale queued sources/decisions/blockers; cancellation; empty mechanical decision scope; fresh result bundles and unchanged originals; exact automatic origins; human pending edits and existing approvals taking precedence; old unselected drafts remaining unaccepted; provider errors surfaced as warnings; unsupported preparation with no PDF; edits arriving during preparation, generation, and processing; and dashboard reads overlapping automatic writes. The new race test holds the real workspace file lock during an actual `Application.view` call and requires the concurrent Auto-fix job to finish successfully, without merely asserting a lock exists.
+
+Provider failure is handled at the request/batch boundary. A failed request contributes no usable new suggestions; eligible values from earlier successful batches can still be automatically applied under the current explicit authority. Warnings disclose the partial result, and unresolved choices remain pending. This is not a guarantee that any provider error cancels every previously completed automatic choice.
+
+Earlier full-suite rejected-POST tests encountered two Windows `WinError 10053` connection aborts. The implementation now drains only bounded unread rejected-body data, retaining authorization rejection: maximum 64 KiB and an absolute 100 ms deadline. Seven transport regressions exercise 84 actual denied POSTs and two incomplete/oversized requests. An intermediate 493-test build passed before the browser exposed the workspace polling race; serialized application reads/writes and the new deterministic regression precede the final 494-test pass. The [release record](../output/auto-fix/release-tests.json) retains earlier attempts and their resolutions.
+
+The [final wheel verification](../output/auto-fix/wheel-verification.json) passes for **0.3.0**, **148,035 bytes**, with all **31 source/UI/data assets** byte-matching this frozen package and all **35 wheel RECORD entries** verified. The [wheel](../output/auto-fix/dist/local_pdf_remediator-0.3.0-py3-none-any.whl) SHA-256 is `9d51dfc862eba21c0558ead7d3a14966d858a80a978cd33e4f2c9e556161bb16`. The source-pilot package and its final member/hash inventory are recorded separately by packaging, avoiding a circular hash inside this report. The pilot includes this report; the linked full raw trial PDFs, review states, and native evidence remain in the prepared workspace and are excluded from that source package. Native runtimes and installed model weights are prerequisites, not bundled wheel contents. Fresh-machine installation and cross-platform operation remain unmeasured.
+
+The trial's original files and prior artifacts remain hash-unchanged; synced project references and the separate Phase 2 report were not edited. Phase 3 must measure actual-user effort, assistive-technology acceptance, and real the LMS accessibility checker feedback against exact candidate hashes. **No automatic run creates human approval or verification.**
