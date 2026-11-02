@@ -903,6 +903,18 @@ def test_installer_window_says_the_program_opens_in_its_own_window():
     assert "Your browser will show the local workspace" not in installer
 
 
+def test_installer_offers_a_desktop_and_start_menu_icon_and_the_start_text_explains_it():
+    installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
+    assert "Put a PDF Remediator icon on my desktop and in the Start menu" in installer and "Checked = true" in installer
+    assert "SpecialFolder.DesktopDirectory" in installer and "SpecialFolder.Programs" in installer
+    assert "Open PDF Remediator now?" in installer
+    # a failed icon never undoes the installation, and the test-only command line cannot reach the real desktop by accident
+    assert "The icon could not be made, but the program is installed" in installer
+    assert '--shortcuts-in' in installer and installer.count("MakeShortcut(") == 4  # definition, headless test, desktop, Start menu
+    source = (SOURCE).read_text(encoding="utf-8")
+    assert "icon the installer put on your desktop" in source and "delete the PDF Remediator icons" in source
+
+
 def csc_path():
     import os
     windir = os.environ.get("WINDIR")
@@ -942,6 +954,39 @@ def test_compiled_installer_refuses_without_a_new_enough_runtime_and_changes_not
     if (Path(environ["WINDIR"]) / "System32/vcruntime140.dll").is_file():
         passes = run("1.0.0.0")
         assert "Redistributable" not in passes["message"], "with an old enough minimum the check passes and the next step runs"
+
+
+@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
+def test_installer_shortcut_code_makes_a_working_shortcut_with_the_program_icon(tmp_path):
+    import subprocess
+    text = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
+    start = text.index("    static void MakeShortcut(")
+    end = text.index("    [STAThread]", start)
+    harness = ("using System;\nusing System.IO;\nusing System.Reflection;\n"
+               "internal static class T {\n"
+               "    static void Need(bool ok, string message) { if (!ok) throw new InvalidOperationException(message); }\n"
+               + text[start:end] +
+               "    static int Main(string[] a) { MakeShortcut(a[0], a[1]); return 0; }\n}\n")
+    source = tmp_path / "shortcut.cs"
+    source.write_text(harness, encoding="utf-8")
+    program = tmp_path / "shortcut-test.exe"
+    package.compile_cs(csc_path(), source, program, icon=SOURCE.parents[1] / package.ICON_ICO)
+    install = tmp_path / "install"
+    install.mkdir()
+    fake = install / "PDF Remediator.exe"
+    fake.write_bytes(b"MZ")  # only its path matters to a shortcut
+    where = tmp_path / "where"
+    where.mkdir()
+    done = subprocess.run([str(program), str(where), str(install)], capture_output=True, text=True, timeout=60, check=False)
+    assert done.returncode == 0, done.stderr + done.stdout
+    link = where / "PDF Remediator.lnk"
+    assert link.is_file()
+    read = subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+                           "$l=(New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $l.TargetPath; $l.WorkingDirectory; $l.IconLocation" % str(link).replace("'", "''")],
+                          capture_output=True, text=True, timeout=60, check=False).stdout.splitlines()
+    assert read[0] == str(fake) and read[1] == str(install) and read[2].startswith(str(fake)), read
+    missing = subprocess.run([str(program), str(where), str(tmp_path / "nowhere")], capture_output=True, text=True, timeout=60, check=False)
+    assert missing.returncode != 0, "no shortcut is made for a program that is not there"
 
 
 def test_launcher_program_passes_the_arguments_that_launch_portable_understands():
