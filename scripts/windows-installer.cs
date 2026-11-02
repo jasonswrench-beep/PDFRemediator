@@ -154,20 +154,38 @@ internal static class InternalInstaller {
             } finally { mutex.ReleaseMutex(); }
         }
     }
+    // A shortcut (.lnk) that starts the installed program and shows its own icon. Made through Windows' own scripting object, so no extra files or
+    // administrator access are needed. A failure here never undoes the installation.
+    static void MakeShortcut(string folder, string installDir) {
+        Need(Directory.Exists(folder), "The shortcut folder does not exist.");
+        string program = Path.Combine(installDir, "PDF Remediator.exe");
+        Need(File.Exists(program), "The installed program was not found.");
+        Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+        Need(shellType != null, "Windows' shortcut maker is not available.");
+        object shell = Activator.CreateInstance(shellType);
+        object link = shellType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { Path.Combine(folder, "PDF Remediator.lnk") });
+        Type linkType = link.GetType();
+        linkType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, link, new object[] { program });
+        linkType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, link, new object[] { installDir });
+        linkType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, link, new object[] { program + ",0" });
+        linkType.InvokeMember("Description", BindingFlags.SetProperty, null, link, new object[] { "PDF Remediator: drafts accessibility repairs for PDFs" });
+        linkType.InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null);
+    }
     [STAThread]
     static int Main(string[] args) {
         string result = null;
         bool resultWritable = false;
         try {
             if (args.Length > 0) {
-                Need(args.Length == 5 && args[0] == "--install-dir" && args[2] == "--no-launch" && args[3] == "--result",
-                    "Supported internal test arguments: --install-dir PATH --no-launch --result NEWFILE");
+                Need((args.Length == 5 || (args.Length == 7 && args[5] == "--shortcuts-in")) && args[0] == "--install-dir" && args[2] == "--no-launch" && args[3] == "--result",
+                    "Supported internal test arguments: --install-dir PATH --no-launch --result NEWFILE [--shortcuts-in EXISTINGFOLDER]");
                 result = Path.GetFullPath(args[4]);
                 Need(!File.Exists(result) && !Directory.Exists(result), "Result file already exists.");
                 CheckParents(result);
                 Need(Directory.Exists(Path.GetDirectoryName(result)), "Result parent folder must already exist.");
                 resultWritable = true;
                 string installed = Install(args[1]);
+                if (args.Length == 7) MakeShortcut(Path.GetFullPath(args[6]), installed);
                 using (var file = new FileStream(result, FileMode.CreateNew)) using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
                     writer.Write(new JavaScriptSerializer().Serialize(new { status = "installed-internal-unqualified", install_dir = installed, payload_sha256 = PayloadHash, launched = false }));
                 return 0;
@@ -175,24 +193,34 @@ internal static class InternalInstaller {
             Application.EnableVisualStyles();
             string early = VcRuntime.Problem();
             if (early != null) { VcRuntime.OfferDownload(early); return 1; }
-            var form = new Form { Text = "PDF Remediator — internal trial", Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath), ClientSize = new Size(580, 265), StartPosition = FormStartPosition.CenterScreen, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false };
+            var form = new Form { Text = "PDF Remediator — internal trial", Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath), ClientSize = new Size(580, 300), StartPosition = FormStartPosition.CenterScreen, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false };
             var label = new Label { Left = 20, Top = 20, Width = 540, Height = 85, Text = "Install this private trial in a new folder on this computer. The local workspace opens in its own window, not in your browser.\n\nExisting installations and saved reviews stay in place. This internal trial is not ready to share." };
             var field = new TextBox { Left = 20, Top = 115, Width = 540, AccessibleName = "Installation folder", Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PDFRemediator", "Trial-0.3") };
             var install = new Button { Left = 425, Top = 160, Width = 135, Height = 32, Text = "Install trial" };
-            var note = new Label { Left = 20, Top = 210, Width = 540, Height = 40, Text = "No administrator access, AI/OCR downloads, or automatic updates.\nKeep the entire installation folder to preserve saved work." };
-            form.Controls.AddRange(new Control[] { label, field, install, note });
+            var icons = new CheckBox { Left = 20, Top = 168, Width = 380, Height = 24, Checked = true, Text = "Put a PDF Remediator icon on my desktop and in the Start menu" };
+            var note = new Label { Left = 20, Top = 245, Width = 540, Height = 40, Text = "No administrator access, AI/OCR downloads, or automatic updates.\nKeep the entire installation folder to preserve saved work." };
+            form.Controls.AddRange(new Control[] { label, field, icons, install, note });
             install.Click += delegate {
-                install.Enabled = false; field.Enabled = false;
+                install.Enabled = false; field.Enabled = false; icons.Enabled = false;
                 try {
                     string target = Install(PrepareTarget(field.Text, true));
-                    MessageBox.Show("Installed. Open PDF Remediator.exe in this folder.\n\n" + target, "PDF Remediator", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    string where = "Open PDF Remediator.exe in this folder:\n" + target;
+                    if (icons.Checked) {
+                        try {
+                            MakeShortcut(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), target);
+                            MakeShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Programs), target);
+                            where = "A PDF Remediator icon is now on your desktop and in the Start menu.\n\nThe program itself is in:\n" + target;
+                        } catch (Exception) { where = "The icon could not be made, but the program is installed. Open PDF Remediator.exe in this folder:\n" + target; }
+                    }
+                    bool openNow = MessageBox.Show("Installed.\n\n" + where + "\n\nOpen PDF Remediator now?", "PDF Remediator", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes;
+                    if (openNow) { try { Process.Start(new ProcessStartInfo(Path.Combine(target, "PDF Remediator.exe")) { WorkingDirectory = target, UseShellExecute = false }); } catch (Exception) { } }
                     form.Close();
                 } catch (RuntimeMissing missing) {
                     VcRuntime.OfferDownload(missing.Message);
-                    install.Enabled = true; field.Enabled = true;
+                    install.Enabled = true; field.Enabled = true; icons.Enabled = true;
                 } catch (Exception error) {
                     MessageBox.Show(error.Message + "\n\nAny partial installation stays in place for inspection. Choose a new folder to retry.", "Installation needs attention", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    install.Enabled = true; field.Enabled = true;
+                    install.Enabled = true; field.Enabled = true; icons.Enabled = true;
                 }
             };
             Application.Run(form); return 0;

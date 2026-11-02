@@ -679,11 +679,13 @@ def build(plan, output, csc):
     write_new(payload / "local-runtime.toml", runtime_config(bool(ocr)))
     write_new(payload / "launch_portable.py", LAUNCH_PORTABLE)
     write_new(payload / "START-HERE.txt", 'PDF Remediator — internal Windows trial\n\n'
-              'Open PDF Remediator.exe. The private local workspace opens in its own window (Microsoft Edge, which comes with Windows;\n'
+              'Use the PDF Remediator icon the installer put on your desktop (if you left that box ticked), or open PDF Remediator.exe in the install folder.\n'
+              'The private local workspace opens in its own window (Microsoft Edge, which comes with Windows;\n'
               'Chrome if Edge is missing; otherwise your default browser). Closing that window stops the program, as does Stop application.\n'
               'It is a web page that runs on this computer, so it looks like one; a stand-alone program window is planned for version 2.0.\n'
               'Your documents are processed locally; originals remain unchanged.\n'
               'Saved work stays under output/review-app.\n'
+              'To remove the program, close it, delete the install folder, and delete the PDF Remediator icons from your desktop and Start menu (there is no uninstaller yet).\n'
               'Keep this entire installation in place: saved reviews are bound to their files.\n' +
               ('Local English OCR components are included; OCR stays off until you select it.\n' if ocr else 'OCR components are not included.\n') +
               'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
