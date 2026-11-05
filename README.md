@@ -1,5 +1,7 @@
 # PDF Remediator
 
+[Roadmap & Feature Requests](https://app.productbridge.io/widget/784db895-cb64-45f4-9bde-4645df4aa083?tab=roadmap)
+
 A local helper that drafts accessibility repairs for PDFs (reading structure, tags, text for scanned pages) and lists what a person still has to check.
 Your original PDF is never changed, nothing is sent to the cloud, and nothing it produces is called "verified accessible": every result is a draft for a person to review.
 
