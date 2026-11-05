@@ -56,7 +56,7 @@ lineage remains separate follow-up work. Earlier negative attempts are retained.
 
 All work ran in isolated copies in the background, with AI off and no OCR
 recognition rerun, software window, browser or desktop use. There are zero new
-document/accessibility approvals. Actual-user, assistive-technology, the LMS checker,
+document/accessibility approvals. Actual-user, assistive-technology, LMS checker,
 graphical, fresh-PC, distribution and release gates retain their separate scope.
 The documentation .bat and older packaged payload remain unchanged. No merge
 or release occurred; supported insertions are explicit transcription tools,
@@ -118,7 +118,7 @@ There are zero new human approvals or verified accessible documents.
 
 AI stayed off, recognition was not rerun, and no software window, browser or
 desktop interaction occurred. Native keyboard, assistive-technology, actual-user,
-the LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
+LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
 The retained documentation .bat and older packaged payload are unchanged and
 do not automatically acquire this source feature. No merge or release occurred.
 
@@ -183,7 +183,7 @@ Existing page text remains excluded. Standard remains the default layout;
 ruled-table limits are unchanged. Retry retains saved preparation settings;
 changing mode/layout requires a separate result. Existing reviews are retained.
 
-No graphical, fresh-PC, human/assistive-technology, the LMS checker, distribution or release
+No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
 `C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
@@ -243,7 +243,7 @@ layout control are disabled if the local OCR component is unavailable. A logo
 can receive a meaningful description in the usual figure-review workflow
 without running OCR for it. Save a draft, review it and use the existing
 acceptance and checked Apply steps. Real-user, assistive-technology and
-authorized the LMS checker checks remain separate.
+authorized LMS checker checks remain separate.
 
 
 PDF Remediator opens a private review workspace in your browser. It keeps your original PDF unchanged, creates a separate result, and shows the work that still needs your judgment.
@@ -349,4 +349,4 @@ In this manual workflow, AI suggestions remain drafts until you accept them. The
 
 The workspace, copies, reports, and exports are stored locally under `output/review-app` by default. Completed processing bundles remain unchanged. If the application says the source, checkpoint, or result changed, reprocess it instead of reusing stale approvals.
 
-Testing with actual users, the LMS accessibility checker, and assistive technologies is explicitly scheduled for Phase 3. Phase 2's internal software and UI checks do not substitute for that work. See [Phase 2 results](eval/PHASE2-RESULTS.md) for the implemented scope and evidence, and [README.md](README.md) for command line use and the separate verification ledger.
+Testing with actual users, the LMS checker, and assistive technologies is explicitly scheduled for Phase 3. Phase 2's internal software and UI checks do not substitute for that work. See [Phase 2 results](eval/PHASE2-RESULTS.md) for the implemented scope and evidence, and [README.md](README.md) for command line use and the separate verification ledger.

@@ -95,7 +95,7 @@ def evaluate(item,engine,runroot,resume=False):
             'input':str(item['path']),'input_sha256':sha(item['path']),'source':item['source'],
             'criteria_sha256':fingerprint,'no_ai':True,'document_cloud_calls':0,'complete':False,
             'implementation_sha256':implementation,
-            'not_assessed':['semantic reading order','description meaning','contrast','full WCAG coverage','human the LMS checker review']}
+            'not_assessed':['semantic reading order','description meaning','contrast','full WCAG coverage','human LMS checker review']}
     if report['input_sha256']!=item['sha256']:
         raise ValueError('Input changed after manifest')
     report['baseline']=inspect_pdf(item['path'])

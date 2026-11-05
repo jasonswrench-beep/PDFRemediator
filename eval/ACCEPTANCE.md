@@ -2,7 +2,7 @@
 
 Declared before scoring the engines. Evaluation scope is Windows, no AI, no cloud document processing, no paid engine. These criteria select feasibility; they do not award product candidate or verified status.
 
-- Run OpenDataLoader 2.5.13 and accesspdf 1.2.1 in isolated environments. Preserve raw outputs and independently normalized outputs. a proprietary tagging SDK is not evaluated without established license eligibility.
+- Run OpenDataLoader 2.5.13 and accesspdf 1.2.1 in isolated environments. Preserve raw outputs and independently normalized outputs. No proprietary tagging SDK is evaluated without established license eligibility.
 - Use standalone veraPDF 1.30.3 with explicit ua1 profile, unlimited failure reporting, one validation process, and the selected working Java runtime. Zero failed rules/checks is a strict machine pass. Validator errors never become passes.
 - Normalization changes only title/language/export metadata, document-title display, MarkInfo and page tab order. It must not change text, fonts, content marking, or structural semantics. Record it separately from engine performance.
 - Preserve every page and its dimensions, all normalized PDFium text tokens, annotations, page labels, bookmarks, and named destinations. Compare every page using PDFium 5.14.0 at 96 dpi, white RGB background, annotations enabled. Allow zero changed pixels and zero per-channel tolerance. Report ordering separately; semantic reading order is not established by content-token equality.

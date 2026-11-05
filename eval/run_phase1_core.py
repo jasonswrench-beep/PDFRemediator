@@ -44,7 +44,7 @@ def run(destination):
         item['value']=value
         bind_approval(item,'Synthetic fixture author (automated test only)','2026-10-15')
     decision_file=destination/'synthetic-author-decisions.json';write_sidecar(data,decision_file)
-    write_json(destination/'decision-provenance.json',{'scope':'Original synthetic fixture intent from eval/build_corpus.py and corpus/manifest.json; no real-person review or the LMS checker verification.',
+    write_json(destination/'decision-provenance.json',{'scope':'Original synthetic fixture intent from eval/build_corpus.py and corpus/manifest.json; no real-person review or LMS checker verification.',
        'fixture_manifest_sha256':sha(ROOT/'eval/corpus/manifest.json'),'descriptions':descriptions,
        'book_title_source':'Allen Downey, Think Python, Second Edition; exact published book identity, not an inferred title.'})
     execute('chapter',Path('eval/corpus/structured-chapter.pdf'),config,decision_file,bundle_label='chapter-before')
@@ -56,7 +56,7 @@ def run(destination):
     passed=stable and len(selected)==3 and all(row['status']=='candidate' and row['source_unchanged'] and row['bundle_verified'] and all(row[k]=='pass' for k in ('gate1','gate2','fidelity')) for row in selected)
     summary={'schema_version':'phase1-core-trial-1','core_exit_pass':passed,'implementation_unchanged':stable,
       'cases':rows,'seconds':round(time.monotonic()-started,3),'verified_count':0,
-      'limits':'Candidates await human structure, character, contrast and assistive-technology review plus an actual the LMS accessibility checker score. No LMS upload performed.'}
+      'limits':'Candidates await human structure, character, contrast and assistive-technology review plus an actual LMS checker score. No LMS upload performed.'}
     write_json(destination/'summary.json',summary)
     with (destination/'summary.csv').open('w',encoding='utf-8',newline='') as stream:
         writer=csv.DictWriter(stream,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)

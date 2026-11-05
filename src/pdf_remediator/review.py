@@ -122,14 +122,14 @@ summary{{cursor:pointer;font-weight:600}}details{{margin:.7rem 0}}img{{max-width
 @media print{{body{{max-width:none}}details{{display:block}}pre{{font-size:.75rem}}}}
 </style></head><body><a href="#review-queue">Skip to pending human review</a>
 <header><h1>{title}</h1><p class="status">Run status: {_text(report.get('status', 'unknown'))}</p>
-<p>Automated candidacy, human review, and an actual the LMS accessibility checker score are separate records. A candidate still needs the human checks below. This packet does not certify accessibility.</p></header>
+<p>Automated candidacy, human review, and an actual LMS checker score are separate records. A candidate still needs the human checks below. This packet does not certify accessibility.</p></header>
 <main><section aria-labelledby="binding"><h2 id="binding">Exact document under review</h2>
 <p>Source: {_text(source.get('path', ''))}<br>Source SHA-256: <code>{_text(source.get('sha256', sidecar.get('source_sha256', '')))}</code></p>
 <p>Output: {_text(output.get('path', 'No releasable PDF'))}<br>Output SHA-256: <code>{_text(output.get('sha256', 'Not published'))}</code></p>
 <p>Changing the PDF invalidates previous approvals and verification for those bytes.</p></section>
 <section aria-labelledby="blockers"><h2 id="blockers">Blockers and repair paths</h2>{_items(blockers, 'No blockers are recorded in this report.')}</section>
 <section aria-labelledby="review-queue"><h2 id="review-queue">Pending human review ({len(pending)})</h2>
-{_items(pending, 'No pending items are listed. Verification still requires an eligible candidate, a named reviewer, review scope, and the actual the LMS checker score.')}
+{_items(pending, 'No pending items are listed. Verification still requires an eligible candidate, a named reviewer, review scope, and the actual LMS checker score.')}
 {_details('All human-review items, including completed checks', queue)}</section>
 <section aria-labelledby="decisions"><h2 id="decisions">Explicit reviewer decisions</h2>
 <p>Edit the separate decision sidecar and explicitly approve each selected value through the local review command. Existing text is retained by default. Changed values, source fingerprints, staged document fingerprints, or occurrence context invalidate prior approval.</p>

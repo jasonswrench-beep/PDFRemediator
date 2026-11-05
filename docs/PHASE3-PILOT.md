@@ -7,10 +7,10 @@ paragraph line boundaries. This is a finding, not accessibility acceptance.
 The owner subsequently confirmed that the separate bounded experiment retained
 appearance and corrected both clipboard boundaries. See
 [Windows pilot continuation](WINDOWS-PILOT.md) for the record and remaining scope.
-Assistive-technology acceptance and the LMS accessibility checker testing remain deferred.
+Assistive-technology acceptance and LMS checker testing remain deferred.
 
 The broader human-dependent milestone is the existing roadmap's actual-user,
-assistive-technology, and the LMS accessibility checker acceptance. AGENTS.md requires owner
+assistive-technology, and LMS checker acceptance. AGENTS.md requires owner
 authorization before those trials. Native synthetic passes do not waive it.
 
 Detailed tasks, seeded controls and evidence-binding instructions are prepared
@@ -36,21 +36,21 @@ scope; spot checks cannot complete all 1,234 pending reviews.
    local installation or a separately approved authenticated preview. Keep the
    cloud review server on loopback; do not expose it for this pilot. Record
    usability separately from PDF/assistive-technology results.
-4. If the owner has an authorized Canvas course with the LMS checker and explicitly approves
-   upload, the owner uploads each exact candidate and records the actual the LMS checker
+4. If the owner has an authorized LMS course with the LMS checker and explicitly approves
+   upload, the owner uploads each exact candidate and records the actual LMS checker
    score, feedback, course/context, date and candidate hash. No credentials or
    institutional/private material belong in Git. No upload occurs by default.
 5. Bind genuine named human reviews to the exact artifact. Keep all unperformed
    checks pending, resolve confirmed blockers, and revalidate any changed PDF.
    A changed hash invalidates earlier artifact verification. Use the existing
    verification ledger only after every required review and qualifying actual
-   the LMS checker result meet the product's established policy.
+   LMS checker result meet the product's established policy.
 
 ## Review record
 
 Capture: artifact name and SHA-256; tester/reviewer and date; OS/reader/screen
 reader versions; exact review scope/pages; actual observations and blockers;
-completed versus pending checks; original/candidate comparison; actual the LMS checker
+completed versus pending checks; original/candidate comparison; actual LMS checker
 score/context if tested; and the final disposition. No automatic value is a
 named human approval. No untested result receives a score, pass, or verified label.
 
@@ -58,8 +58,8 @@ named human approval. No untested result receives a score, pass, or verified lab
 
 Stop for changed source/candidate hashes, an unresolved confirmed blocker,
 missing reviewer authority, inaccessible tooling, or an unavailable/unauthorized
-Canvas course. Do not fill those gaps with automatic approvals, simulated
-screen-reader results, invented the LMS checker feedback, or relaxed preservation gates.
+LMS course. Do not fill those gaps with automatic approvals, simulated
+screen-reader results, invented LMS checker feedback, or relaxed preservation gates.
 
 Approval of this plan would authorize only the specified synthetic pilot, not a
 broader user study, private document upload, public server, deployment, merge,

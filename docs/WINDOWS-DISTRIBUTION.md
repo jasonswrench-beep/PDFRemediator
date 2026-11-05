@@ -70,7 +70,7 @@ lineage remains separate follow-up work. Earlier negative attempts are retained.
 
 All work ran in isolated copies in the background, with AI off and no OCR
 recognition rerun, software window, browser or desktop use. There are zero new
-document/accessibility approvals. Actual-user, assistive-technology, the LMS checker,
+document/accessibility approvals. Actual-user, assistive-technology, LMS checker,
 graphical, fresh-PC, distribution and release gates retain their separate scope.
 The documentation .bat and older packaged payload remain unchanged. No merge
 or release occurred; supported insertions are explicit transcription tools,
@@ -132,7 +132,7 @@ There are zero new human approvals or verified accessible documents.
 
 AI stayed off, recognition was not rerun, and no software window, browser or
 desktop interaction occurred. Native keyboard, assistive-technology, actual-user,
-the LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
+LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
 The retained documentation .bat and older packaged payload are unchanged and
 do not automatically acquire this source feature. No merge or release occurred.
 
@@ -197,7 +197,7 @@ Existing page text remains excluded. Standard remains the default layout;
 ruled-table limits are unchanged. Retry retains saved preparation settings;
 changing mode/layout requires a separate result. Existing reviews are retained.
 
-No graphical, fresh-PC, human/assistive-technology, the LMS checker, distribution or release
+No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
 `C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
@@ -241,7 +241,7 @@ The separately built internal offline payload contains **3,812 files**,
 the unchanged official artwork, private CPython 3.14.9, the exact eight-core
 and 31-OCR locks, and the complete 138-file native OCR factory. Real CLI checks
 used this payload locally with AI off. This is prepared-host developer evidence;
-new graphical/fresh-PC, user/assistive-technology/the LMS checker and distribution clearance
+new graphical/fresh-PC, user/assistive-technology/LMS checker and distribution clearance
 retain their separate requirements.
 
 The new **Scanned text → Add text only on wholly scanned pages** option
@@ -440,7 +440,7 @@ mixed pages without replacing their existing text. Then compare every word,
 number, bullet and accent, and review table relationships and reading order.
 Meaningful descriptions, heading choices, titles and remaining font/strict
 defects retain their real review or source-repair requirements. GUI, fresh-PC,
-screen-reader/the LMS checker acceptance and release gates remain open.
+screen-reader/LMS checker acceptance and release gates remain open.
 
 
 Original PDFs, the selected saved input/review guards, original checkout,
@@ -448,7 +448,7 @@ validation source/Git state, installed application, prior builds/trials and
 qualified runtimes stayed unchanged during these checks. All failed/intermediate
 attempts remain evidence. No AI provider call, named approval, commit, merge,
 release, installation or distribution occurred. New graphical/browser workflows,
-a fresh Windows computer, actual-user/screen-reader/the LMS checker acceptance and external
+a fresh Windows computer, actual-user/screen-reader/LMS checker acceptance and external
 release remain separate qualification; the older GUI evidence does not qualify
 this new OCR package.
 
@@ -692,7 +692,7 @@ four documentation-only changes with complete old-byte backups. All **35** appli
 assets and executable/test bytes are unchanged; **972** software tests and **49**
 independent wrapper contracts retain their prior results and were not rerun for GUI evidence.
 Only the bounded GUI checklist item closes: **nine master items remain open**.
-Fresh-PC, licensing, signing, human/AT/the LMS checker and final owner/build gates remain separate.
+Fresh-PC, licensing, signing, human/AT/LMS checker and final owner/build gates remain separate.
 No distribution, commit, merge or release is cleared.
 
 ## October 22 maintained private Python qualification
@@ -772,7 +772,7 @@ checklist item closed; graphical packaged installer/launcher qualification was
 still pending. The later bounded graphical result above qualifies that separate
 item. Fresh-computer installation, distribution licensing/source/relinking
 obligations and publisher signing/authentication remain open. Human
-semantic/usability review, screen-reader testing, authorized the LMS checker feedback and
+semantic/usability review, screen-reader testing, authorized LMS checker feedback and
 final owner/build decisions retain their separate gates. No external
 distribution, commit, merge or release is cleared.
 
@@ -822,7 +822,7 @@ continuing runtime maintenance, supported Windows versions/architecture and
 fresh-machine installation/recovery need their own final qualification.
 
 Developer keyboard/file-picker checks, actual-user semantic review, experienced
-screen-reader testing and authorized the LMS checker feedback retain their separate scopes.
+screen-reader testing and authorized LMS checker feedback retain their separate scopes.
 The package builder cannot mark a PDF human-verified, weaken release gates or
 turn these internal checks into acceptance. Do not merge, release or share the
 trial without the owner's separate decision.

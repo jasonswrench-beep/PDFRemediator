@@ -123,7 +123,7 @@ inventory errors or changed source/input hashes. These are compatibility/timing
 observations, not new human authoring or a new remediation of the full problem
 PDF folder. Both final native pages were rendered, compared with the original
 and visually inspected with no layout defects. Mechanical observations are not
-genuine human, keyboard, screen-reader, the next accessibility checker or accessibility approval.
+genuine human, keyboard, screen-reader, LMS checker or accessibility approval.
 
 Qualification: `small-font-empty-tags-20261027-01/qualification-01`. Guarded source-application authority after
 application: `work/small-font-empty-tags-20261027-01/source-application-01/source-application.json`.
@@ -285,13 +285,13 @@ actual-user/assistive-technology/LMS feedback, fresh-PC, distribution and final 
 gates remain open. Existing installer and documentation .bat payloads were not
 rebuilt.
 
-The institution's planned move to the institution's next accessibility checker adds its published PDF checklist
-as an external acceptance reference. Its explicit PDF rules reinforce headings,
+The institution's planned move to a different LMS accessibility checker adds that
+checker's published PDF checklist as an external acceptance reference. Its explicit PDF rules reinforce headings,
 tables, reading order, language, links and form tooltip work already on this
-roadmap. No result has been tested in the next accessibility checker, and no vendor score or WCAG
-conformance is implied. Disabled vendor defaults do not remove the need for
-human judgment. AI stays off. Vendor reference:
-(vendor page)
+roadmap. No result has been tested in that checker, and no checker score or WCAG
+conformance is implied. Disabled checker defaults do not remove the need for
+human judgment. AI stays off. The reference is the checker's own published PDF
+checklist.
 
 Originals, saved reviews and existing changes are preserved. AI stayed off and
 OCR was not run. No software window, browser or desktop was used; no installation,
@@ -393,7 +393,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded development group. Thirteen grouped
 items remain: nine acceptance/distribution/final gates and four further
 requested development groups. Genuine table judgments, graphical/keyboard
-workflows, actual-user/assistive-technology/the LMS checker, fresh-PC, distribution packaging
+workflows, actual-user/assistive-technology/LMS checker, fresh-PC, distribution packaging
 and final release gates remain open. Existing installer and documentation .bat
 payloads were not rebuilt.
 
@@ -494,7 +494,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded development group. Fourteen grouped
 items remain: nine acceptance/distribution/final gates and five further requested
 development groups. Complex table associations, IDs, spans and summaries are next.
-Graphical/keyboard/assistive-technology/the LMS checker, fresh-PC, packaging and final release
+Graphical/keyboard/assistive-technology/LMS checker, fresh-PC, packaging and final release
 gates stay open. Installer and documentation .bat payloads were not rebuilt.
 
 References: [W3C PDF21](https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21),
@@ -582,7 +582,7 @@ every stage. Existing outline style/custom attributes, earlier bundles, notes,
 saved reviews, text, painting, geometry, resources and ParentTree stayed intact
 except the exact named navigation changes. Fresh required navigation judgments
 numbered 0, 5 and 5 and remained pending in the new results. This is mechanical
-developer evidence; actual-user, speech, keyboard and the LMS checker acceptance remain open.
+developer evidence; actual-user, speech, keyboard and LMS checker acceptance remain open.
 
 Qualification: `link-bookmark-controls-20261027-01/qualification-01`.
 Guarded source-application authority after application:
@@ -668,7 +668,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded language-development group. Sixteen
 grouped items remain: nine acceptance/distribution/final gates and seven further
 development groups. Link/annotation names and bookmark authoring are next.
-Graphical/keyboard checks, actual-user/assistive-technology/the LMS checker acceptance,
+Graphical/keyboard checks, actual-user/assistive-technology/LMS checker acceptance,
 fresh-PC, packaging and release remain open. Installer and documentation .bat
 payloads were not rebuilt. Earlier dated sections retain their original scope.
 
@@ -749,7 +749,7 @@ No future receipt hash is invented. Documentation is a separate reviewed overlay
 the master checklist receives a bounded reconciliation; other prior bodies remain
 verbatim. This completes the first requested authoring group within item #2;
 passage-specific language is the next group. Graphical/keyboard checks of these
-new controls, actual-user/AT/the LMS checker, fresh-PC, distribution and release gates remain.
+new controls, actual-user/AT/LMS checker, fresh-PC, distribution and release gates remain.
 
 Originals and saved reviews are preserved. AI stayed off and OCR was not rerun.
 No software window or desktop was used, and no merge or release occurred. Existing
@@ -802,7 +802,7 @@ reviewed separately; prior document bodies remain byte-for-byte unchanged.
 
 Originals and existing saved reviews remain preserved. AI stayed off, OCR was not
 rerun, and no software window, browser or desktop was used. No new native PDF,
-graphical, user, screen-reader, the LMS checker, packaging, distribution or release acceptance
+graphical, user, screen-reader, LMS checker, packaging, distribution or release acceptance
 is claimed. The documentation .bat and existing installer remain on their earlier
 builds. No commit, merge or release occurred. This completes the known older-review
 note issue; requested PDF repair controls are the next sequential workstream.
@@ -870,7 +870,7 @@ lineage remains separate follow-up work. Earlier negative attempts are retained.
 
 All work ran in isolated copies in the background, with AI off and no OCR
 recognition rerun, software window, browser or desktop use. There are zero new
-document/accessibility approvals. Actual-user, assistive-technology, the LMS checker,
+document/accessibility approvals. Actual-user, assistive-technology, LMS checker,
 graphical, fresh-PC, distribution and release gates retain their separate scope.
 The documentation .bat and older packaged payload remain unchanged. No merge
 or release occurred; supported insertions are explicit transcription tools,
@@ -932,7 +932,7 @@ There are zero new human approvals or verified accessible documents.
 
 AI stayed off, recognition was not rerun, and no software window, browser or
 desktop interaction occurred. Native keyboard, assistive-technology, actual-user,
-the LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
+LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
 The retained documentation .bat and older packaged payload are unchanged and
 do not automatically acquire this source feature. No merge or release occurred.
 
@@ -997,7 +997,7 @@ Existing page text remains excluded. Standard remains the default layout;
 ruled-table limits are unchanged. Retry retains saved preparation settings;
 changing mode/layout requires a separate result. Existing reviews are retained.
 
-No graphical, fresh-PC, human/assistive-technology, the LMS checker, distribution or release
+No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
 `C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
@@ -1041,7 +1041,7 @@ The separately built internal offline payload contains **3,812 files**,
 the unchanged official artwork, private CPython 3.14.9, the exact eight-core
 and 31-OCR locks, and the complete 138-file native OCR factory. Real CLI checks
 used this payload locally with AI off. This is prepared-host developer evidence;
-new graphical/fresh-PC, user/assistive-technology/the LMS checker and distribution clearance
+new graphical/fresh-PC, user/assistive-technology/LMS checker and distribution clearance
 retain their separate requirements.
 
 The new **Scanned text → Add text only on wholly scanned pages** option
@@ -1240,7 +1240,7 @@ mixed pages without replacing their existing text. Then compare every word,
 number, bullet and accent, and review table relationships and reading order.
 Meaningful descriptions, heading choices, titles and remaining font/strict
 defects retain their real review or source-repair requirements. GUI, fresh-PC,
-screen-reader/the LMS checker acceptance and release gates remain open.
+screen-reader/LMS checker acceptance and release gates remain open.
 
 
 Original PDFs, the selected saved input/review guards, original checkout,
@@ -1248,7 +1248,7 @@ validation source/Git state, installed application, prior builds/trials and
 qualified runtimes stayed unchanged during these checks. All failed/intermediate
 attempts remain evidence. No AI provider call, named approval, commit, merge,
 release, installation or distribution occurred. New graphical/browser workflows,
-a fresh Windows computer, actual-user/screen-reader/the LMS checker acceptance and external
+a fresh Windows computer, actual-user/screen-reader/LMS checker acceptance and external
 release remain separate qualification; the older GUI evidence does not qualify
 this new OCR package.
 
@@ -1373,7 +1373,7 @@ four documentation-only changes with complete old-byte backups. All **35** appli
 assets and executable/test bytes are unchanged; **972** software tests and **49**
 independent wrapper contracts retain their prior results and were not rerun for GUI evidence.
 Only the bounded GUI checklist item closes: **nine master items remain open**.
-Fresh-PC, licensing, signing, human/AT/the LMS checker and final owner/build gates remain separate.
+Fresh-PC, licensing, signing, human/AT/LMS checker and final owner/build gates remain separate.
 No distribution, commit, merge or release is cleared.
 
 ## October 22 maintained private Python qualification
@@ -1453,7 +1453,7 @@ checklist item closed; graphical packaged installer/launcher qualification was
 still pending. The later bounded graphical result above qualifies that separate
 item. Fresh-computer installation, distribution licensing/source/relinking
 obligations and publisher signing/authentication remain open. Human
-semantic/usability review, screen-reader testing, authorized the LMS checker feedback and
+semantic/usability review, screen-reader testing, authorized LMS checker feedback and
 final owner/build decisions retain their separate gates. No external
 distribution, commit, merge or release is cleared.
 
@@ -1580,7 +1580,7 @@ No commit, merge, release, distribution or LMS upload occurred.
 
 The full native Windows keyboard/modifier and Ctrl/Shift file-picker task remains
 open. Genuine usability/semantic review, experienced screen-reader testing,
-authorized the LMS accessibility checker feedback, final-build review and the owner's integration
+authorized LMS checker feedback, final-build review and the owner's integration
 or release decision remain separate requirements. The earlier shared-element,
 contrast and missing-description checks are distinct from these seeded cases.
 
@@ -1667,7 +1667,7 @@ verification. No commit, merge, release, distribution or LMS upload occurred.
 Full native keyboard/picker work and the four specific phantom/incomplete-tag,
 content-loss, wrong-Unicode and changed-settings browser negatives remain open.
 Actual-user semantic review, experienced screen-reader acceptance, authorized
-the LMS accessibility checker feedback, final-build review and an owner integration/release
+LMS checker feedback, final-build review and an owner integration/release
 decision remain separate requirements. The older unexplained closure remains
 undiagnosed; this explicit Stop and its diagnostic log do not explain it.
 
@@ -1710,7 +1710,7 @@ runs passed. No native browser/keyboard acceptance is inferred from these tests.
 
 All 821 protected original/review/runtime files remained unchanged. AI/OCR stayed
 off. This completes the master checklist's known software wording follow-up;
-remaining Windows workflow, actual-user, screen-reader and authorized the LMS checker work
+remaining Windows workflow, actual-user, screen-reader and authorized LMS checker work
 stays open. No commit, merge or release occurred. Evidence and original-byte
 application backups are retained outside Git under
 `work/cancel-wording-20261021-01/`. These three documentation summaries follow the
@@ -1755,7 +1755,7 @@ Evidence, frozen sources, before/after comparisons and application backups are
 retained outside Git under `work/windows-path-fix-20261021-01/`. The three
 documentation summaries below were added after qualification; executable and
 test bytes match the tested 129-file source. Earlier incomplete trials and
-remaining user, screen-reader, broader keyboard and the LMS checker acceptance boundaries
+remaining user, screen-reader, broader keyboard and LMS checker acceptance boundaries
 remain unchanged.
 
 ## October 21 controls and focus continuation — completed
@@ -1768,13 +1768,13 @@ The original controls build and later focus build have separate source/evidence 
 
 Audits preserved all 344 protected original/review/runtime files, 91 earlier retained files, 6,343 historical trial/installed files, 1,164 earlier installed source files and the separately recorded historical downloads. Existing originals, reviews and historical incomplete evidence remain intact. AI/OCR stayed off; synthetic named approvals never populate genuine human verification. No commit, merge, release, distribution or LMS upload occurred.
 
-Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized the LMS accessibility checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
+Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized LMS checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
 
 The earlier source-only and Linux counts below remain historical; no current source-only or Linux result is inferred. Formal integration/release remains separately authorized and bound to the eventual exact target and final source bytes.
 
-Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/ally-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
+Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/lms-checker-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
 
-October 21 implementation update: the new the LMS checker-related checks and reviewed fixes, their prepared software result and remaining qualification are recorded in [STATUS.md](STATUS.md) and [LMS-CHECK-APPLICABILITY.md](LMS-CHECK-APPLICABILITY.md). The October 20 comparison/native evidence below retains its earlier exact-source scope; it does not qualify the new controls. The development changes remain unmerged and unreleased.
+October 21 implementation update: the new LMS-checker-related checks and reviewed fixes, their prepared software result and remaining qualification are recorded in [STATUS.md](STATUS.md) and [LMS-CHECK-APPLICABILITY.md](LMS-CHECK-APPLICABILITY.md). The October 20 comparison/native evidence below retains its earlier exact-source scope; it does not qualify the new controls. The development changes remain unmerged and unreleased.
 
 Updated October 20, 2026. Application version remains **0.3.0**. This document
 prepares review; it authorizes no merge, commit, distribution or release.
@@ -1979,7 +1979,7 @@ not the Linux scripts or a replay of raw artifact assertions.
 
 A passing PDF is an accessibility **candidate** for supported bounded inputs.
 Automated results do not establish correct semantic meaning, reading order,
-mathematical meaning, WCAG conformance, screen-reader usability or an the LMS checker score.
+mathematical meaning, WCAG conformance, screen-reader usability or an LMS checker score.
 Unsupported equations/forms, complex layouts, arbitrary fonts, signed/encrypted
 PDFs and PDF 2.x retain manual/refusal boundaries. Automatic records are not human
 approval. No general platform or complex-document support expansion is implied.
@@ -1992,7 +1992,7 @@ Before any later integration/release decision:
 - Obtain genuinely completed human semantic/usability reviews and experienced
   screen-reader observations on exact representative artifacts. Actual-user/AT
   work remains deferred until authorized.
-- Obtain the qualifying actual the LMS accessibility checker record only with explicit course/
+- Obtain the qualifying actual LMS checker record only with explicit course/
   upload authorization. Bind hashes, reader/OS/AT versions, reviewer/date and
   scope; do not populate verification from conversation or synthetic labels.
 - Resolve confirmed blockers and repeat affected checks on changed code/artifacts.

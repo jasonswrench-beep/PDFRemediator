@@ -90,7 +90,7 @@ Windows copy: all 32 package files verified, the old package was retained and a
 local configuration sentinel stayed unchanged. This is bounded actual Windows
 happy-path evidence; deliberately denied native replacement/recovery and broader
 installer qualification remain separate. The working installation was not
-replaced, and the earlier manual update/the desktop PDF viewer pilot is not used as updater proof.
+replaced, and the earlier manual update/desktop PDF viewer pilot is not used as updater proof.
 
 
 ### October 19 disposable Windows installation and sharing-denial checks

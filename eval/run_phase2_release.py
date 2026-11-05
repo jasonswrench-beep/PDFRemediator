@@ -81,7 +81,7 @@ def run(destination):
     summary={'schema_version':'phase2-release-trial-1','complete':True,'core_exit_pass':passed,
         'implementation_unchanged':stable,'cases':rows,'seconds':round(time.monotonic()-started,3),
         'verified_records_created':0,'source_manifest_sha256':sha(ROOT/'eval/corpus/manifest.json'),
-        'human_testing':'Deferred to Phase 3. Descriptions are explicitly labeled synthetic-author test decisions; no actual-user, the LMS checker or assistive-technology acceptance test occurred.',
+        'human_testing':'Deferred to Phase 3. Descriptions are explicitly labeled synthetic-author test decisions; no actual-user, LMS checker or assistive-technology acceptance test occurred.',
         'resource_scope':'Sampled runner-plus-descendant RSS; does not include independent model services or prove an OS hard allocation limit.'}
     write_json(destination/'summary.json',summary)
     with (destination/'summary.csv').open('w',encoding='utf-8',newline='') as stream:

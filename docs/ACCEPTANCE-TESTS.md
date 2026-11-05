@@ -42,7 +42,7 @@ No commit, merge, release, distribution or LMS upload occurred.
 
 The full native Windows keyboard/modifier and Ctrl/Shift file-picker task remains
 open. Genuine usability/semantic review, experienced screen-reader testing,
-authorized the LMS accessibility checker feedback, final-build review and the owner's integration
+authorized LMS checker feedback, final-build review and the owner's integration
 or release decision remain separate requirements. The earlier shared-element,
 contrast and missing-description checks are distinct from these seeded cases.
 
@@ -129,7 +129,7 @@ verification. No commit, merge, release, distribution or LMS upload occurred.
 Full native keyboard/picker work and the four specific phantom/incomplete-tag,
 content-loss, wrong-Unicode and changed-settings browser negatives remain open.
 Actual-user semantic review, experienced screen-reader acceptance, authorized
-the LMS accessibility checker feedback, final-build review and an owner integration/release
+LMS checker feedback, final-build review and an owner integration/release
 decision remain separate requirements. The older unexplained closure remains
 undiagnosed; this explicit Stop and its diagnostic log do not explain it.
 
@@ -158,17 +158,17 @@ The repair retains focus at the matching replacement action after a successful s
 
 This trial's apparent service absence was a sandbox process-visibility diagnostic: host proof established the original service remained alive until the genuine visible Stop. Protected diagnostic helpers refused before Start. The older historical unexplained closure and stalled browser-tool waits remain undiagnosed; successful recovery does not establish forced-crash or Windows-reboot recovery.
 
-Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized the LMS accessibility checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
+Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized LMS checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
 
 The full protocols below remain required. The fresh browser import starts from a CLI-produced authored bundle, so it is not browser upload/Process proof. Synthetic reviewer names and selected-only checks describe developer action authority, not meaningful human semantic acceptance. A cancellation record with no published output proves its recorded cancellation outcome, not observation of an active native child. Bind later tests to their exact source, artifact hashes and actual browser/OS/AT route.
 
-Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/ally-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
+Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/lms-checker-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
 
 This is a test plan, not authorization to start a broader pilot. The owner's
-one-page Windows/the desktop PDF viewer visual and clipboard test is complete. The tasks below
+one-page Windows/desktop PDF viewer visual and clipboard test is complete. The tasks below
 prepare the remaining work for a suitable machine, users and explicit scope.
 Keep actual PDFs, screenshots, participant findings and review records local,
-outside Git. Never record a session URL, token or Canvas credentials.
+outside Git. Never record a session URL, token or LMS credentials.
 
 ## October 20 execution status
 
@@ -186,7 +186,7 @@ hash-bound evidence. Do not infer actual-user/AT acceptance from these cases.
 | Checked updater | Real sharing-denied replacement/rollback/retained-backup recovery complete on disposable copies; not every ACL/disk/power-loss condition. |
 | Keyboard/usability | Native Ctrl+Home/Ctrl+End, bare Home/End/Left/Right, Tab/Shift+Tab and Shift+Home observations passed on Phase A's exact source. Phase B reading selection/process used native keys. The remaining full keyboard protocol and multi-file picker qualification stay open; these developer observations do not establish actual-user acceptance. |
 | Protected-note edit/recovery continuation | All 20 bounded Phase B native observation groups passed: protected notes survived title/figure edits, skip-link reload, reopening and a full application restart; Apply refused the retained problem; exports/download stayed bound; paired chapter pages, separate figure drafts and group-selection reset behaved as observed. Both visible Stops ended the owned services/listeners. |
-| Human semantics, experienced screen reader, the LMS accessibility checker | Still pending and separately authorized. Synthetic reviewer labels never complete these tasks. |
+| Human semantics, experienced screen reader, LMS checker | Still pending and separately authorized. Synthetic reviewer labels never complete these tasks. |
 
 The saved-note visibility defect and skip-link session defect were corrected and
 retested natively at the earlier checkpoint. The new source-distributed 39-case
@@ -286,7 +286,7 @@ rollback and retained-backup recovery with hashes/configuration preserved. See
 untested ACL, disk/power-loss and fresh-machine variants; do not rerun against the
 working installation or reinterpret the older happy path as denial proof.
 
-## the LMS accessibility checker and disposition
+## LMS checker and disposition
 
 Proceed only with explicit authorization for the selected course and uploads.
 The authorized user uploads the exact candidate, records its actual score and
@@ -295,6 +295,6 @@ Record original-versus-candidate findings if both uploads are authorized. Do not
 predict a score or upload private material by default.
 
 Resolve confirmed blockers and repeat affected tests on any new PDF. Final
-verified status requires the established qualifying the LMS checker result, intact bound
+verified status requires the established qualifying LMS checker result, intact bound
 candidate evidence, and genuinely completed required human reviews. Keep every
 unperformed or ambiguous item pending. No merge/release approval is implied.

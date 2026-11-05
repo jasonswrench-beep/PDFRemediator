@@ -1,8 +1,8 @@
-"""the LMS checker-category integration with authored PDFs and named validator doubles.
+"""LMS-checker-category integration with authored PDFs and named validator doubles.
 
 Real parsing, reviewed structure writes, supplemental gates, exact all-page
 render/text fidelity, immutable bundles and review recovery run here. No native
-validator/tagger, provider, OCR, browser or the LMS checker service runs.
+validator/tagger, provider, OCR, browser or outside checker service runs.
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def authored_pdf(tmp_path, *, roles=("H1", "P"), pages=1, language="en-US", body
     raw = tmp_path / "authored-visible-content.pdf"
     output = tmp_path / "authored-tagged-input.pdf"
     document = canvas.Canvas(str(raw), pagesize=(612, 792), invariant=1)
-    document.setTitle("Authored the LMS checker integration reading")
+    document.setTitle("Authored LMS checker integration reading")
     for page in range(pages):
         y = 730
         for mcid, role in enumerate(roles):

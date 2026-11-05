@@ -22,7 +22,7 @@ inside it. Each of those has terms. Reading them all:
   permissive (MIT, BSD, Apache) or a "weak copyleft" licence that covers only that piece's own files (MPL, LGPL, CDDL, GPL with the
   Classpath or GCC exception).
 * No fees, registrations or paid licences are needed anywhere. (Publisher code-signing is a separate question and is not a licence.)
-* None of the troublesome extras is inside: **no Ghostscript** (AGPL), **no unpaper, pngquant or jbig2enc**, no a proprietary tagging SDK or accesspdf.
+* None of the troublesome extras is inside: **no Ghostscript** (AGPL), **no unpaper, pngquant or jbig2enc**, no proprietary tagging SDK or accesspdf.
   I searched the runtime for them and found none. The app reads pages with PDFium and writes plain PDF, so it does not need them.
 * Your own three tools (OpenStage Author, OpenStage Recorder, OpenExplainer) are all Apache-2.0 [file], as are the tagging engine
   (OpenDataLoader) and Tesseract. Apache-2.0 for PDF Remediator would match all of them.

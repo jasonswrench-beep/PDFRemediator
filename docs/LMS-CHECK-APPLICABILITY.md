@@ -78,7 +78,7 @@ inventory errors or changed source/input hashes. These are compatibility/timing
 observations, not new human authoring or a new remediation of the full problem
 PDF folder. Both final native pages were rendered, compared with the original
 and visually inspected with no layout defects. Mechanical observations are not
-genuine human, keyboard, screen-reader, the next accessibility checker or accessibility approval.
+genuine human, keyboard, screen-reader, LMS checker or accessibility approval.
 
 Qualification: `small-font-empty-tags-20261027-01/qualification-01`. Guarded source-application authority after
 application: `work/small-font-empty-tags-20261027-01/source-application-01/source-application.json`.
@@ -229,13 +229,13 @@ actual-user/assistive-technology/LMS feedback, fresh-PC, distribution and final 
 gates remain open. Existing installer and documentation .bat payloads were not
 rebuilt.
 
-The institution's planned move to the institution's next accessibility checker adds its published PDF checklist
-as an external acceptance reference. Its explicit PDF rules reinforce headings,
+The institution's planned move to a different LMS accessibility checker adds that
+checker's published PDF checklist as an external acceptance reference. Its explicit PDF rules reinforce headings,
 tables, reading order, language, links and form tooltip work already on this
-roadmap. No result has been tested in the next accessibility checker, and no vendor score or WCAG
-conformance is implied. Disabled vendor defaults do not remove the need for
-human judgment. AI stays off. Vendor reference:
-(vendor page)
+roadmap. No result has been tested in that checker, and no checker score or WCAG
+conformance is implied. Disabled checker defaults do not remove the need for
+human judgment. AI stays off. The reference is the checker's own published PDF
+checklist.
 
 Originals, saved reviews and existing changes are preserved. AI stayed off and
 OCR was not run. No software window, browser or desktop was used; no installation,
@@ -337,7 +337,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded development group. Thirteen grouped
 items remain: nine acceptance/distribution/final gates and four further
 requested development groups. Genuine table judgments, graphical/keyboard
-workflows, actual-user/assistive-technology/the LMS checker, fresh-PC, distribution packaging
+workflows, actual-user/assistive-technology/LMS checker, fresh-PC, distribution packaging
 and final release gates remain open. Existing installer and documentation .bat
 payloads were not rebuilt.
 
@@ -438,7 +438,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded development group. Fourteen grouped
 items remain: nine acceptance/distribution/final gates and five further requested
 development groups. Complex table associations, IDs, spans and summaries are next.
-Graphical/keyboard/assistive-technology/the LMS checker, fresh-PC, packaging and final release
+Graphical/keyboard/assistive-technology/LMS checker, fresh-PC, packaging and final release
 gates stay open. Installer and documentation .bat payloads were not rebuilt.
 
 References: [W3C PDF21](https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21),
@@ -526,7 +526,7 @@ every stage. Existing outline style/custom attributes, earlier bundles, notes,
 saved reviews, text, painting, geometry, resources and ParentTree stayed intact
 except the exact named navigation changes. Fresh required navigation judgments
 numbered 0, 5 and 5 and remained pending in the new results. This is mechanical
-developer evidence; actual-user, speech, keyboard and the LMS checker acceptance remain open.
+developer evidence; actual-user, speech, keyboard and LMS checker acceptance remain open.
 
 Qualification: `link-bookmark-controls-20261027-01/qualification-01`.
 Guarded source-application authority after application:
@@ -612,7 +612,7 @@ Guarded source-application authority after application:
 The master checklist credits this bounded language-development group. Sixteen
 grouped items remain: nine acceptance/distribution/final gates and seven further
 development groups. Link/annotation names and bookmark authoring are next.
-Graphical/keyboard checks, actual-user/assistive-technology/the LMS checker acceptance,
+Graphical/keyboard checks, actual-user/assistive-technology/LMS checker acceptance,
 fresh-PC, packaging and release remain open. Installer and documentation .bat
 payloads were not rebuilt. Earlier dated sections retain their original scope.
 
@@ -693,7 +693,7 @@ No future receipt hash is invented. Documentation is a separate reviewed overlay
 the master checklist receives a bounded reconciliation; other prior bodies remain
 verbatim. This completes the first requested authoring group within item #2;
 passage-specific language is the next group. Graphical/keyboard checks of these
-new controls, actual-user/AT/the LMS checker, fresh-PC, distribution and release gates remain.
+new controls, actual-user/AT/LMS checker, fresh-PC, distribution and release gates remain.
 
 Originals and saved reviews are preserved. AI stayed off and OCR was not rerun.
 No software window or desktop was used, and no merge or release occurred. Existing
@@ -702,15 +702,15 @@ software in future. Earlier checkpoints follow with their original dated scope.
 
 ---
 
-# the LMS checker PDF checks and PDFRemediator coverage
+# LMS checker PDF checks and PDFRemediator coverage
 
 Updated October 21, 2026. This reference separates vendor-documented PDF
 categories, the implemented local screens and reviewed fixes, and remaining
-human work. It does not predict an the LMS checker score or establish vendor parity.
+human work. It does not predict an LMS checker score or establish parity with any outside checker.
 
 ## PDF applicability
 
-Anthology's [the LMS checker for LMS accessibility checklist]((vendor page))
+The LMS checker's published accessibility checklist
 has separate PDF, Office and presentation sections. Its 14 PDF categories
 include all six cases initially uncertain in the university summaries. The
 absent-headings condition applies to PDFs of at least three pages. Documented
@@ -718,12 +718,12 @@ applicability does not disclose the exact vendor algorithm or establish the
 behavior of a particular institution's deployment.
 
 The owner's CSVs distinguish scans with and without OCR. Keep those conditions
-separate beneath the vendor's single scanned-PDF category. The
-[UT San Antonio guide](https://utsa.screenstepslive.com/a/1938489-ally-errors-and-fixes)
+separate beneath the vendor's single scanned-PDF category. A
+university help guide for the checker
 also distinguishes those feedback conditions. Its two PDF hierarchy entries
 describe repair routes with and without a source Word document; absence of
 other categories from that guide does not override the vendor PDF checklist.
-The [University of Houston overview](https://www.uh.edu/equal-opportunity/eir-accessibility/eira-resources/ally/index.php)
+Another university overview
 groups Word and PDF under Documents; the vendor's PDF section resolves the
 initial format-applicability uncertainty.
 
@@ -754,7 +754,7 @@ decorative, incidental or a logo. Required human contrast review remains.
 | Missing metadata title | Title presence/plausibility and display are checked. Existing supplied or named reviewed values can write PDF/XMP metadata to a separate result; meaningfulness remains human review. | `checks.py`, `processors.py`, `sidecar.py` |
 
 Application source files above live under `src/pdf_remediator/`. These local
-screens are traceable implementations of declared rules, not replicas of the LMS checker.
+screens are traceable implementations of declared rules, not replicas of any outside checker.
 
 ## Bounds and review authority
 
@@ -785,29 +785,29 @@ prepare current structure controls where an older review lacks them.
 
 ## Software evidence and remaining acceptance
 
-The fresh 127-file prepared Windows source copy passed **841 tests in 146.66s**, with zero failures, errors or skips. This includes actual parsing/rendering/fidelity and the declared native adapter tests, plus named software doubles; it does not qualify the new controls in a native browser or complete human/the LMS checker acceptance. The exact tested bytes, command and result are retained in `work/ally-checks-implementation-20261021-01/prepared-final-02/` (`source-manifest.json`, `suite.xml` and `suite-summary.json`). AI/OCR stayed off; all 344 protected original/review/runtime files and 91 retained saved-review/input/run/export files remained unchanged.
+The fresh 127-file prepared Windows source copy passed **841 tests in 146.66s**, with zero failures, errors or skips. This includes actual parsing/rendering/fidelity and the declared native adapter tests, plus named software doubles; it does not qualify the new controls in a native browser or complete human/LMS checker acceptance. The exact tested bytes, command and result are retained in `work/lms-checks-implementation-20261021-01/prepared-final-02/` (`source-manifest.json`, `suite.xml` and `suite-summary.json`). AI/OCR stayed off; all 344 protected original/review/runtime files and 91 retained saved-review/input/run/export files remained unchanged.
 
 The actual shipped browser script has 60 authored DOM/HTTP-double cases: the
 previous 39, 15 repair-control cases and six asynchronous navigation/job-guard
 cases. They execute inside one
 Python test, not as 60 extra Python passes. These are software checks, not a new
-native browser, actual-user, screen-reader or the LMS accessibility checker qualification.
+native browser, actual-user, screen-reader or LMS checker qualification.
 
 Historical Windows software/native results retain their exact earlier source
 bindings. Genuine semantic/usability review, experienced assistive-technology
-acceptance and explicitly authorized the LMS checker feedback remain open under the
+acceptance and explicitly authorized LMS checker feedback remain open under the
 [acceptance process](ACCEPTANCE-TESTS.md) and [current checklist](STATUS.md).
 Verification still needs the exact qualifying artifact, actual completed required
-human reviews and the actual qualifying the LMS checker record. No score is inferred.
+human reviews and the actual qualifying LMS checker record. No score is inferred.
 
 ## Supplied references and preservation
 
-The two read-only CSV inputs were `-WhatAllylooksfor-Documentedissuewording.csv`
-(nine data rows) and `-WhatAllychecks-Whattheissuemeans.csv` (eight data rows).
+The two read-only CSV inputs were the owner's exports of the checker's documented
+issue wording (nine data rows) and of what each check means (eight data rows).
 The former additionally lists malformed PDFs. Their original documentation
-comparison/provenance remains under ignored `work/ally-applicability-20261021-01/`.
+comparison/provenance remains under ignored `work/lms-checker-applicability-20261021-01/`.
 New implementation/test evidence belongs under
-`work/ally-checks-implementation-20261021-01/`.
+`work/lms-checks-implementation-20261021-01/`.
 
 CSV content and linked repair recipes are reference material, not instructions
 to flatten, unlock, overwrite, enable AI/OCR or upload private documents. This

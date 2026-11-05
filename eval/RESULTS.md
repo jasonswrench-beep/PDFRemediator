@@ -27,7 +27,7 @@ All Python environments are isolated inside the project and have recorded depend
 
 OCRmyPDF 17.13.1, mentioned by the documentation used during planning, was unavailable from the package index. The installed and tested release is 17.13.0. The environments confirm the expected pikepdf incompatibility between accesspdf and OCRmyPDF; they were not forced into one environment.
 
-a proprietary tagging SDK was not tested because eligibility for its proprietary evaluation/deployment license was not established. No cloud tagging engine or AI enrichment provider was used. Evaluation scripts made no external document-processing calls. Selected rendered diagnostic evidence was inspected in this Codex conversation; the scripts' zero cloud-call count describes engine execution rather than all chat communication.
+No proprietary tagging SDK was tested because eligibility for its evaluation/deployment license was not established. No cloud tagging engine or AI enrichment provider was used. Evaluation scripts made no external document-processing calls. Selected rendered diagnostic evidence was inspected in this Codex conversation; the scripts' zero cloud-call count describes engine execution rather than all chat communication.
 
 ## Comparison method
 
@@ -127,7 +127,7 @@ The pinned validator internally limits individual failure-detail records after a
 1. Isolate the OpenDataLoader diagram, small-rendering-difference, joined-word-boundary, and dangling-reference regressions. Test bounded configuration or upstream fixes against the same controls and both complete books.
 2. Keep strict preservation rejection. Do not mask the diagram change by increasing a global pixel tolerance.
 3. Retain the narrow metadata, exact-decision artifact, and exact-source font experiments as evidence. Promote a processor only after its supported structures and refusal cases are defined.
-4. Expand the permitted real-document sample and include human reading-order, description, and table checks before choosing a book default. No the LMS checker score or screen-reader release check was performed in Phase 0.
+4. Expand the permitted real-document sample and include human reading-order, description, and table checks before choosing a book default. No LMS checker score or screen-reader release check was performed in Phase 0.
 5. Reconsider Phase 1 only when predeclared basic reading, chapter, and substantial-book cases can reach the planned gates. Until then, treat OpenDataLoader as the leading investigation target, not a validated default for unattended book remediation.
 
 The comparison, raw/normalized outputs, original fingerprints, dependency locks, full available validator reports, all-page measurements, corruption controls, and experiment records are saved under this evaluation directory. The command-line product, assisted judgment layer, and local review application have not been implemented.
