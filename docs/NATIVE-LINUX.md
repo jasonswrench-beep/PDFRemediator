@@ -122,10 +122,10 @@ reviews. Default rendering defects and stale preparation settings remain refusal
 
 This is bounded native Linux evidence for the named synthetic cases. It does
 not establish general document support, OCR, arbitrary font repair, model
-quality, actual-user success, assistive-technology acceptance, the LMS accessibility checker scores,
+quality, actual-user success, assistive-technology acceptance, LMS checker scores,
 or verified accessibility. A candidate is not verified. The owner completed a
-limited Windows reading/the desktop PDF viewer visual and clipboard pilot; broader usability,
-assistive-technology and the LMS accessibility checker acceptance remain deferred. See
+limited Windows reading/desktop PDF viewer visual and clipboard pilot; broader usability,
+assistive-technology and LMS checker acceptance remain deferred. See
 [the current checklist](STATUS.md) and [acceptance scope](PHASE3-PILOT.md).
 
 ## Fresh 200-page timing and resource observations

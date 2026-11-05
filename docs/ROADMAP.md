@@ -12,7 +12,7 @@ this plan are future scope, not enabled features or current work authorization.
 
 Build a local program that produces PDFs ready for an accessibility review, with evidence showing what changed, what passed automated checks, and what still needs a person. Start by proving that an existing tagging engine can preserve and improve representative book content. Keep the engine replaceable.
 
-This revision preserves the supplied specification's local workflow, focus on books, separate outputs, and human review. It replaces the success criteria and development sequence below. Phases 0 and 1 are complete. At Jason's request, Phase 2 now combines the remaining preservation repair, local review interface, grouped reviews, and focused AI assistance. Testing with actual users and the LMS accessibility checker follows in Phase 3. Other proposed defaults remain recommendations where they have not been explicitly confirmed.
+This revision preserves the supplied specification's local workflow, focus on books, separate outputs, and human review. It replaces the success criteria and development sequence below. Phases 0 and 1 are complete. At Jason's request, Phase 2 now combines the remaining preservation repair, local review interface, grouped reviews, and focused AI assistance. Testing with actual users and the LMS checker follows in Phase 3. Other proposed defaults remain recommendations where they have not been explicitly confirmed.
 
 ## 1 Proposed product baseline
 
@@ -24,10 +24,10 @@ This revision preserves the supplied specification's local workflow, focus on bo
 | Engine strategy | Compare existing engines first. OpenDataLoader is the leading candidate, pending evidence on books. |
 | AI | Off in the first build. Later, support a local model and explicitly configured cloud providers. |
 | AI application policy | Offer manual drafts with per-item acceptance and an optional document-level Auto-fix mode, as requested on October 16. Auto-fix may apply bounded best guesses without individual acceptance; record machine authority, context, and model origin separately from human approval. Neither mode grants human verification. |
-| the LMS checker workflow | Record the actual score from Canvas. Recommend High, 67–99%, as the initial workflow threshold and 100% as the target. The threshold affects human verification, not automated candidacy. |
+| LMS checker workflow | Record the actual score from the LMS checker. Recommend High, 67–99%, as the initial workflow threshold and 100% as the target. The threshold affects human verification, not automated candidacy. |
 | Name | Keep PDF Remediator as a working name. Naming does not block evaluation. |
 
-the LMS checker describes 100% as no issues identified and says further improvements may still be possible. Its score is a workflow measure, not a substitute for semantic review. [Anthology accessibility scores]((vendor page))
+The LMS checker's own documentation describes 100% as no issues identified and says further improvements may still be possible. Its score is a workflow measure, not a substitute for semantic review.
 
 The first implementation does not promise automatic repair of complex tables, equations, forms, arbitrary font problems, or badly damaged files. Detect these cases and explain the next step. Retain them in evaluation so that limitations remain visible.
 
@@ -43,7 +43,7 @@ A future evaluator may recover the repository and branch identified in the suppl
 
 ## 3 Results and release rules
 
-Store four separate assessments: validator result, supplemental checks, fidelity, and human review. Never combine them into a predicted the LMS checker percentage or a general compliance score.
+Store four separate assessments: validator result, supplemental checks, fidelity, and human review. Never combine them into a predicted LMS checker percentage or a general compliance score.
 
 ### Automated validator result
 
@@ -53,7 +53,7 @@ Exceptions may be recorded with reasons, but a failed rule remains a failure. ve
 
 ### Supplemental automated checks
 
-Replace the “the LMS checker and WCAG proxy gate” label with “supplemental automated checks.” Each check records its evidence, applicability, severity, and one of `pass`, `fail`, `needs-review`, `not-tested`, `not-applicable`, or `error`. Publish a coverage matrix relating checks to selected WCAG 2.1 AA criteria. The matrix must also show criteria requiring human assessment or outside this tool's coverage. Evaluation tools require human judgment; this set of checks is not a complete WCAG assessment. [W3C evaluation guidance](https://www.w3.org/WAI/test-evaluate/tools/selecting/)
+Replace the “LMS checker and WCAG proxy gate” label with “supplemental automated checks.” Each check records its evidence, applicability, severity, and one of `pass`, `fail`, `needs-review`, `not-tested`, `not-applicable`, or `error`. Publish a coverage matrix relating checks to selected WCAG 2.1 AA criteria. The matrix must also show criteria requiring human assessment or outside this tool's coverage. Evaluation tools require human judgment; this set of checks is not a complete WCAG assessment. [W3C evaluation guidance](https://www.w3.org/WAI/test-evaluate/tools/selecting/)
 
 | Check group | Required behavior |
 |---|---|
@@ -86,9 +86,9 @@ OCR pages still require automated visible-content comparison. Recognition accura
 | `failed` | Processing failed, structure integrity is broken, or a phantom tree was produced. Publish the failure report; do not publish that PDF as a usable result. |
 | `needs-manual` | A blocker, unsupported case, or unresolved required automated assessment remains. Publish reasons and repair paths. A structurally intact draft may be retained only in a clearly labeled review area. |
 | `candidate` | The strict validator, required supplemental automated checks, and fidelity checks pass. The review packet lists pending human judgments, including any applied AI drafts. |
-| `verified` | The exact candidate PDF has a recorded the LMS checker score meeting the selected threshold, a named reviewer and date, and all required human-review items completed without unresolved blockers. |
+| `verified` | The exact candidate PDF has a recorded LMS checker score meeting the selected threshold, a named reviewer and date, and all required human-review items completed without unresolved blockers. |
 
-Tie all assessments and approvals to the final PDF's SHA-256 hash. Any change to that file invalidates its previous verification. Keep the actual the LMS checker score and institutional context in the record. No status authorizes a certification or a claim of complete WCAG conformance.
+Tie all assessments and approvals to the final PDF's SHA-256 hash. Any change to that file invalidates its previous verification. Keep the actual LMS checker score and institutional context in the record. No status authorizes a certification or a claim of complete WCAG conformance.
 
 A confirmed semantic blocker found during review moves a candidate to `needs-manual`. A blocker discovered after verification invalidates the current verified status while preserving the dated historical record. Use `failed` for processing or integrity failures, rather than for every adverse human finding.
 
@@ -136,11 +136,11 @@ Choose required native components from the tested OCR release and backend. Curre
 
 Use the standalone veraPDF CLI as the evaluation baseline. A bundled-core fallback is a separately named diagnostic configuration until its profiles and reports are compared against that baseline. Do not assume different validator builds produce interchangeable counts.
 
-Pin exact engine and dependency versions. Record source locations, applicable licenses, notices, and redistribution status. Keep a proprietary tagging SDK optional and verify that the user's license covers the intended evaluation or deployment; absence of a watermark proves nothing about permission. [a proprietary tagging SDK terms]((vendor page))
+Pin exact engine and dependency versions. Record source locations, applicable licenses, notices, and redistribution status. Keep any proprietary tagging SDK optional and verify that the user's license covers the intended evaluation or deployment; absence of a watermark proves nothing about permission.
 
 ## 7 Revised development sequence
 
-Phases 0, 1, and 2 are complete; their evidence remains in the project. [Phase 2 results](../eval/PHASE2-RESULTS.md) record the preservation repair, local review interface, occurrence-bound grouping, optional local AI drafts, and release checks. Phase 3 has only the limited owner Windows visual/clipboard pilot completed. Broader actual-user studies, external assistive-technology acceptance testing, and the LMS accessibility checker testing remain pending. Internal software checks do not substitute for that acceptance work, and no Phase 2 output has received verified status.
+Phases 0, 1, and 2 are complete; their evidence remains in the project. [Phase 2 results](../eval/PHASE2-RESULTS.md) record the preservation repair, local review interface, occurrence-bound grouping, optional local AI drafts, and release checks. Phase 3 has only the limited owner Windows visual/clipboard pilot completed. Broader actual-user studies, external assistive-technology acceptance testing, and LMS checker testing remain pending. Internal software checks do not substitute for that acceptance work, and no Phase 2 output has received verified status.
 
 ### Phase 0 Establish feasibility
 
@@ -169,19 +169,19 @@ OCR is included only for the routes proven in Phase 0; other scan cases receive 
 3. **Make repetitive reviews manageable.** Group similar mechanical repairs and highlight exceptions while retaining every occurrence, page, evidence record, and approval binding. Preserve separate decisions when the same image or repair pattern has different context. A group display must not silently approve its members or remove unresolved issues.
 4. **Add focused AI assistance.** Implement the provider interface and a local endpoint first. Begin with context-aware figure descriptions and title suggestions; add heading suggestions only after testing their structured decisions and deterministic application. Optional cloud providers retain explicit provider/data/budget authorization. Suggestions remain editable and attributable. Manual mode requires per-item acceptance; the optional Auto-fix extension below permits application under explicit document-level authorization. Human edits win while their relevant input remains unchanged.
 
-Internal checks cover the interface, seeded review defects, grouping completeness, stale approvals, cache invalidation, conflicting edits, provider failures, local-only execution, and accepted-decision reapplication. Measure displayed review groups separately from unresolved occurrences. Actual-user testing and the LMS checker uploads are not Phase 2 activities.
+Internal checks cover the interface, seeded review defects, grouping completeness, stale approvals, cache invalidation, conflicting edits, provider failures, local-only execution, and accepted-decision reapplication. Measure displayed review groups separately from unresolved occurrences. Actual-user testing and LMS checker uploads are not Phase 2 activities.
 
 **October 16 Auto-fix extension:** At Jason's request, add an optional mode that applies supported best guesses without hundreds of individual approvals. Automatically handled mechanical occurrences move out of the main action queue, with their identities and evidence retained in a detailed view and export. Local AI title/figure choices may be applied under explicit document-level authorization. Protect saved human edits and confirmed blockers, rerun the release gates, keep prior results unchanged, and preserve separate human-verification requirements. This supersedes mandatory per-item acceptance only for the explicitly chosen automatic mode; manual review remains available. Record the extension separately from the historical Phase 2 release evidence.
 
 **Exit:** the synthetic book preserves every page under the existing exact policy; existing core automated gates and refusal controls still pass. The local interface supports the complete review workflow on controlled fixtures. Every grouped occurrence remains traceable and approval-bound. Every AI decision is attributable, editable, and reviewable; unapproved suggestions are not applied. No external connection occurs in local-only mode, and credentials are absent from artifacts and logs. A Windows pilot build and instructions are ready. Outputs remain candidates with pending human verification; Phase 2 completion does not grant verified status.
 
-### Phase 3 Test with actual users and the LMS accessibility checker
+### Phase 3 Test with actual users and the LMS checker
 
 Run a pilot with nontechnical users on the prepared Windows workflow. Observe setup, file selection, processing, blocker interpretation, grouped reviews, description editing, and approval. Measure task completion, review time, missed seeded defects, and unresolved issues. Check the interface with keyboard and screen-reader users and test representative output PDFs, including a substantial chapter, for reading order, lists, links, tables, figures, and character meaning.
 
-After the development work is ready, validate a release sample in Canvas and record actual the LMS checker feedback against the exact final PDF hashes. Compare original and processed results and preserve the reviewer, date, institutional context, and review scope. Resolve confirmed blockers and repeat the affected tests. LMS uploads remain the user's action unless separately authorized.
+After the development work is ready, validate a release sample in the LMS and record actual LMS checker feedback against the exact final PDF hashes. Compare original and processed results and preserve the reviewer, date, institutional context, and review scope. Resolve confirmed blockers and repeat the affected tests. LMS uploads remain the user's action unless separately authorized.
 
-**Exit:** a nontechnical user can set up, process a supported document, understand the review queue, and complete the documented review workflow. The pilot records actual-user findings, assistive-technology results, review effort, and actual the LMS checker feedback. A file becomes verified only when its exact candidate hash meets the existing the LMS checker threshold and all required human checks are completed without unresolved blockers. Other platforms, proprietary integrations, and advanced document types require their own evidence and support commitments.
+**Exit:** a nontechnical user can set up, process a supported document, understand the review queue, and complete the documented review workflow. The pilot records actual-user findings, assistive-technology results, review effort, and actual LMS checker feedback. A file becomes verified only when its exact candidate hash meets the existing LMS checker threshold and all required human checks are completed without unresolved blockers. Other platforms, proprietary integrations, and advanced document types require their own evidence and support commitments.
 
 ## 8 Evaluation corpus and measurements
 
@@ -211,13 +211,13 @@ A completed run directory contains the candidate PDF, report JSON, HTML review p
 
 The report includes schema/tool versions, all tool/runtime versions, profile/config hashes, source/output hashes, classification per page, selected and skipped stages, processor outcomes, OCR pages, each assessment's coverage and result, residual issues and repair paths, human-review queue, data-sent summary, and timings. Record validator rules as fixed, remaining, or newly failing against the baseline, without discarding their original identifiers.
 
-The ledger includes final PDF hash, run identifier, reviewer/date, actual the LMS checker score and context, selected threshold, human-review completion, review scope, and notes. Configuration selects language, engine, privacy mode, review policy, and check profile; it contains no API key. Do not overwrite existing language, title, alt text, or human decisions with generic defaults.
+The ledger includes final PDF hash, run identifier, reviewer/date, actual LMS checker score and context, selected threshold, human-review completion, review scope, and notes. Configuration selects language, engine, privacy mode, review policy, and check profile; it contains no API key. Do not overwrite existing language, title, alt text, or human decisions with generic defaults.
 
 ## 11 Decisions left for the product owner
 
-The following recommendations keep evaluation moving without treating them as confirmed product requirements: Windows first; High as the initial the LMS checker workflow threshold; draft AI application with explicit review; manual the LMS checker entry first; PDF Remediator as the working name. None needs to delay the initial no-AI feasibility comparison.
+The following recommendations keep evaluation moving without treating them as confirmed product requirements: Windows first; High as the initial LMS checker workflow threshold; draft AI application with explicit review; manual LMS checker entry first; PDF Remediator as the working name. None needs to delay the initial no-AI feasibility comparison.
 
-The next acceptance milestone is the remaining Phase 3 testing with actual users, assistive technology and the LMS accessibility checker. See the current checklist for independent development and machine-dependent work. Phase 2 is complete under the exit criteria above, as documented in its results report. This completion update preserves the user's sequencing decision; it does not enable cloud processing, authorize LMS uploads, or expand supported document types.
+The next acceptance milestone is the remaining Phase 3 testing with actual users, assistive technology and the LMS checker. See the current checklist for independent development and machine-dependent work. Phase 2 is complete under the exit criteria above, as documented in its results report. This completion update preserves the user's sequencing decision; it does not enable cloud processing, authorize LMS uploads, or expand supported document types.
 
 ## 12 Version 2.0: a stand-alone program window
 

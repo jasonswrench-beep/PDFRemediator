@@ -4,7 +4,7 @@ Recorded October 16, 2026 for PDF Remediator **0.3.0** on the prepared Windows c
 
 **The optional Auto-fix workflow passes the recorded internal release checks.** One explicit action handles eligible mechanical repair records and, when separately authorized, generates and applies local-model title and figure guesses. The 244-page book changes from 630 displayed pending items to **623 automatically handled and 7 actionable checks**. All 630 original pending records remain in the raw review export. The result is still an unverified candidate, with **zero human approvals**.
 
-The separate [Phase 2 report](PHASE2-RESULTS.md) and its historical evidence remain unchanged. This report covers the new automatic workflow, not a new general accessibility guarantee. Actual-user studies, external assistive-technology acceptance, and the LMS accessibility checker testing remain Phase 3 work.
+The separate [Phase 2 report](PHASE2-RESULTS.md) and its historical evidence remain unchanged. This report covers the new automatic workflow, not a new general accessibility guarantee. Actual-user studies, external assistive-technology acceptance, and LMS checker testing remain Phase 3 work.
 
 ## Release conditions
 
@@ -19,7 +19,7 @@ The separate [Phase 2 report](PHASE2-RESULTS.md) and its historical evidence rem
 | Automatic handling does not imply human approval or verification | **Pass** | Full required pending review exports remain; automatic authority and origin are separate; the ledger refuses verification for every tested candidate. |
 | Normal dashboard polling can overlap automatic work | **Pass, regression and developer browser check** | Deterministic real-file-lock regression and final browser run both complete after workspace access was serialized. |
 | Software and package verification | **Pass** | 494 tests pass in 79.49 seconds; final wheel matches all 31 package assets and all 35 RECORD entries. |
-| Actual-user, assistive-technology acceptance, and the LMS checker results | **Deferred to Phase 3** | No such trials, actual accessibility approvals, LMS upload, or verified record occurred. |
+| Actual-user, assistive-technology acceptance, and LMS checker results | **Deferred to Phase 3** | No such trials, actual accessibility approvals, LMS upload, or verified record occurred. |
 
 ## Actual native trials
 
@@ -64,7 +64,7 @@ Rendering still uses pinned PDFium at 96 dpi, RGB on white, annotations enabled,
 
 Developer visual spot-checks viewed the final book page 16 and chapter page 3 previews. Contents alignment, dot leaders and page numbers remain intact; both chapter drawings, distinct captions, headings, and footer are legible without clipping or overlap. The [visual QA record](../output/auto-fix/release-final/visual-qa.json) binds those observations to exact PDF and PNG hashes. It supplements the automated all-page comparisons and is not a human accessibility approval.
 
-Every candidate remains `not-verified`. The release runner explicitly confirms that the verification ledger still refuses it with required human checks incomplete. The new mode reduces repetitive interaction and permits informed best-guess application; it does not establish expert semantic review, WCAG conformance, a predicted the LMS checker score, or final accessibility.
+Every candidate remains `not-verified`. The release runner explicitly confirms that the verification ledger still refuses it with required human checks incomplete. The new mode reduces repetitive interaction and permits informed best-guess application; it does not establish expert semantic review, WCAG conformance, a predicted LMS checker score, or final accessibility.
 
 ## Interface, regressions, and package
 
@@ -80,4 +80,4 @@ Earlier full-suite rejected-POST tests encountered two Windows `WinError 10053` 
 
 The [final wheel verification](../output/auto-fix/wheel-verification.json) passes for **0.3.0**, **148,035 bytes**, with all **31 source/UI/data assets** byte-matching this frozen package and all **35 wheel RECORD entries** verified. The [wheel](../output/auto-fix/dist/local_pdf_remediator-0.3.0-py3-none-any.whl) SHA-256 is `9d51dfc862eba21c0558ead7d3a14966d858a80a978cd33e4f2c9e556161bb16`. The source-pilot package and its final member/hash inventory are recorded separately by packaging, avoiding a circular hash inside this report. The pilot includes this report; the linked full raw trial PDFs, review states, and native evidence remain in the prepared workspace and are excluded from that source package. Native runtimes and installed model weights are prerequisites, not bundled wheel contents. Fresh-machine installation and cross-platform operation remain unmeasured.
 
-The trial's original files and prior artifacts remain hash-unchanged; synced project references and the separate Phase 2 report were not edited. Phase 3 must measure actual-user effort, assistive-technology acceptance, and real the LMS accessibility checker feedback against exact candidate hashes. **No automatic run creates human approval or verification.**
+The trial's original files and prior artifacts remain hash-unchanged; synced project references and the separate Phase 2 report were not edited. Phase 3 must measure actual-user effort, assistive-technology acceptance, and real LMS checker feedback against exact candidate hashes. **No automatic run creates human approval or verification.**

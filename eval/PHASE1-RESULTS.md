@@ -1,6 +1,6 @@
 # Phase 1 results
 
-Phase 1's local workflow and predeclared core exit are complete on this Windows machine. A simple reading, a structured chapter with recorded synthetic-author descriptions, and a 244-page published book all reached **candidate** with strict PDF/UA-1 validation, the declared supplemental profile, and full preservation checks passing. They still require human verification. No actual the LMS checker score, assistive-technology review, or verified status was invented.
+Phase 1's local workflow and predeclared core exit are complete on this Windows machine. A simple reading, a structured chapter with recorded synthetic-author descriptions, and a 244-page published book all reached **candidate** with strict PDF/UA-1 validation, the declared supplemental profile, and full preservation checks passing. They still require human verification. No actual LMS checker score, assistive-technology review, or verified status was invented.
 
 The user's request to move to Phase 1 authorized this work. The supplied planning documents remained reference material. Files in `sources/` and the original Downloads documents were not modified. Phase 0 evidence is retained unchanged.
 
@@ -11,7 +11,7 @@ The user's request to move to Phase 1 authorized this work. The supplied plannin
 - Strict standalone veraPDF validation of the original and final bytes, with fixed/remaining/newly failing **rule** IDs. Partial assertion details remain explicit.
 - Every-page pixel/text/geometry/annotation comparisons and original bookmark, destination and page-label preservation.
 - Atomic immutable bundles with PDF hashes, report, validator evidence, editable decision sidecar, review JSON, HTML packet, and manifest.
-- Hash-bound metadata/figure decisions and a verification ledger requiring actual human review and an actual the LMS checker score.
+- Hash-bound metadata/figure decisions and a verification ledger requiring actual human review and an actual LMS checker score.
 
 The application contains no AI provider or cloud PDF-processing route. Dependency installation is separate from document processing. The command line is the Phase 1 interface; a graphical application and installer remain later work.
 
@@ -83,6 +83,6 @@ The supplied Downloads README, RESEARCH and SPEC SHA-256 hashes still match the 
 
 ## Remaining limits
 
-The synthetic book remains unsupported because one page fails exact rendering. Arbitrary font restoration, general complex-table repair, automatic meaningful descriptions, multi-page/difficult OCR, visual equation remediation, and slide remediation remain manual/source-document work. Contrast, spoken character meaning, reading order, artifact choices and table/figure semantics still need human assessment. Actual the LMS accessibility checker results have not been measured.
+The synthetic book remains unsupported because one page fails exact rendering. Arbitrary font restoration, general complex-table repair, automatic meaningful descriptions, multi-page/difficult OCR, visual equation remediation, and slide remediation remain manual/source-document work. Contrast, spoken character meaning, reading order, artifact choices and table/figure semantics still need human assessment. Actual LMS checker results have not been measured.
 
 Open the [operating guide](../README.md) to use the prepared local environment. Later phases can improve review usability and add explicitly authorized judgment services; this result does not start those phases.

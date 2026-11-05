@@ -51,7 +51,11 @@ def _parser():
         cmd=sub.add_parser(name);cmd.add_argument('--ledger',type=Path,required=True)
         if name=='add':
             cmd.add_argument('bundle',type=Path);cmd.add_argument('--reviewer',required=True);cmd.add_argument('--reviewed-at')
-            cmd.add_argument('--ally-score',required=True,type=float);cmd.add_argument('--ally-context',required=True)
+            cmd.add_argument('--checker-score',type=float,dest='checker_score',help='Actual score from the LMS accessibility checker (required)')
+            cmd.add_argument('--checker-context',dest='checker_context',help='Institution, course and item the score came from (required)')
+            # Hidden aliases keep earlier scripts working.
+            cmd.add_argument('--ally-score',type=float,dest='checker_score',help=argparse.SUPPRESS)
+            cmd.add_argument('--ally-context',dest='checker_context',help=argparse.SUPPRESS)
             cmd.add_argument('--threshold',type=float,default=67);cmd.add_argument('--review-scope',required=True)
             cmd.add_argument('--review-file',type=Path,required=True);cmd.add_argument('--notes',default='')
         elif name=='export':cmd.add_argument('-o','--output',type=Path,required=True)
@@ -75,6 +79,9 @@ def _review_data(report,file):
 
 def main(argv=None):
     parser=_parser();args=parser.parse_args(argv)
+    if args.command=='ledger' and args.action=='add':
+        missing=[flag for flag,value in (('--checker-score',args.checker_score),('--checker-context',args.checker_context)) if value is None]
+        if missing:parser.error('the following arguments are required: '+', '.join(missing))
     try:
         if args.command=='serve':
             from .web import serve
@@ -154,7 +161,7 @@ def main(argv=None):
             if not verify_bundle(args.bundle):raise ValueError('The candidate bundle is incomplete or changed.')
             report=json.loads((args.bundle/'report.json').read_text(encoding='utf-8'))
             reviewed=_review_data(report,args.review_file)
-            result=ledger.add_record(args.ledger,report['output']['path'],reviewed,args.reviewer,date,args.ally_score,args.ally_context,
+            result=ledger.add_record(args.ledger,report['output']['path'],reviewed,args.reviewer,date,args.checker_score,args.checker_context,
                 threshold=args.threshold,review_scope=args.review_scope,notes=args.notes)
             emit(result);return 0
     except (OSError,ValueError,RuntimeError,KeyError,TypeError) as exc:

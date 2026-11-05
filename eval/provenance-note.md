@@ -129,5 +129,5 @@ historical code was executed or incorporated, and no historical benchmark
 numbers are treated as reproduced evidence. The recovery manifest and notes are
 in `eval/evidence/historical-recovery.json` and `historical-recovery.md`.
 
-No a proprietary tagging SDK, paid API, cloud document processing or external mutation was performed
+No proprietary tagging SDK, paid API, cloud document processing or external mutation was performed
 by this subtask.

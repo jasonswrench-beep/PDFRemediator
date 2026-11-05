@@ -172,7 +172,7 @@ class Application:
         with self.lock:jobs=[self.public_job(job) for job in self.jobs.values()]
         return {'documents':rows,'jobs':jobs,'capabilities':{'ocr':ocr_availability(self.config)},
             'privacy':'Local processing. AI is off until you explicitly request a selected local model.',
-            'phase':'Phase 2 pilot build; actual-user and the LMS checker testing are Phase 3.'}
+            'phase':'Phase 2 pilot build; actual-user and LMS checker testing are Phase 3.'}
 
     def catalog(self):
         from .workspace import _report_cancelled

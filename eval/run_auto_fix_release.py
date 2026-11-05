@@ -86,7 +86,7 @@ def run(destination, data_dir, expected_digest=None, model="qwen2.5:1.5b", inclu
         "runner_sha256": sha(Path(__file__)), "source_sha256_before": originals,
         "prior_manifests": old_manifests, "prior_artifacts": old_artifacts,
         "application_data_dir": str(data_dir), "model": model, "include_images": include_images,
-        "policy": "Actual Application.auto_fix, actual spawned PDF workers, actual strict validator and selected installed local model. No stubs, human approvals, actual-user/AT/the LMS checker trials, or verified records."})
+        "policy": "Actual Application.auto_fix, actual spawned PDF workers, actual strict validator and selected installed local model. No stubs, human approvals, actual-user/AT/LMS checker trials, or verified records."})
     application = Application(data_dir, RuntimeConfig())
     rows, visuals = [], []
     started = time.monotonic()
@@ -101,7 +101,7 @@ def run(destination, data_dir, expected_digest=None, model="qwen2.5:1.5b", inclu
                    "all_case_invariants_pass": len(rows) == 4 and all(row["invariants_pass"] for row in rows),
                    "verified_records_created": 0, "visuals": visuals, "seconds": round(time.monotonic() - started, 3),
                    "resource_scope": "Sampled trial-runner plus descendants during queued/running jobs, 0.15-second sampling; excludes brief synchronous preflight and independently running Ollama/model-service processes. Not an OS hard allocation cap.",
-                   "human_testing": "Developer-controlled trial only; no actual-user, assistive-technology acceptance, or the LMS accessibility checker testing."}
+                   "human_testing": "Developer-controlled trial only; no actual-user, assistive-technology acceptance, or LMS checker testing."}
         write_json(destination / "summary.json", summary)
         if rows:
             with (destination / "summary.csv").open("w", encoding="utf-8", newline="") as stream:

@@ -10,7 +10,7 @@ tools, model weights, and full trial evidence are deliberately excluded.
 - Protect saved human edits, explicit consent, current revisions, and source bindings.
 - Never commit passwords, API keys, session URLs/tokens, private PDFs, document
   extracts/crops, runtime logs, or review states. Retain the Git allowlist.
-- Phase 3 actual-user, assistive-technology acceptance, and the LMS accessibility checker testing
+- Phase 3 actual-user, assistive-technology acceptance, and LMS checker testing
   remains deferred until the user authorizes it.
 - For cloud development, use scripts/setup-cloud.sh and scripts/test-cloud.py.
   The portable contract subset is not the prepared Windows full-suite/native proof.

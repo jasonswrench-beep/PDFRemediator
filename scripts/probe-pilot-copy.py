@@ -2,7 +2,7 @@
 
 This is not a general repair or a change to Auto-fix. Only two known synthetic
 line endings receive an explicit space, with real gates rerun. The original
-result stays unchanged. a desktop PDF program behavior still needs an actual human retest.
+result stays unchanged. Desktop PDF viewer behavior still needs an actual human retest.
 """
 from pathlib import Path
 import argparse
@@ -105,12 +105,12 @@ def main():
     with patched.open('rb') as inp, output.open('xb') as dest:
         shutil.copyfileobj(inp, dest)
     require(sha(output) == assessed, 'Export changed the assessed bytes')
-    save('report.json', {'status': 'experimental-awaiting-a desktop PDF program-retest', 'human_verified': False,
+    save('report.json', {'status': 'experimental-awaiting-desktop-viewer-retest', 'human_verified': False,
          'production_fix_confirmed': False, 'source_sha256': SOURCE_SHA, 'prior_candidate_sha256': CANDIDATE_SHA,
          'output_sha256': assessed, 'explicit_line_end_spaces': 2, 'ai': 'off', 'ocr': 'off',
          'scope': 'Exact synthetic pilot only; does not replace the application result or its review records'})
     print('Created separate experiment:', output)
-    print('Automated gates pass. Copy/paste behavior is not confirmed until the a desktop PDF program retest.')
+    print('Automated gates pass. Copy/paste behavior is not confirmed until the desktop PDF viewer retest.')
     return 0
 
 

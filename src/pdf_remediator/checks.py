@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import re
 
-PROFILE = "phase1-core-1.1+ally-pdf-screens-1+bounded-readability-1"
+PROFILE = "phase1-core-1.1+lms-pdf-screens-1+bounded-readability-1"
 ADVISORY_SCREENS = ('small-font', 'empty-structure-tags')
-ALLY_SCREENS = ("marked-headings", "heading-start-level", "heading-depth",
+CHECKER_SCREENS = ("marked-headings", "heading-start-level", "heading-depth",
                 "heading-sequence", "language-correctness", "contrast")
 BLOCKING = ("content-linkage", "content-coverage", "link-structure", "metadata",
             "figure-alternatives", "table-header-associations", "font-embedding",
@@ -153,7 +153,7 @@ def assess(inspection, source=None):
         item = previous.get(name, {})
         results.append(_entry(name, item.get("status", "not-tested"), item.get("evidence", {}),
                               item.get("scope", "Human assessment"), item.get("limitations"), blocking=False))
-    for name in ALLY_SCREENS:
+    for name in CHECKER_SCREENS:
         item = previous.get(name, {})
         status = item.get("status", "not-tested")
         row = _entry(name, status, item.get("evidence", {}), item.get("scope", "Screen not measured"),
@@ -207,12 +207,12 @@ def assess(inspection, source=None):
         elif item["id"] == "metadata-meaning":
             item["evidence"] = previous.get("language-correctness", {}).get("evidence", {})
         elif item["id"] == "reading-order":
-            item["evidence"] = {name: previous.get(name, {}).get("evidence", {}) for name in ALLY_SCREENS[:4]}
+            item["evidence"] = {name: previous.get(name, {}).get("evidence", {}) for name in CHECKER_SCREENS[:4]}
     blockers = [item for item in results if item["blocking"] and item["status"] not in ("pass", "not-applicable")]
     status = "error" if any(item["status"] == "error" for item in blockers) else "fail" if blockers else "pass"
     required = list(BLOCKING) + [item["id"] for item in results if item["blocking"] and item["id"] not in BLOCKING]
     return {"profile": PROFILE, "status": status, "checks": results, "blocking_checks": required,
             "blockers": blockers, "manual_queue": manual, "automated_coverage_complete": False,
-            "coverage": {"automated": list(BLOCKING) + list(ALLY_SCREENS) + list(ADVISORY_SCREENS), "human_pending": [item["id"] for item in manual],
+            "coverage": {"automated": list(BLOCKING) + list(CHECKER_SCREENS) + list(ADVISORY_SCREENS), "human_pending": [item["id"] for item in manual],
                          "outside_scope": ["complete WCAG assessment", "general complex-table repair", "arbitrary font restoration"]},
             "claim": "Declared automated profile only; human verification remains pending."}

@@ -33,7 +33,7 @@ LIMITATIONS = [
     "Measured digital text only; images of text, outlined text and graphics are not assessed.",
     "Pattern/image/shading/Form paint, transparency, clipping, rotation, ambiguous backgrounds and overlaps require review.",
     "Measurements are rendered device RGB; color management and semantic WCAG exceptions require review.",
-    "A passing measurement is not an the LMS checker result, complete contrast assessment or human verification.",
+    "A passing measurement is not an LMS checker result, complete contrast assessment or human verification.",
     "PDFium page loading/decoding occurs before object limits; engine-level resource use is not bounded by these counters. Encoded stream lengths do not bound decompressed size.",
 ]
 FIX = ("Edit the original authoring document: increase text/background contrast to at least "

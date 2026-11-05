@@ -10,14 +10,14 @@ The previous 127-file controls build completed its bounded authored workflows, i
 
 Audits preserved all 344 protected original/review/runtime files, 91 earlier retained files, 6,343 historical trial/installed files, 1,164 earlier installed source files and the separately recorded historical downloads. Existing originals, reviews and historical incomplete evidence remain intact. AI/OCR stayed off; synthetic named approvals never populate genuine human verification. No commit, merge, release, distribution or LMS upload occurred.
 
-Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized the LMS accessibility checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
+Broader native Windows keyboard/modifier and populated-control workflows, safe legacy import in this new trial, actual navigation/response overlap, genuine nontechnical-user semantic review, experienced screen-reader acceptance and explicitly authorized LMS checker feedback remain open. No conversation or developer fixture result grants human verification or release authority.
 
-Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/ally-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
+Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/lms-checker-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
 
 Prepared October 17, 2026 for Jason Wrench. This handoff moves development and
 machine-dependent checks to the larger home computer. It does not authorize a
 merge, release, public server, AI/OCR use, private-document upload, or new
-assistive-technology/the LMS accessibility checker trial.
+assistive-technology/LMS checker trial.
 
 ## October 20 native keyboard and protected-note continuation
 
@@ -39,7 +39,7 @@ Both native installations retained their exact frozen 118-file source manifests.
 
 Latest local evidence is under ignored `work/native-keyboard-20261020-01/`;
 start with `PhaseB-native-summary.json`, `phaseA-native-summary.json`, `final-preservation-audit.json` and `notes-edit-fix/prepared-final/prepared-suite-summary.json`. Complete the remaining full Windows keyboard protocol and supported modifier combinations, multi-file picker qualification, grouped exceptions and individual/group acceptance controls, and seeded negative controls beyond the authored missing-description chapter. The completed page, occurrence and selection-reset cases remain bounded developer proof. Genuine actual-user/AT
-and separately authorized the LMS accessibility checker work remain open. AI/OCR stay off; no
+and separately authorized LMS checker work remain open. AI/OCR stay off; no
 merge, commit, tag, release, upload or distribution occurred. Earlier notices
 below retain their historical exact-build results. See STATUS/HANDOFF for detail.
 
@@ -69,8 +69,8 @@ The older branch names, machine setup requests and counts below are historical.
 Do not repeat completed installation work, overwrite the existing source/reviews
 or use a source-only update to deliver root setup-helper changes. Broader keyboard,
 figure/group review, genuine human semantics, experienced screen-reader testing
-and explicitly authorized the LMS accessibility checker acceptance remain open. AI/OCR stay off;
-no merge/release or actual-user/AT/the LMS checker trial is authorized by this notice.
+and explicitly authorized LMS checker acceptance remain open. AI/OCR stay off;
+no merge/release or actual-user/AT/LMS checker trial is authorized by this notice.
 
 ## October 18 continuation notice (historical)
 
@@ -117,12 +117,12 @@ chat between turns unless a real task/process is running.
 | Native synthetic Linux trial | Eleven named case contracts plus two negative fidelity controls passed, including all three 200-page book routes |
 | Default 200-page book | Fidelity fails; no PDF published. This refusal is expected and must remain visible. |
 | Explicit book regrouping plus authored automatic captions | Candidate; 106 strict UA-1 rules / 678,858 checks pass, every page compared; all 1,234 human reviews remain pending, including 1,224 regrouping records |
-| Owner's other Windows computer | Python 3.11.9 x64, Java 21.0.12.1, ODL 2.5.13 and veraPDF 1.30.3 were used for a one-page install/upload/process/download/the desktop PDF viewer pilot |
-| the desktop PDF viewer owner observation | Fresh normal-app result retained appearance/footer and corrected two copied word boundaries; actual reader version and exact fresh Windows output hash were not captured |
+| Owner's other Windows computer | Python 3.11.9 x64, Java 21.0.12.1, ODL 2.5.13 and veraPDF 1.30.3 were used for a one-page install/upload/process/download/desktop PDF viewer pilot |
+| Desktop PDF viewer owner observation | Fresh normal-app result retained appearance/footer and corrected two copied word boundaries; actual reader version and exact fresh Windows output hash were not captured |
 | Checked source updater | Forty synthetic failure/integrity/rollback cases and an isolated real-package copy trial pass on Linux; native Windows exercise remains open |
 
 These results do not establish full Windows/Linux qualification or accessible
-PDF acceptance. No screen-reader result, actual the LMS checker score, or verified ledger
+PDF acceptance. No screen-reader result, actual LMS checker score, or verified ledger
 record has been invented. The owner does not have a screen reader; an experienced
 external tester can perform that future work. AI and OCR remain off.
 
@@ -293,7 +293,7 @@ in [NATIVE-LINUX.md](NATIVE-LINUX.md).
    no private source or LMS upload is implied by resuming development.
 5. When an actual user/tester and scope are available, use the prepared
    [acceptance tasks](ACCEPTANCE-TESTS.md). Full usability/keyboard, experienced
-   screen-reader and actual the LMS checker work remain pending. Ask for the specific
+   screen-reader and actual LMS checker work remain pending. Ask for the specific
    missing authorization or observation at that point, not an unnecessary
    reconfirmation of already authorized source development.
 
@@ -337,4 +337,4 @@ may use different defaults, so use the explicit config command until verified.
 > AI/OCR remain off. Preserve all validation, preservation, refusal and revision
 > gates, keep generated/private artifacts out of Git, push clean development
 > commits if supported, and do not merge. Only involve me for an actual missing
-> decision/approval or hands-on test. Broader AT/Canvas acceptance remains deferred.
+> decision/approval or hands-on test. Broader AT/LMS checker acceptance remains deferred.

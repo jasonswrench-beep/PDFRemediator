@@ -615,7 +615,7 @@ def preserve_painting(source, engine_output, destination, *, allow_tag_regroupin
         if changes["mixed_owner_text_runs_retained"]:
             report["warnings"].append("Mixed semantic owners retain engine text splitting; exact render/text fidelity may still fail.")
         if report['automatic_line_separators']:
-            report['warnings'].append("Automatic source line separators preserve bounded paragraph boundaries; a desktop PDF program/reading-order review remains required.")
+            report['warnings'].append("Automatic source line separators preserve bounded paragraph boundaries; desktop PDF viewer/reading-order review remains required.")
         if semantic_reviews:
             report["warnings"].append("Opted-in tag regrouping changed semantic assignment. Every recorded regrouping needs human review; this is never implicit verification.")
         return report

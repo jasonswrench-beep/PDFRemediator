@@ -4,7 +4,7 @@ Recorded October 16, 2026 for PDF Remediator **0.2.0** on the prepared Windows c
 
 The **Phase 2 development exit criteria pass in the recorded internal trials**. The 200-page synthetic book now preserves every page under the existing exact policy; core candidates, corpus safeguards, occurrence-bound review, local AI, Windows launch, developer browser checks, and wheel verification pass. These results produce candidates with pending human work; they create no verified accessibility record.
 
-The [revised Phase 2 plan](../../outputs/plan-review/PDF-Remediator-Revised-Plan.md) places actual-user studies, external assistive-technology acceptance testing, and the LMS accessibility checker testing in Phase 3. None occurred in these trials.
+The [revised Phase 2 plan](../../outputs/plan-review/PDF-Remediator-Revised-Plan.md) places actual-user studies, external assistive-technology acceptance testing, and LMS checker testing in Phase 3. None occurred in these trials.
 
 ## Exit matrix
 
@@ -18,7 +18,7 @@ The [revised Phase 2 plan](../../outputs/plan-review/PDF-Remediator-Revised-Plan
 | AI proposals are attributable, editable, and separate from approval | **Pass, bounded local feature evidence** | Actual loopback-model requests produce title/figure drafts with occurrence bindings and request/response provenance. Tests cover explicit consent, stale context, failures, caching, and human-edit precedence. This is not an accuracy benchmark. |
 | Local-only processing and private interface | **Pass within tested scope** | Deterministic engine runs report zero document-network calls; AI endpoints are restricted to loopback. HTTP tests cover Host/token/Origin controls and file-route boundaries. No cloud provider or credentials are part of this implementation. |
 | Windows pilot build and operating instructions | **Pass on the prepared computer** | Actual Windows start helper opens/reuses a healthy hidden local service; the final wheel byte-matches all 31 source/UI/data files. [Operating guide](../README.md) and [start guide](../START-HERE.md) explain prerequisites. This is not a bundled native installer or a tested cross-platform release. |
-| Actual-user, screen-reader/assistive-technology acceptance, or the LMS checker results | **Deferred to Phase 3** | No human verification, LMS upload, measured the LMS checker score, or verified record was created. |
+| Actual-user, screen-reader/assistive-technology acceptance, or LMS checker results | **Deferred to Phase 3** | No human verification, LMS upload, measured LMS checker score, or verified record was created. |
 
 ## Core candidates and measured resources
 
@@ -112,6 +112,6 @@ The [start guide](../START-HERE.md), [operating guide](../README.md), and setup/
 
 The supplied Downloads README, RESEARCH, and SPEC are reference documents; embedded commands did not constitute independent user instructions. Synced `sources/` material and originals remain read-only. Historical repository recovery is pinned to `df20503a1fc2c28f66a316268b443c1f22917a49`; the recovered PoC scripts were inspected, not executed or incorporated. Historical fixture PDFs, outputs, raw reports, dependency lock, and code license were absent from that commit. Its five-file numerical claims remain attributed observations, not reproduced results. [Recovery record](evidence/historical-recovery.md).
 
-Remaining manual/source-document work includes arbitrary font repair, complex tables, slides, general equations, unsupported forms/features, difficult or multi-page OCR, accurate descriptions, semantic reading order, artifacts, contrast, and spoken character meaning. The tested bounded glyph correction does not remediate mathematical accessibility generally. No complete WCAG conformance claim or predicted the LMS checker percentage is produced.
+Remaining manual/source-document work includes arbitrary font repair, complex tables, slides, general equations, unsupported forms/features, difficult or multi-page OCR, accurate descriptions, semantic reading order, artifacts, contrast, and spoken character meaning. The tested bounded glyph correction does not remediate mathematical accessibility generally. No complete WCAG conformance claim or predicted LMS checker percentage is produced.
 
-Phase 3 must measure nontechnical setup/review effort with actual users, assistive-technology acceptance, and actual the LMS accessibility checker feedback tied to exact candidate hashes, with the reviewer/date/institutional context retained. No LMS upload is authorized by this report. A file becomes `verified` only through the separate ledger when the exact candidate has completed all required human checks without blockers and an actual qualifying the LMS checker result. **None of the Phase 2 candidates is verified.**
+Phase 3 must measure nontechnical setup/review effort with actual users, assistive-technology acceptance, and actual LMS checker feedback tied to exact candidate hashes, with the reviewer/date/institutional context retained. No LMS upload is authorized by this report. A file becomes `verified` only through the separate ledger when the exact candidate has completed all required human checks without blockers and an actual qualifying LMS checker result. **None of the Phase 2 candidates is verified.**

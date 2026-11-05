@@ -90,7 +90,7 @@ lineage remains separate follow-up work. Earlier negative attempts are retained.
 
 All work ran in isolated copies in the background, with AI off and no OCR
 recognition rerun, software window, browser or desktop use. There are zero new
-document/accessibility approvals. Actual-user, assistive-technology, the LMS checker,
+document/accessibility approvals. Actual-user, assistive-technology, LMS checker,
 graphical, fresh-PC, distribution and release gates retain their separate scope.
 The documentation .bat and older packaged payload remain unchanged. No merge
 or release occurred; supported insertions are explicit transcription tools,
@@ -152,7 +152,7 @@ There are zero new human approvals or verified accessible documents.
 
 AI stayed off, recognition was not rerun, and no software window, browser or
 desktop interaction occurred. Native keyboard, assistive-technology, actual-user,
-the LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
+LMS checker, fresh-PC, packaging and release acceptance retain their separate scope.
 The retained documentation .bat and older packaged payload are unchanged and
 do not automatically acquire this source feature. No merge or release occurred.
 
@@ -217,7 +217,7 @@ Existing page text remains excluded. Standard remains the default layout;
 ruled-table limits are unchanged. Retry retains saved preparation settings;
 changing mode/layout requires a separate result. Existing reviews are retained.
 
-No graphical, fresh-PC, human/assistive-technology, the LMS checker, distribution or release
+No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
 `C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
@@ -277,7 +277,7 @@ layout control are disabled if the local OCR component is unavailable. A logo
 can receive a meaningful description in the usual figure-review workflow
 without running OCR for it. Save a draft, review it and use the existing
 acceptance and checked Apply steps. Real-user, assistive-technology and
-authorized the LMS checker checks remain separate.
+authorized LMS checker checks remain separate.
 
 
 A local Windows application and command line workflow for producing PDF accessibility **candidates** with strict validation, preservation evidence, and a review workspace. Originals remain unchanged. The core PDF workflow uses OpenDataLoader 2.5.13 and deterministic processors. Optional local AI can produce drafts for manual acceptance or apply best guesses under the explicit Auto-fix choice. AI is off by default; there is no cloud-provider integration.
@@ -288,7 +288,7 @@ The supported workflow is deliberately bounded. A PDF/UA validator pass alone ne
 
 The [Phase 1 results](eval/PHASE1-RESULTS.md) record the completed reading, chapter and 244-page book candidates, the full corpus outcomes, and remaining limits.
 
-The [Phase 2 results](eval/PHASE2-RESULTS.md) describe preservation repair, the local review interface, grouped reviews, focused AI assistance, and their limits. The [current development plan](docs/ROADMAP.md) places testing with actual users, the LMS accessibility checker, and assistive technologies in Phase 3. Internal software and UI checks do not constitute those user/the LMS checker/assistive-technology trials.
+The [Phase 2 results](eval/PHASE2-RESULTS.md) describe preservation repair, the local review interface, grouped reviews, focused AI assistance, and their limits. The [current development plan](docs/ROADMAP.md) places testing with actual users, the LMS checker, and assistive technologies in Phase 3. Internal software and UI checks do not constitute those user/LMS checker/assistive-technology trials.
 
 See [current status and remaining work](docs/STATUS.md) for the support boundaries, completed evidence and open acceptance tasks. The [integration readiness review](docs/RELEASE-READINESS.md) consolidates the development diff and reproducible checks; it does not authorize a merge or release.
 
@@ -358,7 +358,7 @@ Open a document and choose **Auto-fix this document**. It creates a separate res
 
 Expand **Include local AI guesses** if you also want pending titles and figure descriptions generated and applied without individually accepting each suggestion. Choose an installed local model and explicitly enable that option. For the tested automatic figure route, choose `qwen3.5:latest`, include crops, and select fast drafting mode. The smaller caption-only model may echo a placeholder; required gates still refuse that result. At most 24 eligible decisions are processed in batches of eight. Existing human edits, accepted values, and reported problems remain protected. Local AI failures are disclosed; missing or unsupported content can still prevent candidacy. No cloud connection or model download is added.
 
-Automatic choices use a separate `auto-accepted` status and exact source/prepared/value/context authorization. The immutable result records the authorization and model origin. The default review list omits mechanical checks already handled automatically; **Include checks handled automatically** restores every occurrence. The raw required review inventory and the requirements for a separate human-verified ledger entry remain intact. Automatic mode does not claim correct semantic meaning or a measured the LMS checker score. [Auto-fix results](eval/AUTO-FIX-RESULTS.md).
+Automatic choices use a separate `auto-accepted` status and exact source/prepared/value/context authorization. The immutable result records the authorization and model origin. The default review list omits mechanical checks already handled automatically; **Include checks handled automatically** restores every occurrence. The raw required review inventory and the requirements for a separate human-verified ledger entry remain intact. Automatic mode does not claim correct semantic meaning or a measured LMS checker score. [Auto-fix results](eval/AUTO-FIX-RESULTS.md).
 
 Grouped review keeps each occurrence's identity and context. Grouping is a navigation aid: only the explicitly selected, actually reviewed members receive a named reviewer's approval. Similar images, lists, or links do not acquire shared semantic approval automatically. A stale source, prepared checkpoint, output, or group membership prevents approval reuse.
 
@@ -451,11 +451,11 @@ Other configurable paths are `project_root`, `odl_jar`, `validator_cli`, `ocr_py
 | `failed` | Processing or structural integrity failed. No usable PDF is published. |
 | `needs-manual` | A required automated check, supported-case condition, or preservation check remains unresolved. An intact draft is retained only when its preservation checks pass. |
 | `candidate` | Strict PDF/UA-1 validation, the declared automated profile, and complete preservation checks pass. Human judgments remain pending. |
-| `verified` | A separate ledger record binds completed human review and an actual qualifying the LMS checker score to the exact candidate hash. |
+| `verified` | A separate ledger record binds completed human review and an actual qualifying LMS checker score to the exact candidate hash. |
 
 A completed run directory contains `report.json`, `review.html`, `review.json`, `decisions.json`, `manifest.json`, and the complete available validator evidence. A successful fix adds `candidate.pdf`; a reviewable manual-work result may contain `review-draft.pdf`. Preservation failures do not publish a review PDF. A read-only check does not publish a remediated copy.
 
-The report keeps validator results, supplemental checks, fidelity, and human work separate. Figure-description meaning, semantic reading order, artifact choices, table relationships, character accuracy, and contrast remain explicit human work. There is no predicted the LMS checker score or aggregate WCAG compliance percentage.
+The report keeps validator results, supplemental checks, fidelity, and human work separate. Figure-description meaning, semantic reading order, artifact choices, table relationships, character accuracy, and contrast remain explicit human work. There is no predicted LMS checker score or aggregate WCAG compliance percentage.
 
 Each fix validates the unchanged original baseline before modification and validates the exact final artifact again. `validation_delta` records original rule IDs as fixed, remaining, or newly failing when the two complete rule inventories are comparable. Partial assertion details stay disclosed; a rule comparison does not invent individual repaired-assertion counts. A missing or inconsistent comparison remains explicitly not compared.
 
@@ -552,15 +552,15 @@ Processing exit codes are `0` for automated candidates, `2` when manual work rem
 
 Copy the candidate bundle's `review.json` outside the bundle. Complete every required item against the exact candidate PDF: set its `status` to `approved`, supply the actual `reviewer` and ISO `reviewed_at`, and add review notes. Keep the artifact hash, item IDs, and item scope unchanged. The final review should record the assistive technology used and the pages/regions actually checked.
 
-Obtain the actual the LMS checker score in the relevant Canvas/institutional context. Then record it:
+Obtain the actual LMS checker score in the relevant LMS/institutional context. Then record it:
 
 ```powershell
-& $py -m pdf_remediator ledger add ".\output\readings\RUN-DIRECTORY" --ledger ".\verification.jsonl" --reviewer "Reviewer Name" --ally-score 95 --ally-context "Institution / Canvas course / item" --threshold 67 --review-scope "Record the actual listening, page, table, figure, and visual review scope" --review-file ".\reading.review.json"
+& $py -m pdf_remediator ledger add ".\output\readings\RUN-DIRECTORY" --ledger ".\verification.jsonl" --reviewer "Reviewer Name" --checker-score 95 --checker-context "Institution / LMS course / item" --threshold 67 --review-scope "Record the actual listening, page, table, figure, and visual review scope" --review-file ".\reading.review.json"
 & $py -m pdf_remediator ledger list --ledger ".\verification.jsonl"
 & $py -m pdf_remediator ledger export --ledger ".\verification.jsonl" -o ".\verification-export.json"
 ```
 
-The numbers above demonstrate the syntax; enter the observed score and selected threshold. The default workflow threshold is 67. An the LMS checker score alone cannot create verification: the candidate bundle, hashes, all required automated assessments, and completed human-review items must also qualify. Verification is recorded in the ledger; it does not rewrite the immutable run report.
+The numbers above demonstrate the syntax; enter the observed score and selected threshold. The default workflow threshold is 67. An LMS checker score alone cannot create verification: the candidate bundle, hashes, all required automated assessments, and completed human-review items must also qualify. Verification is recorded in the ledger; it does not rewrite the immutable run report.
 
 A later PDF edit makes its verification stale. A subsequently discovered semantic blocker can be recorded without deleting history:
 
@@ -574,7 +574,7 @@ PDF Remediator itself is licensed under the Apache License 2.0 (see `LICENSE` an
 
 The core processing commands invoke selected local executables. Optional assistance connects only to the explicitly selected local model service and stays off until requested. There is no cloud-provider or automatic model-download route. `--local-only` and `--no-ai` on the deterministic processing commands document their intent; they do not configure a system firewall. Reports, drafts, extracted descriptions, image crops, and validation contexts are local artifacts and can contain document content. Dependency installation and opening externally hosted links are separate from PDF processing.
 
-Validator/engine versions and relevant artifact hashes are recorded; `doctor` separately reports dependency/runtime startup evidence. Retain each third-party distribution's notices and license terms when moving or packaging the environment. The application is not a prebuilt Windows installer. Proprietary a proprietary tagging SDK and accesspdf are not Phase 1 processing engines. Historical scripts without established licensing were not incorporated.
+Validator/engine versions and relevant artifact hashes are recorded; `doctor` separately reports dependency/runtime startup evidence. Retain each third-party distribution's notices and license terms when moving or packaging the environment. The application is not a prebuilt Windows installer. A proprietary tagging SDK and accesspdf are not Phase 1 processing engines. Historical scripts without established licensing were not incorporated.
 
 The pinned TeX mapping reference is distributed unchanged with [its provenance notice](src/pdf_remediator/data/TEX-MAPPING-NOTICE.txt) and [LPPL license](src/pdf_remediator/data/LPPL-1.3c.txt). The published *Think Python* evaluation PDF remains subject to its separately recorded CC BY-NC attribution and provenance; it is not an unrestricted redistribution fixture.
 

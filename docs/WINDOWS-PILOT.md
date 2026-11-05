@@ -90,7 +90,7 @@ Only the maintained private Python/core-baseline checklist item closes here.
 Graphical packaged installer/launcher qualification, a genuinely fresh Windows
 computer, distribution licensing/source/relinking obligations and publisher
 signing/authentication remain open. Human semantic/usability review, screen-reader
-testing, authorized the LMS checker feedback and final owner/build decisions remain separate.
+testing, authorized LMS checker feedback and final owner/build decisions remain separate.
 No external distribution, commit, merge or release is cleared.
 
 Retained evidence is under `work/rt-20261022-01/`: the native result is
@@ -185,7 +185,7 @@ AI and OCR stayed off; the local server must remain on loopback.
 The owner compared the original one-page synthetic reading and its candidate in
 the desktop PDF viewer and reported that they looked the same. Candidate clipboard text
 joined two line boundaries; the source clipboard text separated them. Exact
-the desktop PDF viewer and Windows versions are not recorded. No screen reader or the LMS checker test
+the desktop PDF viewer and Windows versions are not recorded. No screen reader or LMS checker test
 was performed. No artifact has received accessibility acceptance or human
 verification in the application ledger.
 
@@ -236,7 +236,7 @@ automated gates passed. The owner pasted the experimental PDF's text with the
 correct spaces at both boundaries and the SYNTHETIC footer. The owner then
 confirmed the original and experiment looked the same in the desktop PDF viewer. This completes
 that limited visual/clipboard retest, not full accessibility acceptance. The
-actual the desktop PDF viewer version remains unrecorded; no ledger approvals were fabricated.
+actual desktop PDF viewer version remains unrecorded; no ledger approvals were fabricated.
 
 The subsequent development branch `dev/source-line-separators` integrates a
 bounded automatic preservation rule for source-extracted ASCII line boundaries
@@ -244,7 +244,7 @@ in adjacent MCIDs of the same plain paragraph. It requires separate reset text
 objects, identity positioning, explicit matching font mapping, aligned columns,
 small line spacing, unique source extraction and unchanged semantic order.
 Ambiguous or unsupported shapes receive no inserted space. All normal gates and
-mandatory human review remain. The owner subsequently completed a fresh Windows processing/the desktop PDF viewer retest
+mandatory human review remain. The owner subsequently completed a fresh Windows processing/desktop PDF viewer retest
 after updating the local source, as recorded below.
 
 ## Fresh application result confirmed by owner
@@ -259,7 +259,7 @@ as the original. This completes the limited application visual/clipboard retest.
 The exact Windows output hash, actual reader version, final download filename
 and full local evidence were not independently captured. This report does not
 approve other review items, create a verification-ledger entry, establish full
-Windows native qualification or complete AT/the LMS checker acceptance. Keep those pending.
+Windows native qualification or complete AT/LMS checker acceptance. Keep those pending.
 
 ## Home desktop native and visual observation — October 18
 
@@ -275,27 +275,27 @@ identical to its reported output hash and the Linux control. It has one page,
 the full text/footer, both explicit line-end spaces and a structure tree. The
 owner confirmed its appearance is fine in the desktop PDF viewer. The actual About screenshot
 shows **a desktop PDF editor, Continuous Release 2026.002.22031, 64-bit**. The JPEG
-and PDF stay outside Git. The actual fresh home the desktop PDF viewer clipboard output and
+and PDF stay outside Git. The actual fresh home desktop PDF viewer clipboard output and
 full raw local evidence were not supplied; do not invent those observations.
 
 This closes the named synthetic native/visual case only, not the prepared full
 suite, real-package updater recovery, general document support, keyboard/AT
-acceptance or the LMS checker testing. No named verification-ledger approval is inferred.
+acceptance or LMS checker testing. No named verification-ledger approval is inferred.
 
-The owner subsequently pasted text directly from this home the desktop PDF viewer instance:
+The owner subsequently pasted text directly from this home desktop PDF viewer instance:
 both paragraph boundary spaces were correct and the selected footer label was
 present. The selected footer was not its full displayed wording, so complete
 footer copying is not claimed. The previously uploaded exact PDF independently
 contains the complete footer and its appearance was confirmed. This completes
 the limited home native/visual/paragraph-clipboard case; broader human semantic
-review, AT/the LMS checker acceptance and verification remain pending.
+review, AT/LMS checker acceptance and verification remain pending.
 
 The owner later supplied the local bundle/PDF-hash verification success message
 and reported **617 prepared tests passed in 79.76s** after supplying the pinned
 AMS archive and actual native config. These observations supersede the earlier
 full-suite/bundle-message gaps for that declared scope; full raw local evidence
 was not uploaded. Real-package updater, broader native documents, keyboard/AT
-and the LMS checker acceptance remain open.
+and LMS checker acceptance remain open.
 
 
 ## October 18 startup/retry follow-up (new branch, not yet Windows-tested)

@@ -63,8 +63,8 @@ def report_for(path):
 
 
 def record(path, ledger, report=None, **kwargs):
-    arguments = {"reviewer": "Human Reviewer", "reviewed_at": "2026-10-15", "ally_score": 91,
-                 "ally_context": "University Canvas course; actual uploaded candidate", "threshold": 67,
+    arguments = {"reviewer": "Human Reviewer", "reviewed_at": "2026-10-15", "checker_score": 91,
+                 "checker_context": "University LMS course; actual uploaded candidate", "threshold": 67,
                  "review_scope": "All pages visually; full document reading order through accessibility interface"}
     arguments.update(kwargs)
     return add_record(ledger, path, report or report_for(path), **arguments)
@@ -221,7 +221,7 @@ def test_ledger_requires_candidate_not_a_score_alone(document, tmp_path):
     report = report_for(document)
     report["status"] = "needs-manual"
     with pytest.raises(LedgerError, match="candidate"):
-        record(document, tmp_path / "ledger.jsonl", report, ally_score=100)
+        record(document, tmp_path / "ledger.jsonl", report, checker_score=100)
 
 
 @pytest.mark.parametrize("defect", ["validator", "rules", "execution", "validator-hash", "supplemental", "required-check", "fidelity", "fidelity-hash", "pending", "omitted", "residual"])
@@ -253,9 +253,9 @@ def test_ledger_refuses_failed_or_unresolved_evidence(document, tmp_path, defect
         record(document, tmp_path / "ledger.jsonl", report)
 
 
-@pytest.mark.parametrize("kwargs", [{"reviewer": ""}, {"reviewed_at": ""}, {"ally_context": ""},
-                                    {"review_scope": ""}, {"ally_score": 66}, {"ally_score": True},
-                                    {"ally_score": float("nan")}, {"threshold": 101}])
+@pytest.mark.parametrize("kwargs", [{"reviewer": ""}, {"reviewed_at": ""}, {"checker_context": ""},
+                                    {"review_scope": ""}, {"checker_score": 66}, {"checker_score": True},
+                                    {"checker_score": float("nan")}, {"threshold": 101}])
 def test_ledger_requires_actual_score_context_and_complete_human_record(document, tmp_path, kwargs):
     with pytest.raises((LedgerError, DecisionError)):
         record(document, tmp_path / "ledger.jsonl", **kwargs)
@@ -287,7 +287,7 @@ def test_ledger_detects_changed_historical_entry(document, tmp_path):
     ledger = tmp_path / "ledger.jsonl"
     record(document, ledger)
     row = json.loads(ledger.read_text(encoding="utf-8"))
-    row["actual_ally_score"] = 100
+    row["actual_checker_score"] = 100
     ledger.write_text(json.dumps(row) + "\n", encoding="utf-8")
     with pytest.raises(LedgerError, match="integrity"):
         list_records(ledger)
@@ -301,3 +301,26 @@ def test_semantic_blocker_invalidates_current_status_but_retains_history(documen
     assert records[0]["historical_status"] == "verified"
     assert records[0]["current_status"] == "invalidated"
     assert records[1]["kind"] == "invalidation"
+
+
+def test_ledger_accepts_older_score_and_context_names(document, tmp_path):
+    ledger = tmp_path / "ledger.jsonl"
+    arguments = {"reviewer": "Human Reviewer", "reviewed_at": "2026-10-15", "ally_score": 91,
+                 "ally_context": "University LMS course; actual uploaded candidate", "threshold": 67,
+                 "review_scope": "All pages visually; full document reading order through accessibility interface"}
+    entry = add_record(ledger, document, report_for(document), **arguments)
+    assert entry["actual_checker_score"] == 91 and entry["checker_context"].startswith("University")
+    old = dict(entry)
+    old["actual_ally_score"], old["ally_context"] = old.pop("actual_checker_score"), old.pop("checker_context")
+    old.pop("record_sha256")
+    from pdf_remediator.ledger import _digest
+    old["record_sha256"] = _digest(old)
+    ledger.write_text(json.dumps(old) + "\n", encoding="utf-8")
+    current = list_records(ledger)[0]
+    assert current["actual_checker_score"] == 91 and current["checker_context"] == old["ally_context"]
+    from pdf_remediator.cli import _parser
+    flags = ["ledger", "add", "--ledger", "ledger.jsonl", "bundle", "--reviewer", "Human Reviewer",
+             "--review-scope", "All pages", "--review-file", "review.json"]
+    for score, context in (("--checker-score", "--checker-context"), ("--ally-score", "--ally-context")):
+        parsed = _parser().parse_args(flags + [score, "90", context, "LMS course"])
+        assert parsed.checker_score == 90 and parsed.checker_context == "LMS course"

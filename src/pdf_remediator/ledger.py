@@ -1,6 +1,6 @@
 """Append-only local verification evidence tied to an exact candidate hash.
 
-An the LMS checker score alone cannot create verification. The ledger is an audit record,
+An LMS checker score alone cannot create verification. The ledger is an audit record,
 not a certificate or a replacement for the recorded human assessment scope.
 """
 from __future__ import annotations
@@ -153,16 +153,32 @@ def _append(path, record):
     return record
 
 
-def add_record(ledger_path, pdf_path, report, reviewer, reviewed_at, ally_score,
-               ally_context, threshold=67, review_scope="", notes=""):
-    """Record actual human verification, refusing score-only or stale evidence."""
+# Records written before the generic names used these keys; they stay readable.
+LEGACY_RECORD_KEYS = {"actual_ally_score": "actual_checker_score", "ally_context": "checker_context"}
+
+
+def add_record(ledger_path, pdf_path, report, reviewer, reviewed_at, checker_score=None,
+               checker_context=None, threshold=67, review_scope="", notes="", *,
+               ally_score=None, ally_context=None):
+    """Record actual human verification, refusing score-only or stale evidence.
+
+    ``ally_score`` and ``ally_context`` are older keyword names kept as aliases.
+    """
+    if ally_score is not None:
+        if checker_score is not None:
+            raise TypeError("Give checker_score or its older alias ally_score, not both")
+        checker_score = ally_score
+    if ally_context is not None:
+        if checker_context is not None:
+            raise TypeError("Give checker_context or its older alias ally_context, not both")
+        checker_context = ally_context
     reviewer = _text(reviewer, "Reviewer")
     _validate_date(reviewed_at)
-    ally_context = _text(ally_context, "Institutional/the LMS accessibility checker context")
+    checker_context = _text(checker_context, "Institutional LMS checker context")
     review_scope = _text(review_scope, "Human/assistive-technology review scope")
-    ally_score, threshold = _score(ally_score, "Actual the LMS checker score"), _score(threshold, "Selected threshold")
-    if ally_score < threshold:
-        raise LedgerError("The actual the LMS checker score is below the selected workflow threshold")
+    checker_score, threshold = _score(checker_score, "Actual LMS checker score"), _score(threshold, "Selected threshold")
+    if checker_score < threshold:
+        raise LedgerError("The actual LMS checker score is below the selected workflow threshold")
     if isinstance(report, (str, Path)):
         report = json.loads(Path(report).read_text(encoding="utf-8"))
     pdf = Path(pdf_path).resolve()
@@ -172,7 +188,7 @@ def add_record(ledger_path, pdf_path, report, reviewer, reviewed_at, ally_score,
     record = {"schema_version": SCHEMA_VERSION, "kind": "verification", "recorded_at": timestamp,
               "pdf_path": str(pdf), "pdf_sha256": actual_sha, "run_id": report.get("run_id"),
               "report_sha256": _digest(report), "reviewer": reviewer, "reviewed_at": reviewed_at,
-              "actual_ally_score": ally_score, "ally_context": ally_context, "selected_threshold": threshold,
+              "actual_checker_score": checker_score, "checker_context": checker_context, "selected_threshold": threshold,
               "human_review": human_items, "review_scope": review_scope, "notes": str(notes),
               "historical_status": "verified"}
     record["record_id"] = _digest(record)[:24]
@@ -202,6 +218,9 @@ def list_records(ledger_path, verify_files=True):
     result = []
     for entry in records:
         row = dict(entry)
+        for old, new in LEGACY_RECORD_KEYS.items():
+            if old in row and new not in row:
+                row[new] = row[old]
         if row.get("kind") != "verification":
             row["current_status"] = "invalidation"
         elif row["record_id"] in invalidated:

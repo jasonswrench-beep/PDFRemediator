@@ -218,7 +218,7 @@ def test_links_and_bookmarks_are_kept_exactly_when_a_reviewed_decision_is_applie
     assert verdicts(out) == NOT_A_FORM
 
 
-# ---- the standard, passive structure attributes that Word and a desktop PDF program write
+# ---- the standard, passive structure attributes that Word and desktop PDF viewers write
 def layout_variant(path, variant):
     source = inert_layout_pdf(path.parent / ('base-' + path.name))
     with pikepdf.open(source) as pdf:
