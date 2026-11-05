@@ -204,7 +204,7 @@ mail address (http, https, mailto), is passive navigation and no longer counts a
 form authority, provided nothing else refers to that action. Every other action
 type, any chained action or extra key, and any action outside the page links and
 bookmarks still does. The same proof accepts the standard passive structure
-attributes that Word, a desktop PDF program and this program's own tagging write (figure and
+attributes that Word, the desktop PDF viewer and this program's own tagging write (figure and
 table position, header-cell scope and spans, list numbering) and structure
 elements that omit the optional /Type, and still refuses every other attribute.
 The evidence policy is passive-empty-acroform-2.
@@ -3353,7 +3353,7 @@ artifact Git transfer, merge or release. This checkpoint only updates docs;
 October 18, 2026. The owner reported **617 passed in 79.76s** for the full declared
 prepared regression scope on home Windows/Python 3.11.9 x64. This followed the
 actual 604-test source-only pass, pinned native provisioning and first real
-one-page candidate/a desktop PDF program observation. The approved AMSFonts ZIP was downloaded
+one-page candidate/the desktop PDF viewer observation. The approved AMSFonts ZIP was downloaded
 to the home Downloads directory; its independently reported SHA-256 exactly
 matches `aaab3930b952128b7ed65260144493eb3d88cb063b50da1f90272e23c7e08ba2`.
 No missing native/font prerequisites were skipped or substituted.
@@ -3389,7 +3389,7 @@ committed, no merge. AI/OCR remain off.
 ## Home desktop reader clipboard observation complete
 
 October 18, 2026. After identifying home a desktop PDF editor **2026.002.22031, 64-bit**,
-the owner pasted the candidate's text from a desktop PDF program. Both previously joined word
+the owner pasted the candidate's text from the desktop PDF viewer. Both previously joined word
 boundaries now have spaces, both authored paragraph anchors are present, and the
 selected footer label is present. The paste contains the footer label only,
 not its complete displayed wording; do not infer either complete footer copying
@@ -3452,10 +3452,10 @@ and footer. Content-stream inspection finds exactly one explicit trailing
 space at each of the two corrected line endings and a structure tree.
 The original uploaded file remains outside Git and unchanged.
 
-The owner confirmed the candidate looks fine in a desktop PDF program. The supplied About
+The owner confirmed the candidate looks fine in the desktop PDF viewer. The supplied About
 screenshot identifies **a desktop PDF editor, Continuous Release 2026.002.22031,
 64-bit**. This is the actual home reader version; do not backfill it onto the
-earlier other-computer pilot. Actual home a desktop PDF program clipboard output has not yet
+earlier other-computer pilot. Actual home the desktop PDF viewer clipboard output has not yet
 been supplied; PDFium extraction and the prior other-machine clipboard result
 are not a new home clipboard observation. Full raw Windows evidence/bundle and
 a separate `verify_bundle` success message were not uploaded, so do not claim
@@ -3692,7 +3692,7 @@ the recovery guarantee. See [checked local updates](docs/LOCAL-UPDATES.md).
   `.venv/bin/python -m pip check`, `git diff --check`: pass/no broken requirements.
 
 No new native PDF trial is claimed: application source was unchanged, and the
-previous bounded native/a desktop PDF program results remain identified above/below. This new
+previous bounded native/the desktop PDF viewer results remain identified above/below. This new
 updater has Linux automated and isolated-copy evidence; native Windows execution
 of it remains untested. Do not conflate the successful earlier manual Windows
 update with qualification of this tool. No further user action is needed now.
@@ -3707,7 +3707,7 @@ October 17, 2026. On `dev/source-line-separators`, following application commit
 installation with line-separator file verification, started a new local test
 workspace, uploaded the original reading again and processed/downloaded a fresh
 result through the normal application. The owner confirmed that the pasted text
-came from this new download opened in a desktop PDF program. Both previously joined
+came from this new download opened in the desktop PDF viewer. Both previously joined
 word boundaries were correctly spaced. The owner confirmed the footer remained
 visible and explicitly confirmed that the remaining text, spacing and layout
 looked the same as the original. This completes the limited Windows application
@@ -3725,7 +3725,7 @@ reported that update completed. Keep backups and failed-update material local;
 none is repository evidence or a reason to weaken permissions.
 
 Limits: the exact fresh Windows candidate hash, full local evidence bundle,
-actual a desktop PDF program version and final downloaded filename were not independently
+actual the desktop PDF viewer version and final downloaded filename were not independently
 captured in this chat. Do not bind this observation to the Linux candidate hash,
 claim a full Windows automated/native suite pass, or populate application review
 approvals from conversation alone. Record exact artifact/reader identifiers if
@@ -3739,18 +3739,18 @@ recorded 549 source-only and 562 prepared passes. No merge. Next engineering
 work may extend synthetic coverage for other text layouts; broader acceptance
 still needs separately authorized scope and actual testing.
 
-## Latest checkpoint: source line separators and completed bounded a desktop PDF program retest
+## Latest checkpoint: source line separators and completed bounded the desktop PDF viewer retest
 
 October 17, 2026. Branch `dev/source-line-separators` continues from `78ec8fa`;
-no merge. The owner explicitly asked to continue after the bounded a desktop PDF program test.
+no merge. The owner explicitly asked to continue after the bounded the desktop PDF viewer test.
 The original development branch remains available; Windows does not auto-update.
 
 **Owner observation:** the exact-pair probe ran on Windows and reported its gates
 passed. The owner pasted the experimental PDF's text with both word boundaries
 correctly spaced and the SYNTHETIC footer present, identified the subsequent
 line-broken paste as `reading-source.pdf`, and explicitly confirmed the original
-and experiment looked the same in a desktop PDF program. This completes that limited
-visual/clipboard retest only. The actual a desktop PDF program version is still unrecorded.
+and experiment looked the same in the desktop PDF viewer. This completes that limited
+visual/clipboard retest only. The actual the desktop PDF viewer version is still unrecorded.
 It does not approve all reading order, AT behavior, the LMS checker results or any automatic
 choice. No ledger approval or verified status was fabricated.
 
@@ -3815,7 +3815,7 @@ assertions remain; only the expected preservation version advances to 1.2.
 
 Next: update the local Windows source deliberately, process the original reading
 in a fresh output/data directory through the normal app (not the exact-pair
-probe), and repeat the a desktop PDF program clipboard/appearance check on that new candidate.
+probe), and repeat the the desktop PDF viewer clipboard/appearance check on that new candidate.
 The already passing experiment does not prove the production Windows route.
 The source-name download fix is inherited. See [Windows pilot](docs/WINDOWS-PILOT.md).
 AI/OCR stay off; no public listener, merge, full native qualification, AT
@@ -3827,14 +3827,14 @@ generated assets/evidence and review states stay outside Git.
 October 17, 2026. Branch `dev/windows-pilot-copy-boundaries` continues from
 `b9a6bfc` on `dev/native-linux-synthetic`; no merge. The owner asked for continued
 useful work while asleep. The owner authorized a limited Windows visual/usability
-pilot in a desktop PDF program without a screen reader. That subset has started; broader
+pilot in the desktop PDF viewer without a screen reader. That subset has started; broader
 assistive-technology acceptance and the LMS accessibility checker testing remain deferred.
 
 The owner installed the application locally (Python 3.11.9 x64, Java 21.0.12.1,
 ODL 2.5.13, veraPDF 1.30.3), opened the local page and processed the authored
 one-page reading. The source and candidate looked the same to the owner.
-Clipboard text from a desktop PDF program joined two word boundaries in the candidate while
-source clipboard text retained line separation. Windows/a desktop PDF program exact versions
+Clipboard text from the desktop PDF viewer joined two word boundaries in the candidate while
+source clipboard text retained line separation. Windows/the desktop PDF viewer exact versions
 and full human acceptance are not recorded. Do not mark text/reading-order
 reviews complete. Cloud commands cannot update the owner's Windows installation.
 
@@ -3842,7 +3842,7 @@ Both uploaded PDFs were inspected without changing them or committing them.
 Source SHA-256: `ed1351295101b5dc72c5fa0f5075fb6074ac3d2f4868a2ee4feac3403d3f4a3b`.
 Candidate SHA-256: `41efe341fa7bf14ef0850bec7a24e727d213de376d4797c53e976a3a691cd683`.
 PDFium extraction agrees, including the footer, but candidate paragraph tags group
-line strings without explicit trailing spaces. This fits the reported a desktop PDF program
+line strings without explicit trailing spaces. This fits the reported the desktop PDF viewer
 behavior and exposes a limitation of existing extraction-based fidelity checks;
 it does not prove a general repair. No preservation assertion was relaxed.
 
@@ -3873,7 +3873,7 @@ Actual commands/results:
 - `.venv/bin/python scripts/probe-pilot-copy.py --source /workspace/attachments/6d5592fe-21ca-49a5-986b-3833392b3127/reading-source.pdf --candidate /workspace/attachments/d2ec219a-e5af-4381-91c6-f8f7368e4f7e/accessibility-candidate.pdf --config work/native-linux-reproduced-tools/runtime.toml --output work/windows-copy-probe-2/reading-source-copy-test.pdf`:
   real veraPDF **1.30.3 UA-1 pass**, supplemental **pass**, source fidelity **pass**.
   Export SHA-256: `1ec9f6cd06cfdff099fa27596b144200e5846e4402eda34995ceebce941fd36c`.
-  Report explicitly says `experimental-awaiting-a desktop PDF program-retest`, human false,
+  Report explicitly says `experimental-awaiting-the desktop PDF viewer-retest`, human false,
   production fix unconfirmed. Evidence stays ignored under `work/`.
 - Two subprocess refusal checks with the same script: modified source rejected
   without output; existing output rejected and sentinel bytes preserved.
@@ -3882,7 +3882,7 @@ Actual commands/results:
 
 Next human-dependent action: follow [Windows pilot continuation](docs/WINDOWS-PILOT.md)
 to generate the separate experiment locally, compare appearance and clipboard
-text in a desktop PDF program, and record the actual reader version. No a desktop PDF program fix is claimed
+text in the desktop PDF viewer, and record the actual reader version. No the desktop PDF viewer fix is claimed
 before that retest. No generic whitespace insertion should be added based solely
 on this one synthetic example. AI/OCR stay off. No full native qualification,
 AT acceptance, the LMS checker score or verified status is claimed. Generated PDFs, runtime
@@ -4136,7 +4136,7 @@ current prerequisites. Native tools and the pinned licensed AMS archive remain
 external and explicitly required for the prepared scope.
 
 1. Complete actual Windows qualification of the checked updater/fresh install,
-   broader review workflow and keyboard access. The one-page owner a desktop PDF program
+   broader review workflow and keyboard access. The one-page owner the desktop PDF viewer
    visual/clipboard pilot is complete, not comprehensive acceptance.
 2. Expand supported-case/refusal coverage and evaluation on further permitted
    representative material when available. Retain bounded document/font/OCR

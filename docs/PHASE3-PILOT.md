@@ -1,7 +1,7 @@
 # Phase 3 pilot — limited Windows visual scope started
 
 On October 17, 2026, the owner authorized and performed a limited local Windows
-visual/usability trial in a desktop PDF program, without a screen reader. Source and
+visual/usability trial in the desktop PDF viewer, without a screen reader. Source and
 candidate looked the same to the owner; copied text exposed joined words at two
 paragraph line boundaries. This is a finding, not accessibility acceptance.
 The owner subsequently confirmed that the separate bounded experiment retained
