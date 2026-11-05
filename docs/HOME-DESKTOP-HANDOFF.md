@@ -117,8 +117,8 @@ chat between turns unless a real task/process is running.
 | Native synthetic Linux trial | Eleven named case contracts plus two negative fidelity controls passed, including all three 200-page book routes |
 | Default 200-page book | Fidelity fails; no PDF published. This refusal is expected and must remain visible. |
 | Explicit book regrouping plus authored automatic captions | Candidate; 106 strict UA-1 rules / 678,858 checks pass, every page compared; all 1,234 human reviews remain pending, including 1,224 regrouping records |
-| Owner's other Windows computer | Python 3.11.9 x64, Java 21.0.12.1, ODL 2.5.13 and veraPDF 1.30.3 were used for a one-page install/upload/process/download/a desktop PDF program pilot |
-| a desktop PDF program owner observation | Fresh normal-app result retained appearance/footer and corrected two copied word boundaries; actual reader version and exact fresh Windows output hash were not captured |
+| Owner's other Windows computer | Python 3.11.9 x64, Java 21.0.12.1, ODL 2.5.13 and veraPDF 1.30.3 were used for a one-page install/upload/process/download/the desktop PDF viewer pilot |
+| the desktop PDF viewer owner observation | Fresh normal-app result retained appearance/footer and corrected two copied word boundaries; actual reader version and exact fresh Windows output hash were not captured |
 | Checked source updater | Forty synthetic failure/integrity/rollback cases and an isolated real-package copy trial pass on Linux; native Windows exercise remains open |
 
 These results do not establish full Windows/Linux qualification or accessible

@@ -165,7 +165,7 @@ The full protocols below remain required. The fresh browser import starts from a
 Local exact-source manifests, commands, raw browser/native records and preservation maps remain outside Git under `work/ally-native-controls-20261021-01/` (development mirror staging before retention). Start with `old-trial-summary.json`, `snapshots/final-stopped/`, and `focus-fix/prepared-final-01/suite-summary.json`; fresh focus records are kept separately under `focus-fix/`. Do not commit session authority, runtime logs, authored PDFs, review states or extracts.
 
 This is a test plan, not authorization to start a broader pilot. The owner's
-one-page Windows/a desktop PDF program visual and clipboard test is complete. The tasks below
+one-page Windows/the desktop PDF viewer visual and clipboard test is complete. The tasks below
 prepare the remaining work for a suitable machine, users and explicit scope.
 Keep actual PDFs, screenshots, participant findings and review records local,
 outside Git. Never record a session URL, token or Canvas credentials.
@@ -208,7 +208,7 @@ native run. Historical incomplete attempts remain intact alongside the retry.
 ## Bind the test before starting
 
 Record the application source revision, exact source/candidate SHA-256 hashes,
-Windows version, a desktop PDF program version, assistive-technology name/version if used,
+Windows version, the desktop PDF viewer version, assistive-technology name/version if used,
 reviewer/date, allowed task scope and the observed starting state. Obtain reader
 versions from Help/About; do not guess from installation folder names.
 

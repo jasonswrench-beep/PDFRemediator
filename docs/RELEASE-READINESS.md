@@ -204,7 +204,7 @@ mail address (http, https, mailto), is passive navigation and no longer counts a
 form authority, provided nothing else refers to that action. Every other action
 type, any chained action or extra key, and any action outside the page links and
 bookmarks still does. The same proof accepts the standard passive structure
-attributes that Word, a desktop PDF program and this program's own tagging write (figure and
+attributes that Word, the desktop PDF viewer and this program's own tagging write (figure and
 table position, header-cell scope and spans, list numbering) and structure
 elements that omit the optional /Type, and still refuses every other attribute.
 The evidence policy is passive-empty-acroform-2.

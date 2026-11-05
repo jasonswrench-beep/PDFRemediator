@@ -183,9 +183,9 @@ The cloud developer cannot operate or inspect that Windows installation.
 AI and OCR stayed off; the local server must remain on loopback.
 
 The owner compared the original one-page synthetic reading and its candidate in
-a desktop PDF program and reported that they looked the same. Candidate clipboard text
+the desktop PDF viewer and reported that they looked the same. Candidate clipboard text
 joined two line boundaries; the source clipboard text separated them. Exact
-a desktop PDF program and Windows versions are not recorded. No screen reader or the LMS checker test
+the desktop PDF viewer and Windows versions are not recorded. No screen reader or the LMS checker test
 was performed. No artifact has received accessibility acceptance or human
 verification in the application ledger.
 
@@ -221,10 +221,10 @@ elsewhere):
 ```
 
 Keep evidence local and outside Git. Do not overwrite an earlier experiment.
-Open the new copy-test PDF in a desktop PDF program, compare its appearance with the original,
+Open the new copy-test PDF in the desktop PDF viewer, compare its appearance with the original,
 and copy the entire page into a plain-text editor. Check the boundaries between
 “card” and “records” and between “original” and “text”, as well as the footer.
-Record a desktop PDF program's actual version and the result. Stop if appearance changes or
+Record the desktop PDF viewer's actual version and the result. Stop if appearance changes or
 text is missing. Passing automated gates does not establish clipboard behavior;
 the initial experiment awaited this human retest. Even a successful clipboard test
 does not complete reading-order or assistive-technology acceptance.
@@ -234,9 +234,9 @@ does not complete reading-order or assistive-technology acceptance.
 On October 17, 2026, the owner ran the exact-pair probe locally and reported its
 automated gates passed. The owner pasted the experimental PDF's text with the
 correct spaces at both boundaries and the SYNTHETIC footer. The owner then
-confirmed the original and experiment looked the same in a desktop PDF program. This completes
+confirmed the original and experiment looked the same in the desktop PDF viewer. This completes
 that limited visual/clipboard retest, not full accessibility acceptance. The
-actual a desktop PDF program version remains unrecorded; no ledger approvals were fabricated.
+actual the desktop PDF viewer version remains unrecorded; no ledger approvals were fabricated.
 
 The subsequent development branch `dev/source-line-separators` integrates a
 bounded automatic preservation rule for source-extracted ASCII line boundaries
@@ -244,14 +244,14 @@ in adjacent MCIDs of the same plain paragraph. It requires separate reset text
 objects, identity positioning, explicit matching font mapping, aligned columns,
 small line spacing, unique source extraction and unchanged semantic order.
 Ambiguous or unsupported shapes receive no inserted space. All normal gates and
-mandatory human review remain. The owner subsequently completed a fresh Windows processing/a desktop PDF program retest
+mandatory human review remain. The owner subsequently completed a fresh Windows processing/the desktop PDF viewer retest
 after updating the local source, as recorded below.
 
 ## Fresh application result confirmed by owner
 
 On October 17, 2026, after the guarded ZIP installation reported success, the
 owner uploaded the original reading again into the normal local application and
-opened the fresh downloaded result in a desktop PDF program. The pasted text had correct
+opened the fresh downloaded result in the desktop PDF viewer. The pasted text had correct
 spacing at both prior problem boundaries. The owner explicitly confirmed the
 footer was present and the rest of the text, spacing and layout looked the same
 as the original. This completes the limited application visual/clipboard retest.
@@ -273,16 +273,16 @@ The uploaded candidate independently hashes to
 `85e820b1db32d63a2823490c02435d2ff4851ab1f0bcd0e240f44744c00624df`,
 identical to its reported output hash and the Linux control. It has one page,
 the full text/footer, both explicit line-end spaces and a structure tree. The
-owner confirmed its appearance is fine in a desktop PDF program. The actual About screenshot
+owner confirmed its appearance is fine in the desktop PDF viewer. The actual About screenshot
 shows **a desktop PDF editor, Continuous Release 2026.002.22031, 64-bit**. The JPEG
-and PDF stay outside Git. The actual fresh home a desktop PDF program clipboard output and
+and PDF stay outside Git. The actual fresh home the desktop PDF viewer clipboard output and
 full raw local evidence were not supplied; do not invent those observations.
 
 This closes the named synthetic native/visual case only, not the prepared full
 suite, real-package updater recovery, general document support, keyboard/AT
 acceptance or the LMS checker testing. No named verification-ledger approval is inferred.
 
-The owner subsequently pasted text directly from this home a desktop PDF program instance:
+The owner subsequently pasted text directly from this home the desktop PDF viewer instance:
 both paragraph boundary spaces were correct and the selected footer label was
 present. The selected footer was not its full displayed wording, so complete
 footer copying is not claimed. The previously uploaded exact PDF independently
