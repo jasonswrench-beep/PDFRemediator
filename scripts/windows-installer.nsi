@@ -23,6 +23,7 @@ RequestExecutionLevel user
 !include LogicLib.nsh
 !include WordFunc.nsh
 !include x64.nsh
+!include "Win\COM.nsh"
 !include "payload-parts.nsh"
 
 !define MAINBINARY "PDF Remediator.exe"
@@ -255,6 +256,32 @@ Function un.ConfirmLeave
   SendMessage $DeleteDataCheckbox ${BM_GETCHECK} 0 0 $DeleteDataState
 FunctionEnd
 
+; Deletes a shortcut only when it starts this copy's program, so a shortcut to another copy of PDF Remediator stays.
+; (Shell link check as in Tauri's installers: IShellLink loaded through IPersistFile.)
+!define /ifndef STGM_READ 0
+!define /ifndef SLGP_RAWPATH 4
+!macro DELETE_OUR_SHORTCUT shortcut
+  ${If} ${FileExists} "${shortcut}"
+    StrCpy $3 0
+    !insertmacro ComHlpr_CreateInProcInstance ${CLSID_ShellLink} ${IID_IShellLink} r0 ""
+    ${If} $0 P<> 0
+      ${IUnknown::QueryInterface} $0 '("${IID_IPersistFile}", .r1)'
+      ${If} $1 P<> 0
+        ${IPersistFile::Load} $1 '("${shortcut}", ${STGM_READ})'
+        ${IShellLink::GetPath} $0 '(.r2, ${NSIS_MAX_STRLEN}, 0, ${SLGP_RAWPATH})'
+        ${If} $2 == "$INSTDIR\${MAINBINARY}"
+          StrCpy $3 1
+        ${EndIf}
+        ${IUnknown::Release} $1 ""
+      ${EndIf}
+      ${IUnknown::Release} $0 ""
+    ${EndIf}
+    ${If} $3 = 1
+      Delete "${shortcut}"
+    ${EndIf}
+  ${EndIf}
+!macroend
+
 Section Uninstall
   !insertmacro WAIT_UNTIL_CLOSED
 
@@ -266,8 +293,8 @@ Section Uninstall
   ; Removed only when nothing is left in it, so saved reviews and anything else the person put there stay.
   RMDir "$INSTDIR"
 
-  Delete "$SMPROGRAMS\${PRODUCTNAME}.lnk"
-  Delete "$DESKTOP\${PRODUCTNAME}.lnk"
+  !insertmacro DELETE_OUR_SHORTCUT "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+  !insertmacro DELETE_OUR_SHORTCUT "$DESKTOP\${PRODUCTNAME}.lnk"
   DeleteRegKey HKCU "${UNINSTKEY}"
   DeleteRegKey HKCU "${PRODUCTKEY}"
 SectionEnd

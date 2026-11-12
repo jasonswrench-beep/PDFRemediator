@@ -948,7 +948,9 @@ def test_installer_is_a_standard_setup_like_the_other_suite_apps():
     assert '!define UNINSTKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCTNAME}"' in code
     assert 'WriteUninstaller "$INSTDIR\\uninstall.exe"' in code
     assert 'CreateShortcut "$SMPROGRAMS\\${PRODUCTNAME}.lnk"' in code and 'CreateShortcut "$DESKTOP\\${PRODUCTNAME}.lnk"' in code
-    assert 'Delete "$SMPROGRAMS\\${PRODUCTNAME}.lnk"' in code and 'Delete "$DESKTOP\\${PRODUCTNAME}.lnk"' in code
+    assert '!insertmacro DELETE_OUR_SHORTCUT "$SMPROGRAMS\\${PRODUCTNAME}.lnk"' in code
+    assert '!insertmacro DELETE_OUR_SHORTCUT "$DESKTOP\\${PRODUCTNAME}.lnk"' in code
+    assert 'Delete "$SMPROGRAMS' not in code and 'Delete "$DESKTOP' not in code, "a shortcut to another copy is never deleted by name alone"
     assert 'DeleteRegKey HKCU "${UNINSTKEY}"' in code and 'DeleteRegKey HKCU "${PRODUCTKEY}"' in code
     assert "Also delete my saved reviews and settings" in code
     # The saved reviews go only when that box is ticked, and the install folder itself only when it is empty.
@@ -1162,6 +1164,28 @@ def test_setup_stops_while_the_program_is_open_and_changes_nothing(small_setup, 
     assert run_setup(setup, folder) == 0 and not stand_in.exists(), "once it is closed, the update goes ahead"
     uninstall(folder)
     assert not folder.exists(), "with no saved reviews, nothing is left"
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_uninstaller_deletes_only_shortcuts_that_start_its_own_copy(tmp_path):
+    """The uninstaller's shortcut step (DELETE_OUR_SHORTCUT in windows-installer.nsi), built into a tiny program that makes its own
+    shortcuts in a temporary folder: one to this copy's program, one to another copy (an older installation in another folder)."""
+    import subprocess
+    template = (SOURCE.parent / "windows-installer.nsi").read_text(encoding="utf-8")
+    begin = template.index("!define /ifndef STGM_READ 0")
+    macro = template[begin:template.index("!macroend", begin) + len("!macroend")]
+    (tmp_path / "probe.nsi").write_text(
+        'Unicode true\nRequestExecutionLevel user\nSilentInstall silent\nOutFile "probe.exe"\n'
+        '!include LogicLib.nsh\n!include "Win\\COM.nsh"\n!define MAINBINARY "PDF Remediator.exe"\n' + macro + '\n'
+        'Section\n  StrCpy $INSTDIR "$EXEDIR\\This Copy"\n  CreateDirectory "$INSTDIR"\n'
+        '  CreateShortcut "$EXEDIR\\ours.lnk" "$INSTDIR\\${MAINBINARY}"\n'
+        '  CreateShortcut "$EXEDIR\\other.lnk" "$EXEDIR\\Other Copy\\${MAINBINARY}"\n'
+        '  !insertmacro DELETE_OUR_SHORTCUT "$EXEDIR\\ours.lnk"\n  !insertmacro DELETE_OUR_SHORTCUT "$EXEDIR\\other.lnk"\n'
+        '  !insertmacro DELETE_OUR_SHORTCUT "$EXEDIR\\missing.lnk"\nSectionEnd\n', encoding="utf-8")
+    package.run_makensis(makensis_path(), tmp_path / "probe.nsi")
+    assert subprocess.run([str(tmp_path / "probe.exe")], timeout=60, check=False).returncode == 0
+    assert not (tmp_path / "ours.lnk").exists(), "the shortcut to this copy is removed"
+    assert (tmp_path / "other.lnk").is_file(), "a shortcut to another copy stays"
 
 
 @pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
