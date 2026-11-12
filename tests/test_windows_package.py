@@ -706,11 +706,14 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     assert all(manifest["files"][name] == plan["source"]["files"][name] == digest == package.sha(payload / name)
                for name, digest in package.EDITOR_FONT_ASSETS.items())
     assert "__OCR_" not in bound
+    assert "__APP_VERSION__" not in bound and 'const string AppVersion = "' + package.APP_VERSION + '";' in bound
+    assert manifest["version"] == package.APP_VERSION
     launcher = (output / "launcher-bound.cs").read_text()
     for text in (bound, launcher):
         assert "__MIN_VC_RUNTIME__" not in text and 'const string Minimum = "' + package.MS_RUNTIME_MINIMUM + '";' in text
         assert "internal static class VcRuntime" in text and "VcRuntime.Problem()" in text
     start_here = (payload / "START-HERE.txt").read_text(encoding="utf-8")
+    assert start_here == package.start_here(ocr_enabled, False)
     assert "opens in its own window" in start_here and "Closing that window stops the program" in start_here
     assert (payload / "launch_portable.py").read_text(encoding="utf-8") == package.LAUNCH_PORTABLE
     assert package.FREETYPE_CREDIT in start_here
@@ -903,6 +906,41 @@ def test_installer_window_says_the_program_opens_in_its_own_window():
     assert "Your browser will show the local workspace" not in installer
 
 
+def test_installer_window_and_start_text_speak_to_the_person_installing_it():
+    """The window and START-HERE.txt once called every copy a private, internal trial "not ready to share", and the line "No administrator
+    access, AI/OCR downloads, or automatic updates" read as if OCR and AI were missing. They now say plainly what is and is not included."""
+    installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
+    assert "trial" not in installer.lower() and "not ready to share" not in installer and "AI/OCR downloads" not in installer
+    assert '"PDF Remediator " + AppVersion + " setup"' in installer and 'Text = "Install" }' in installer
+    assert "This is an early test version. A lawyer has not yet reviewed the third-party licences." in installer
+    assert "Installs for your Windows account only, so no administrator rights are needed." in installer
+    assert "English OCR (reading scanned pages) is included. Turn it on for each document under Scanned text." in installer
+    assert "OCR (reading scanned pages) is not included in this copy." in installer
+    assert "Optional AI help needs a free local model program, such as Ollama, installed separately." in installer
+    assert "Nothing is downloaded later, and there are no automatic updates." in installer
+    assert 'FreshFolder(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PDFRemediator"), AppVersion)' in installer
+    for ocr_included in (True, False):
+        for signed in (True, False):
+            text = package.start_here(ocr_included, signed)
+            assert "trial" not in text.lower() and "do not share" not in text.lower() and "unqualified" not in text.lower()
+            assert text.startswith("PDF Remediator " + package.APP_VERSION + " for Windows, an early test version\n")
+            assert "A lawyer has not yet reviewed the third-party licences" in text
+            assert "Administrator rights: not needed." in text and "nothing is downloaded later" in text
+            assert "such as the free Ollama. No AI model comes with PDF Remediator." in text
+            assert ("English OCR is included. It stays off until you choose it" in text) is ocr_included
+            assert ("OCR (reading scanned pages): not included in this copy." in text) is (not ocr_included)
+            assert ("Its program files are digitally signed" in text) is signed
+            assert ("Its program files are not digitally signed." in text) is (not signed)
+            assert text.endswith(package.FREETYPE_CREDIT) and package.MS_RUNTIME_MINIMUM in text
+            assert all(len(line) <= 130 for line in text.splitlines())
+
+
+def test_app_version_matches_the_project_version():
+    import tomllib
+    project = tomllib.loads((SOURCE.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    assert package.APP_VERSION == project["version"]
+
+
 def test_installer_offers_a_desktop_and_start_menu_icon_and_the_start_text_explains_it():
     installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
     assert "Put a PDF Remediator icon on my desktop and in the Start menu" in installer and "Checked = true" in installer
@@ -987,6 +1025,34 @@ def test_installer_shortcut_code_makes_a_working_shortcut_with_the_program_icon(
     assert read[0] == str(fake) and read[1] == str(install) and read[2].startswith(str(fake)), read
     missing = subprocess.run([str(program), str(where), str(tmp_path / "nowhere")], capture_output=True, text=True, timeout=60, check=False)
     assert missing.returncode != 0, "no shortcut is made for a program that is not there"
+
+
+@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
+def test_installer_suggests_a_folder_nobody_has_used(tmp_path):
+    import subprocess
+    text = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
+    start = text.index("    internal static string FreshFolder(")
+    end = text.index("    static string Install(", start)
+    harness = ("using System;\nusing System.IO;\ninternal static class T {\n" + text[start:end] +
+               "    static int Main(string[] a) { Console.Write(FreshFolder(a[0], a[1])); return 0; }\n}\n")
+    source = tmp_path / "fresh.cs"
+    source.write_text(harness, encoding="utf-8")
+    program = tmp_path / "fresh-test.exe"
+    package.compile_cs(csc_path(), source, program, icon=SOURCE.parents[1] / package.ICON_ICO)
+    parent = tmp_path / "PDFRemediator"
+    parent.mkdir()
+
+    def suggested():
+        done = subprocess.run([str(program), str(parent), "0.3.0"], capture_output=True, text=True, timeout=60, check=False)
+        assert done.returncode == 0, done.stderr + done.stdout
+        return done.stdout
+
+    assert suggested() == str(parent / "0.3.0")
+    (parent / "0.3.0").mkdir()
+    assert suggested() == str(parent / "0.3.0-2")
+    (parent / "0.3.0-2").write_bytes(b"")  # a file of that name counts as taken too
+    assert suggested() == str(parent / "0.3.0-3")
+    assert sorted(p.name for p in parent.iterdir()) == ["0.3.0", "0.3.0-2"], "it only looks; nothing is made or removed"
 
 
 def test_launcher_program_passes_the_arguments_that_launch_portable_understands():

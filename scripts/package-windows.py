@@ -49,6 +49,39 @@ LAUNCH_PORTABLE = ('from pathlib import Path\nimport sys\nfrom pdf_remediator.la
 # snapshot committed 2026-08-24. Check the year again whenever Pillow, pypdfium2 or the Java runtime change.
 FREETYPE_CREDIT = ("Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.\n"
                    "This software is based in part on the work of the FreeType Team.\n")
+APP_VERSION = "0.3.0"  # keep equal to pyproject.toml; the installer window and its suggested folder show it
+
+
+def start_here(ocr_included, signed):
+    """The START-HERE.txt every package carries: plain words for the person who installed it."""
+    return ('PDF Remediator ' + APP_VERSION + ' for Windows, an early test version\n\n'
+            'To start: use the PDF Remediator icon the installer put on your desktop and in the Start menu (if you left that box ticked),\n'
+            'or open PDF Remediator.exe in this folder.\n'
+            'The program opens in its own window (Microsoft Edge, which comes with Windows; Chrome if Edge is missing; otherwise your\n'
+            'default browser). It is a web page that runs on this computer, so it looks like one; a stand-alone program window is\n'
+            'planned for version 2.0. Closing that window stops the program, as does Stop application.\n\n'
+            'PDF Remediator drafts accessibility repairs for PDFs and lists what a person still has to check. Every result is a draft\n'
+            'for review. Your documents are processed on this computer and nothing is sent over the internet. Your original PDFs are\n'
+            'never changed.\n\n' +
+            ('OCR (reading scanned pages): English OCR is included. It stays off until you choose it: on the start page, open\n'
+             'Processing options and pick one of the OCR choices under Scanned text.\n' if ocr_included else
+             'OCR (reading scanned pages): not included in this copy.\n') +
+            'AI help (optional): the review screen has an "Optional local AI assistance" box. It works only with a model program that\n'
+            'you install yourself and run on this computer, such as the free Ollama. No AI model comes with PDF Remediator.\n'
+            'Administrator rights: not needed. PDF Remediator is installed for your Windows account only.\n'
+            'Updates: nothing is downloaded later and there are no automatic updates. To try a newer version, install it into a new folder.\n\n'
+            'Saved work stays in this folder, under output/review-app. Keep this entire installation in place: saved reviews are bound\n'
+            'to its files.\n'
+            'To remove the program, close it, delete the install folder, and delete the PDF Remediator icons from your desktop and\n'
+            'Start menu (there is no uninstaller yet).\n\n'
+            'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
+            'included because Microsoft\'s licence does not let us pass it on; the installer and the program check for it and point you\n'
+            'to Microsoft\'s page.\n\n'
+            'This is an early test version. A lawyer has not yet reviewed the third-party licences (they are in the NOTICES folder),\n'
+            'and it has not yet been tried on a freshly set-up computer.\n' +
+            ('Its program files are digitally signed: right-click PDF Remediator.exe, choose Properties, then Digital Signatures.\n' if signed else
+             'Its program files are not digitally signed.\n') +
+            '\n' + FREETYPE_CREDIT)
 MS_RUNTIME_REFERENCE = re.compile(rb"(vcruntime|msvcp|concrt|vcomp|vccorlib|vcamp)140(_[a-z0-9_]+)?\.dll", re.IGNORECASE)
 ICON_SVG = "src/pdf_remediator/web_assets/PDFRemediator.svg"
 ICON_ICO = "src/pdf_remediator/web_assets/PDFRemediator.ico"
@@ -718,23 +751,7 @@ def build(plan, output, csc, sign=False):
     copy_map(plan["notices"], payload / "NOTICES")
     write_new(payload / "local-runtime.toml", runtime_config(bool(ocr)))
     write_new(payload / "launch_portable.py", LAUNCH_PORTABLE)
-    write_new(payload / "START-HERE.txt", 'PDF Remediator — internal Windows trial\n\n'
-              'Use the PDF Remediator icon the installer put on your desktop (if you left that box ticked), or open PDF Remediator.exe in the install folder.\n'
-              'The private local workspace opens in its own window (Microsoft Edge, which comes with Windows;\n'
-              'Chrome if Edge is missing; otherwise your default browser). Closing that window stops the program, as does Stop application.\n'
-              'It is a web page that runs on this computer, so it looks like one; a stand-alone program window is planned for version 2.0.\n'
-              'Your documents are processed locally; originals remain unchanged.\n'
-              'Saved work stays under output/review-app.\n'
-              'To remove the program, close it, delete the install folder, and delete the PDF Remediator icons from your desktop and Start menu (there is no uninstaller yet).\n'
-              'Keep this entire installation in place: saved reviews are bound to their files.\n' +
-              ('Local English OCR components are included; OCR stays off until you select it.\n' if ocr else 'OCR components are not included.\n') +
-              'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
-              'included because Microsoft\'s licence does not let us pass it on; the installer and launcher check and point to Microsoft\'s page.\n' +
-              FREETYPE_CREDIT +
-              'This trial has no AI, automatic updater or uninstall/delete action.\n' +
-              ('This is an internal, unqualified build; its programs are signed. Do not share or release it.\n' if signer else
-               'This is an internal, unsigned, unqualified build. Do not share or release it.\n') +
-              'Fresh-machine qualification, packaged graphical workflow and licensing review remain open.\n')
+    write_new(payload / "START-HERE.txt", start_here(bool(ocr), bool(signer)))
     with (payload / "runtime-baseline.json").open("xb") as stream:
         stream.write(lock_raw)
     script_root = Path(__file__).resolve().parent
@@ -749,7 +766,7 @@ def build(plan, output, csc, sign=False):
         signer.sign_programs(payload, output)
         check_no_microsoft_runtime(payload)
     metadata = {"schema": "windows-internal-package-1", "release_status": "internal-unqualified",
-                "redistribution_cleared": False, "version": "0.3.0", "architecture": "x64",
+                "redistribution_cleared": False, "version": APP_VERSION, "architecture": "x64",
                 "ai_enabled": False, "ocr_enabled": bool(ocr), "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
                 "python_version": runtime["version"],
                 "runtime_lock_sha256": lock_sha, "python_abi": runtime["abi"],
@@ -771,6 +788,7 @@ def build(plan, output, csc, sign=False):
     installer_source = installer_source.replace("__RUNTIME_LOCK_SHA256__", lock_sha)
     installer_source = installer_source.replace("__OCR_ENABLED__", "true" if ocr else "false")
     installer_source = installer_source.replace("__OCR_RUNTIME_LOCK_SHA256__", ocr["sha256"] if ocr else "")
+    installer_source = installer_source.replace("__APP_VERSION__", APP_VERSION)
     installer_source += "\n" + vc_runtime_check
     source_path = output / "installer-bound.cs"
     write_new(source_path, installer_source)
