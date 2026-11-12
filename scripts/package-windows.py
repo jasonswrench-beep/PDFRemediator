@@ -622,8 +622,48 @@ def runtime_config(ocr_enabled):
             'preserve_painting = true\nallow_tag_regrouping = false\nrepair_source_mappings = false\n')
 
 
-def build(plan, output, csc):
+class ArtifactSigner:
+    """Signs program files with Azure Artifact Signing, each signature timestamped, through scripts/sign_windows.py (which says what
+    it needs: three OPENSTAGE_SIGN_ settings and a sign-in). Files their makers signed keep those signatures."""
+
+    PROGRAMS = (".exe", ".dll", ".pyd")
+    DESCRIPTION = "PDF Remediator"
+
+    def __init__(self):
+        import sign_windows  # beside this script
+        self.sw = sign_windows
+        ready, lines = sign_windows.ready()
+        require(ready, "Signing cannot start:\n" + "\n".join(lines))
+        self.publisher = os.environ.get("OPENSTAGE_SIGN_PUBLISHER") or None
+        self.signed = 0
+
+    def sign(self, files, metadata_dir):
+        self.sw.METADATA = Path(metadata_dir) / "sign-metadata.json"  # beside the build, never in the payload
+        try:
+            signtool, dlib, metadata = self.sw.find_signtool(), self.sw.find_dlib(), self.sw.write_metadata()
+            for path in files:
+                self.sw.sign_one(path, signtool, dlib, metadata, self.DESCRIPTION, self.publisher)
+                self.signed += 1
+        except self.sw.SignError as exc:
+            raise ValueError("Signing stopped: " + str(exc)) from exc
+
+    def statuses(self, files):
+        found = []
+        for start in range(0, len(files), 200):
+            found += self.sw.signatures(files[start:start + 200])
+        return found
+
+    def sign_programs(self, payload, metadata_dir):
+        """Signs every program file in the payload that nobody has signed. Runs before the manifest records the files' hashes."""
+        files = sorted(p for p in Path(payload).rglob("*") if p.is_file() and p.suffix.lower() in self.PROGRAMS)
+        self.sign([Path(info["path"]) for info in self.statuses(files) if info["status"] != "Valid"], metadata_dir)
+        left = [info for info in self.statuses(files) if self.sw.problem(info) is not None]
+        require(not left, "Program files still not signed and timestamped: " + ", ".join(Path(i["path"]).name for i in left[:5]))
+
+
+def build(plan, output, csc, sign=False):
     require(os.name == "nt", "Windows x64 build host required")
+    signer = ArtifactSigner() if sign else None
     require(plan.get("schema") == "windows-internal-inputs-1", "Unrecognized input schema")
     require(plan.get("release_status") == "internal-unqualified", "Only an internal unqualified trial is supported")
     require(plan.get("ai_enabled") is False, "AI must remain disabled")
@@ -691,8 +731,9 @@ def build(plan, output, csc):
               'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
               'included because Microsoft\'s licence does not let us pass it on; the installer and launcher check and point to Microsoft\'s page.\n' +
               FREETYPE_CREDIT +
-              'This trial has no AI, automatic updater or uninstall/delete action.\n'
-              'This is an internal, unsigned, unqualified build. Do not share or release it.\n'
+              'This trial has no AI, automatic updater or uninstall/delete action.\n' +
+              ('This is an internal, unqualified build; its programs are signed. Do not share or release it.\n' if signer else
+               'This is an internal, unsigned, unqualified build. Do not share or release it.\n') +
               'Fresh-machine qualification, packaged graphical workflow and licensing review remain open.\n')
     with (payload / "runtime-baseline.json").open("xb") as stream:
         stream.write(lock_raw)
@@ -703,6 +744,10 @@ def build(plan, output, csc):
     compile_cs(csc, launcher_path, payload / "PDF Remediator.exe", icon=package_icon(source, payload))
     package_icon(source, payload)
     check_no_microsoft_runtime(payload)
+    if signer:
+        # Before the manifest: the installer checks every installed file against the hashes recorded there, so they must be the signed files.
+        signer.sign_programs(payload, output)
+        check_no_microsoft_runtime(payload)
     metadata = {"schema": "windows-internal-package-1", "release_status": "internal-unqualified",
                 "redistribution_cleared": False, "version": "0.3.0", "architecture": "x64",
                 "ai_enabled": False, "ocr_enabled": bool(ocr), "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
@@ -732,13 +777,17 @@ def build(plan, output, csc):
     installer = output / "PDF Remediator Internal Setup.exe"
     compile_cs(csc, source_path, installer, [(archive, "payload.zip")], icon=package_icon(source, payload))
     package_icon(source, payload)
+    if signer:
+        # The payload is a .NET resource inside the installer, found by its metadata, so the signature added at the end cannot disturb it.
+        signer.sign([installer], output)
     summary = {"status": "built-internal-unqualified", "installer": str(installer), "installer_sha256": sha(installer),
                "payload_sha256": sha(archive), "payload_files": len(metadata["files"]) + 1,
                "release_status": "internal-unqualified", "redistribution_cleared": False,
                "python_version": runtime["version"], "runtime_lock_sha256": lock_sha,
                "source_files": len(source["files"]), "ai_enabled": False, "ocr_enabled": bool(ocr),
                "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
-               "no_runtime_downloads": True, "publisher_authenticated": False,
+               "no_runtime_downloads": True, "publisher_authenticated": bool(signer),
+               "signed_program_files": signer.signed if signer else 0,
                "source_plan_sha256": metadata["input_plan_sha256"]}
     write_new(output / "build-summary.json", json.dumps(summary, indent=2) + "\n")
     return summary
@@ -749,9 +798,11 @@ def main():
     parser.add_argument("--inputs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--csc", type=Path, default=Path(os.environ.get("WINDIR", r"C:\Windows")) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe")
+    parser.add_argument("--sign", action="store_true",
+                        help="sign every unsigned program file and the installer with Azure Artifact Signing (see scripts/sign_windows.py)")
     args = parser.parse_args()
     try:
-        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.csc))
+        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.csc), sign=args.sign)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile, subprocess.SubprocessError) as exc:
         parser.exit(1, "Internal package build refused: " + str(exc) + "\n")
     print(json.dumps(result, indent=2))
