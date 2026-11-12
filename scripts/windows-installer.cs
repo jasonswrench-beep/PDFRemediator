@@ -22,6 +22,7 @@ internal static class InternalInstaller {
     const string RuntimeLockHash = "__RUNTIME_LOCK_SHA256__";
     const bool OcrEnabled = "__OCR_ENABLED__" == "true";
     const string OcrRuntimeLockHash = "__OCR_RUNTIME_LOCK_SHA256__";
+    const string AppVersion = "__APP_VERSION__";
     const long Limit = 2147483648;
     static readonly HashSet<string> Reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         "CON","PRN","AUX","NUL","COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
@@ -59,8 +60,16 @@ internal static class InternalInstaller {
         Need(Directory.Exists(parent), "The parent folder must already exist.");
         return target;
     }
+    // The folder the window suggests: the version's own name, or the first numbered name nobody has used, so installing
+    // a second copy never meets "That folder already exists". Existing folders are only looked at, never touched.
+    internal static string FreshFolder(string parent, string name) {
+        string candidate = Path.Combine(parent, name);
+        for (int number = 2; number < 100 && (Directory.Exists(candidate) || File.Exists(candidate)); number++)
+            candidate = Path.Combine(parent, name + "-" + number);
+        return candidate;
+    }
     static string Install(string requested) {
-        Need(Environment.Is64BitOperatingSystem && IntPtr.Size == 8, "This trial requires 64-bit Windows.");
+        Need(Environment.Is64BitOperatingSystem && IntPtr.Size == 8, "PDF Remediator needs 64-bit Windows.");
         string runtime = VcRuntime.Problem();
         if (runtime != null) throw new RuntimeMissing(runtime);
         string target = PrepareTarget(requested, false);
@@ -193,12 +202,16 @@ internal static class InternalInstaller {
             Application.EnableVisualStyles();
             string early = VcRuntime.Problem();
             if (early != null) { VcRuntime.OfferDownload(early); return 1; }
-            var form = new Form { Text = "PDF Remediator — internal trial", Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath), ClientSize = new Size(580, 300), StartPosition = FormStartPosition.CenterScreen, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false };
-            var label = new Label { Left = 20, Top = 20, Width = 540, Height = 85, Text = "Install this private trial in a new folder on this computer. The local workspace opens in its own window, not in your browser.\n\nExisting installations and saved reviews stay in place. This internal trial is not ready to share." };
-            var field = new TextBox { Left = 20, Top = 115, Width = 540, AccessibleName = "Installation folder", Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PDFRemediator", "Trial-0.3") };
-            var install = new Button { Left = 425, Top = 160, Width = 135, Height = 32, Text = "Install trial" };
+            var form = new Form { Text = "PDF Remediator " + AppVersion + " setup", Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath), ClientSize = new Size(580, 300), StartPosition = FormStartPosition.CenterScreen, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false };
+            var label = new Label { Left = 20, Top = 20, Width = 540, Height = 85, Text = "Install PDF Remediator " + AppVersion + " in a new folder on this computer. The local workspace opens in its own window, not in your browser.\n\nThis is an early test version. A lawyer has not yet reviewed the third-party licences. Copies you installed before, and their saved reviews, stay where they are." };
+            var field = new TextBox { Left = 20, Top = 115, Width = 540, AccessibleName = "Installation folder", Text = FreshFolder(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PDFRemediator"), AppVersion) };
+            var install = new Button { Left = 425, Top = 160, Width = 135, Height = 32, Text = "Install" };
             var icons = new CheckBox { Left = 20, Top = 168, Width = 380, Height = 24, Checked = true, Text = "Put a PDF Remediator icon on my desktop and in the Start menu" };
-            var note = new Label { Left = 20, Top = 245, Width = 540, Height = 40, Text = "No administrator access, AI/OCR downloads, or automatic updates.\nKeep the entire installation folder to preserve saved work." };
+            var note = new Label { Left = 20, Top = 205, Width = 540, Height = 85, Text = "Installs for your Windows account only, so no administrator rights are needed.\n" +
+                (OcrEnabled ? "English OCR (reading scanned pages) is included. Turn it on for each document under Scanned text.\n" : "OCR (reading scanned pages) is not included in this copy.\n") +
+                "Optional AI help needs a free local model program, such as Ollama, installed separately.\n" +
+                "Nothing is downloaded later, and there are no automatic updates.\n" +
+                "Keep the whole installation folder: your saved work is inside it." };
             form.Controls.AddRange(new Control[] { label, field, icons, install, note });
             install.Click += delegate {
                 install.Enabled = false; field.Enabled = false; icons.Enabled = false;

@@ -6,7 +6,7 @@ A local helper that drafts accessibility repairs for PDFs (reading structure, ta
 Your original PDF is never changed, nothing is sent to the cloud, and nothing it produces is called "verified accessible": every result is a draft for a person to review.
 
 * **What it does and does not do:** [docs/WHAT-IT-DOES-AND-DOES-NOT-DO.md](docs/WHAT-IT-DOES-AND-DOES-NOT-DO.md)
-* **Try it on Windows:** [START-HERE.md](START-HERE.md) and [docs/WINDOWS-DISTRIBUTION.md](docs/WINDOWS-DISTRIBUTION.md). The installer is an internal trial build, not a finished release.
+* **Try it on Windows:** download the installer from [Releases](https://github.com/jasonswrench-beep/PDFRemediator/releases). It is an early test version (a pre-release), not a finished release. English OCR for scanned pages is included, optional AI help needs a local model program you install yourself, and no administrator rights are needed. To run it from the source code instead: [START-HERE.md](START-HERE.md) and [docs/WINDOWS-DISTRIBUTION.md](docs/WINDOWS-DISTRIBUTION.md).
 * **What the window is:** the program is a web page that runs on your own computer and is shown in its own plain Microsoft Edge (or Chrome) window, with no tabs or address bar. That is why it looks like a web page. Nothing is sent over the internet. A stand-alone program window is planned for version 2.0.
 * **Options in the app and on the command line:** [docs/REPAIR-OPTIONS.md](docs/REPAIR-OPTIONS.md)
 * **PDFs with Content Credentials (C2PA labels):** [docs/C2PA-LABELS-POLICY.md](docs/C2PA-LABELS-POLICY.md)

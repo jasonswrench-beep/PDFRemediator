@@ -628,6 +628,15 @@ Links, redirected folders and network destinations are refused. All copied files
 are verified before an installation-complete marker permits the launcher to run.
 Failures retain partial output and advise choosing another new folder.
 
+What the installer window and `START-HERE.txt` tell the person installing it (2026-11-12): an early test
+version of PDF Remediator (version from `APP_VERSION` in the builder), installed for their Windows account
+only with no administrator rights, English OCR included but off until chosen under Scanned text, optional
+AI help only through a local model program they install themselves, nothing downloaded later, and that a
+lawyer has not yet reviewed the third-party licences. The window suggests a folder named after the version
+(`%LOCALAPPDATA%\PDFRemediator\0.3.0`, or `0.3.0-2` and so on when that one exists). The manifest's internal
+status values (`internal-unqualified`, `redistribution_cleared` false) are unchanged. `--sign` signs every
+unsigned program file and the installer with Azure Artifact Signing through `scripts/sign_windows.py`.
+
 For noninteractive developer qualification, use the compiled internal installer:
 
 ```text
