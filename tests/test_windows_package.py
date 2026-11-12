@@ -661,6 +661,11 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
         compiled_sources.append(Path(source))
         output.write_bytes(b"authored compiler stub; never a qualified executable")
     monkeypatch.setattr(package, "compile_cs", compile_authored_stub)
+    nsis_scripts = []
+    def makensis_stub(makensis, script):
+        nsis_scripts.append((Path(makensis), Path(script)))
+        (Path(script).parent / package.INSTALLER_NAME).write_bytes(b"authored NSIS stub; never a qualified executable")
+    monkeypatch.setattr(package, "run_makensis", makensis_stub)
     real_payload_check = package.check_no_microsoft_runtime
     monkeypatch.setattr(package, "check_no_microsoft_runtime", lambda payload: (checked_payloads.append(Path(payload)), real_payload_check(payload)))
     plan["native"] = {}
@@ -691,27 +696,39 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     (notices / "LICENSE").write_bytes(b"authored notice")
     plan["notices"] = {"root": str(notices), "origin": "authored notices", "files": package.snapshot(notices)}
     output = tmp_path / "new-build"
-    result = package.build(plan, output, Path("not-executed"))
+    result = package.build(plan, output, Path("not-executed"), makensis=Path("declared-makensis"))
     payload = output / "payload"
     config = tomllib.loads((payload / "local-runtime.toml").read_text())["runtime"]
     manifest = json.loads((payload / "package-manifest.json").read_text())
-    bound = (output / "installer-bound.cs").read_text()
+    bound = (output / "installer-bound.nsi").read_text(encoding="utf-8")
     assert config["ocr_mode"] == "off" and manifest["ai_enabled"] is False
     assert result["ocr_enabled"] is manifest["ocr_enabled"] is ocr_enabled
-    assert 'const bool OcrEnabled = "' + str(ocr_enabled).lower() + '" == "true";' in bound
-    assert "Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath)" in bound
-    assert compiled_icons == [(payload / package.ICON_ICO, plan["source"]["files"][package.ICON_ICO])] * 2
+    assert nsis_scripts == [(Path("declared-makensis"), output / "installer-bound.nsi")]
+    assert result["status"] == "built" and result["installer"] == str(output / package.INSTALLER_NAME)
+    assert result["installer_sha256"] == package.sha(output / package.INSTALLER_NAME)
+    settings = dict(re.findall(r'^!define ([A-Z]+) "(.*)"$', bound, re.MULTILINE))
+    assert settings["PRODUCTNAME"] == "PDF Remediator" and settings["VERSION"] == package.APP_VERSION
+    assert settings["VERSIONWITHBUILD"] == package.APP_VERSION + ".0" and settings["MINVC"] == package.MS_RUNTIME_MINIMUM
+    assert Path(settings["PAYLOAD"]) == payload.resolve() and Path(settings["OUTFILE"]) == (output / package.INSTALLER_NAME).resolve()
+    assert Path(settings["ICONFILE"]) == (payload / package.ICON_ICO).resolve()
+    assert Path(settings["LICENSEFILE"]) == (payload / "NOTICES/LICENSE").resolve()
+    assert "!define UNINSTALLERSIGNCOMMAND" not in bound, "an unsigned build has no signing step"
+    assert bound.endswith((SOURCE.parent / "windows-installer.nsi").read_text(encoding="utf-8"))
+    assert (output / "windows-vc-runtime.nsh").read_text(encoding="utf-8") == (SOURCE.parent / "windows-vc-runtime.nsh").read_text(encoding="utf-8")
+    parts = (output / "payload-parts.nsh").read_text(encoding="utf-8")
+    assert parts == package.payload_parts(payload)
+    for item in payload.iterdir():
+        assert (('RMDir /r "$INSTDIR\\' if item.is_dir() else 'Delete "$INSTDIR\\') + item.name + '"') in parts
+    assert "output" not in [item.name for item in payload.iterdir()] and "$INSTDIR\\output" not in parts
+    assert compiled_icons == [(payload / package.ICON_ICO, plan["source"]["files"][package.ICON_ICO])]
     assert all(manifest["files"][name] == plan["source"]["files"][name] == package.sha(payload / name)
                for name in package.ICON_ASSETS)
     assert all(manifest["files"][name] == plan["source"]["files"][name] == digest == package.sha(payload / name)
                for name, digest in package.EDITOR_FONT_ASSETS.items())
-    assert "__OCR_" not in bound
-    assert "__APP_VERSION__" not in bound and 'const string AppVersion = "' + package.APP_VERSION + '";' in bound
     assert manifest["version"] == package.APP_VERSION
     launcher = (output / "launcher-bound.cs").read_text()
-    for text in (bound, launcher):
-        assert "__MIN_VC_RUNTIME__" not in text and 'const string Minimum = "' + package.MS_RUNTIME_MINIMUM + '";' in text
-        assert "internal static class VcRuntime" in text and "VcRuntime.Problem()" in text
+    assert "__MIN_VC_RUNTIME__" not in launcher and 'const string Minimum = "' + package.MS_RUNTIME_MINIMUM + '";' in launcher
+    assert "internal static class VcRuntime" in launcher and "VcRuntime.Problem()" in launcher
     start_here = (payload / "START-HERE.txt").read_text(encoding="utf-8")
     assert start_here == package.start_here(ocr_enabled, False)
     assert "opens in its own window" in start_here and "Closing that window stops the program" in start_here
@@ -719,7 +736,7 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     assert package.FREETYPE_CREDIT in start_here
     assert package.FREETYPE_CREDIT.startswith("Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.\n")
     assert "based in part on the work of the FreeType Team" in start_here
-    assert compiled_sources == [output / "launcher-bound.cs", output / "installer-bound.cs"]
+    assert compiled_sources == [output / "launcher-bound.cs"]
     assert checked_payloads == [payload], "the finished payload is checked for Microsoft runtime files before it is listed"
     microsoft = manifest["microsoft_runtime"]
     assert microsoft["minimum_version"] == package.MS_RUNTIME_MINIMUM
@@ -890,42 +907,77 @@ def test_payload_check_refuses_a_program_still_loading_a_renamed_copy(tmp_path):
 
 def test_installer_and_launcher_check_for_the_runtime_before_anything_else():
     scripts = SOURCE.parent
-    installer = (scripts / "windows-installer.cs").read_text(encoding="utf-8")
+    installer = (scripts / "windows-installer.nsi").read_text(encoding="utf-8")
     launcher = (scripts / "windows-launcher.cs").read_text(encoding="utf-8")
     check = (scripts / "windows-vc-runtime.cs").read_text(encoding="utf-8")
-    assert installer.index("VcRuntime.Problem()") < installer.index("PrepareTarget(requested, false)")
-    assert "throw new RuntimeMissing(runtime)" in installer and "VcRuntime.OfferDownload(early)" in installer
+    nsis_check = (scripts / "windows-vc-runtime.nsh").read_text(encoding="utf-8")
+    assert installer.index("Call CheckVcRuntime") < installer.index('File /r "${PAYLOAD}\\*"')
     assert launcher.index("VcRuntime.Problem()") < launcher.index("File.Exists(python)") < launcher.index("RunPython(root, python")
     assert check.count("__MIN_VC_RUNTIME__") == 1
-    assert {name.lower() for name in package.MS_RUNTIME_SYSTEM_FILES} == set(re.findall(r'"([a-z0-9_]+\.dll)"', check)) - {"ucrtbase.dll"}
+    files = {name.lower() for name in package.MS_RUNTIME_SYSTEM_FILES}
+    assert files == set(re.findall(r'"([a-z0-9_]+\.dll)"', check)) - {"ucrtbase.dll"}
+    assert files == set(re.findall(r'VC_FILE "([a-z0-9_]+\.dll)"', nsis_check))
+    page = re.search(r'DownloadPage = "([^"]+)"', check).group(1)
+    assert f'!define VCPAGE "{page}"' in installer
+    assert "${DisableX64FSRedirection}" in nsis_check and "${EnableX64FSRedirection}" in nsis_check
 
 
-def test_installer_window_says_the_program_opens_in_its_own_window():
-    installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
-    assert "The local workspace opens in its own window, not in your browser." in installer
-    assert "Your browser will show the local workspace" not in installer
+# Words a person must not meet in the installer or START-HERE.txt: it is a normal installer, like the other suite apps'.
+NOT_SHOWN = ("trial", "early test", "test version", "beta", "internal", "unqualified", "not ready to share", "do not share", "lawyer")
 
 
-def test_installer_window_and_start_text_speak_to_the_person_installing_it():
-    """The window and START-HERE.txt once called every copy a private, internal trial "not ready to share", and the line "No administrator
-    access, AI/OCR downloads, or automatic updates" read as if OCR and AI were missing. They now say plainly what is and is not included."""
-    installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
-    assert "trial" not in installer.lower() and "not ready to share" not in installer and "AI/OCR downloads" not in installer
-    assert '"PDF Remediator " + AppVersion + " setup"' in installer and 'Text = "Install" }' in installer
-    assert "This is an early test version. A lawyer has not yet reviewed the third-party licences." in installer
-    assert "Installs for your Windows account only, so no administrator rights are needed." in installer
-    assert "English OCR (reading scanned pages) is included. Turn it on for each document under Scanned text." in installer
-    assert "OCR (reading scanned pages) is not included in this copy." in installer
-    assert "Optional AI help needs a free local model program, such as Ollama, installed separately." in installer
-    assert "Nothing is downloaded later, and there are no automatic updates." in installer
-    assert 'FreshFolder(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PDFRemediator"), AppVersion)' in installer
+def installer_code():
+    """windows-installer.nsi without its comment lines: what NSIS uses, including every text the person sees."""
+    text = (SOURCE.parent / "windows-installer.nsi").read_text(encoding="utf-8")
+    return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(";"))
+
+
+def test_installer_is_a_standard_setup_like_the_other_suite_apps():
+    code = installer_code()
+    for word in NOT_SHOWN:
+        assert word not in code.lower(), word
+    pages = re.findall(r"!insertmacro (MUI_(?:UN)?PAGE_[A-Z]+)", code)
+    assert pages == ["MUI_PAGE_WELCOME", "MUI_PAGE_LICENSE", "MUI_PAGE_DIRECTORY", "MUI_PAGE_INSTFILES", "MUI_PAGE_FINISH",
+                     "MUI_UNPAGE_CONFIRM", "MUI_UNPAGE_INSTFILES"]
+    assert 'InstallDir "$LOCALAPPDATA\\${PRODUCTNAME}"' in code and "RequestExecutionLevel user" in code
+    assert 'InstallDirRegKey HKCU "${PRODUCTKEY}" ""' in code and 'WriteRegStr HKCU "${PRODUCTKEY}" "" "$INSTDIR"' in code
+    assert 'MUI_FINISHPAGE_SHOWREADME_TEXT "Create desktop shortcut"' in code and "!define MUI_FINISHPAGE_RUN\n" in code
+    for value in ("DisplayName", "DisplayIcon", "DisplayVersion", "Publisher", "InstallLocation", "UninstallString", "QuietUninstallString"):
+        assert f'WriteRegStr HKCU "${{UNINSTKEY}}" "{value}"' in code, value
+    assert 'WriteRegDWORD HKCU "${UNINSTKEY}" "EstimatedSize"' in code
+    assert '!define UNINSTKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCTNAME}"' in code
+    assert 'WriteUninstaller "$INSTDIR\\uninstall.exe"' in code
+    assert 'CreateShortcut "$SMPROGRAMS\\${PRODUCTNAME}.lnk"' in code and 'CreateShortcut "$DESKTOP\\${PRODUCTNAME}.lnk"' in code
+    assert 'Delete "$SMPROGRAMS\\${PRODUCTNAME}.lnk"' in code and 'Delete "$DESKTOP\\${PRODUCTNAME}.lnk"' in code
+    assert 'DeleteRegKey HKCU "${UNINSTKEY}"' in code and 'DeleteRegKey HKCU "${PRODUCTKEY}"' in code
+    assert "Also delete my saved reviews and settings" in code
+    # The saved reviews go only when that box is ticked, and the install folder itself only when it is empty.
+    assert code.count('RMDir /r "$INSTDIR\\output"') == 1
+    at = code.index('RMDir /r "$INSTDIR\\output"')
+    assert code.rindex("${If} $DeleteDataState = 1", 0, at) > code.rindex("Section Uninstall", 0, at)
+    assert 'RMDir "$INSTDIR"' in code and 'RMDir /r "$INSTDIR"' not in code
+    # The program's own files are removed only from a folder that holds an installed copy.
+    begin = code.index("!macro REMOVE_PROGRAM")
+    macro = code[begin:code.index("!macroend", begin)]
+    assert '${FileExists} "$INSTDIR\\package-manifest.json"' in macro and '${FileExists} "$INSTDIR\\${MAINBINARY}"' in macro
+    assert "PAYLOAD_REMOVE" in macro
+    # The program opens only a complete installation: the marker it looks for is written after the files.
+    assert code.index('File /r "${PAYLOAD}\\*"') < code.index('FileOpen $0 "$INSTDIR\\.installation-complete.json" w')
+    launcher = (SOURCE.parent / "windows-launcher.cs").read_text(encoding="utf-8")
+    assert '".installation-complete.json"' in launcher
+
+
+def test_start_text_says_where_the_program_is_and_how_to_update_and_remove_it():
     for ocr_included in (True, False):
         for signed in (True, False):
             text = package.start_here(ocr_included, signed)
-            assert "trial" not in text.lower() and "do not share" not in text.lower() and "unqualified" not in text.lower()
-            assert text.startswith("PDF Remediator " + package.APP_VERSION + " for Windows, an early test version\n")
-            assert "A lawyer has not yet reviewed the third-party licences" in text
-            assert "Administrator rights: not needed." in text and "nothing is downloaded later" in text
+            for word in NOT_SHOWN:
+                assert word not in text.lower(), word
+            assert text.startswith("PDF Remediator " + package.APP_VERSION + " for Windows\n\n")
+            assert "C:\\Users\\(your name)\\AppData\\Local\\PDF Remediator" in text and "no administrator rights are needed" in text
+            assert "Settings > Apps > Installed apps > PDF Remediator > Uninstall" in text
+            assert '"Also delete my saved reviews and settings"' in text and "Also delete my saved reviews and settings" in installer_code()
+            assert "It replaces the program files and keeps your saved reviews." in text and "Nothing is downloaded later" in text
             assert "such as the free Ollama. No AI model comes with PDF Remediator." in text
             assert ("English OCR is included. It stays off until you choose it" in text) is ocr_included
             assert ("OCR (reading scanned pages): not included in this copy." in text) is (not ocr_included)
@@ -941,16 +993,35 @@ def test_app_version_matches_the_project_version():
     assert package.APP_VERSION == project["version"]
 
 
-def test_installer_offers_a_desktop_and_start_menu_icon_and_the_start_text_explains_it():
-    installer = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
-    assert "Put a PDF Remediator icon on my desktop and in the Start menu" in installer and "Checked = true" in installer
-    assert "SpecialFolder.DesktopDirectory" in installer and "SpecialFolder.Programs" in installer
-    assert "Open PDF Remediator now?" in installer
-    # a failed icon never undoes the installation, and the test-only command line cannot reach the real desktop by accident
-    assert "The icon could not be made, but the program is installed" in installer
-    assert '--shortcuts-in' in installer and installer.count("MakeShortcut(") == 4  # definition, headless test, desktop, Start menu
-    source = (SOURCE).read_text(encoding="utf-8")
-    assert "icon the installer put on your desktop" in source and "delete the PDF Remediator icons" in source
+def test_payload_parts_list_only_the_programs_own_files(tmp_path):
+    (tmp_path / "runtime").mkdir()
+    (tmp_path / "src").mkdir()
+    (tmp_path / "PDF Remediator.exe").write_bytes(b"MZ")
+    (tmp_path / "START-HERE.txt").write_text("x")
+    assert package.payload_parts(tmp_path).splitlines() == [
+        "; Written by package-windows.py: the program's own top-level files and folders.", "!macro PAYLOAD_REMOVE",
+        '  Delete "$INSTDIR\\PDF Remediator.exe"', '  RMDir /r "$INSTDIR\\runtime"', '  RMDir /r "$INSTDIR\\src"',
+        '  Delete "$INSTDIR\\START-HERE.txt"', "!macroend"]
+    for name in ("output", "Output", "uninstall.exe", ".installation-complete.json"):
+        (tmp_path / name).mkdir()
+        with pytest.raises(package.Refusal, match="cannot hold"):
+            package.payload_parts(tmp_path)
+        (tmp_path / name).rmdir()
+
+
+def test_nsis_values_keep_dollar_signs_and_refuse_quotes():
+    assert package.nsis_value(r"C:\Users\a$b\PDF Remediator") == r"C:\Users\a$$b\PDF Remediator"
+    for bad in ('a"b', "a`b", "a\nb"):
+        with pytest.raises(package.Refusal):
+            package.nsis_value(bad)
+
+
+def test_signed_build_signs_the_uninstaller_with_the_same_script():
+    import sys
+    signer = object.__new__(package.ArtifactSigner)
+    command = signer.uninstaller_command()
+    assert command.startswith(f'"{sys.executable}" "') and command.endswith('" --description "PDF Remediator" "%1"')
+    assert '"' + str((SOURCE.parent / "sign_windows.py").resolve()) + '"' in command
 
 
 def csc_path():
@@ -960,99 +1031,170 @@ def csc_path():
     return path if path is not None and path.is_file() else None
 
 
-@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
-def test_compiled_installer_refuses_without_a_new_enough_runtime_and_changes_nothing(tmp_path):
-    import subprocess
-    scripts = SOURCE.parent
-    check = (scripts / "windows-vc-runtime.cs").read_text(encoding="utf-8")
-    installer = (scripts / "windows-installer.cs").read_text(encoding="utf-8")
-    for token in ("__PAYLOAD_SHA256__", "__RUNTIME_LOCK_SHA256__", "__OCR_RUNTIME_LOCK_SHA256__"):
-        installer = installer.replace(token, "0" * 64)
-    installer = installer.replace("__PYTHON_VERSION__", "3.14.9").replace("__PYTHON_ABI__", "cp314").replace("__OCR_ENABLED__", "false")
-    icon = SOURCE.parents[1] / package.ICON_ICO
+def makensis_path():
+    try:
+        return package.find_makensis()
+    except package.Refusal:
+        return None
 
-    def run(minimum):
+
+TEST_PRODUCT = "PDF Remediator Test Build"  # never the real name, so a check cannot touch a real installation, its Apps entry or shortcuts
+
+
+def registry_value(name, key=None):
+    import winreg
+    key = key or "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + TEST_PRODUCT
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key) as opened:
+            return winreg.QueryValueEx(opened, name)[0]
+    except FileNotFoundError:
+        return None
+
+
+def remove_test_registry_keys():
+    import winreg
+    for key in ("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + TEST_PRODUCT, "Software\\" + TEST_PRODUCT):
+        try:
+            winreg.DeleteKey(winreg.HKEY_CURRENT_USER, key)
+        except FileNotFoundError:
+            pass
+
+
+@pytest.fixture
+def small_setup(tmp_path):
+    """A small installer made from the real script under the test product name, and its payload."""
+    build = tmp_path / "build"
+    payload = build / "payload"
+    for name, data in {"PDF Remediator.exe": b"MZ authored stand-in", "package-manifest.json": b"{}", "local-runtime.toml": b"[runtime]\n",
+                       "src/pdf_remediator/__init__.py": b"# authored", "runtime/python/README.txt": b"authored",
+                       "NOTICES/LICENSE": (SOURCE.parents[1] / "LICENSE").read_bytes()}.items():
+        (payload / name).parent.mkdir(parents=True, exist_ok=True)
+        (payload / name).write_bytes(data)
+    setup = build / "Test-Setup.exe"
+    package.write_installer_script(build, payload, setup, SOURCE.parents[1] / package.ICON_ICO, payload / "NOTICES/LICENSE",
+                                   product_name=TEST_PRODUCT)
+    package.run_makensis(makensis_path(), build / "installer-bound.nsi")
+    remove_test_registry_keys()
+    try:
+        yield setup, payload
+    finally:
+        remove_test_registry_keys()
+
+
+def run_setup(setup, folder):
+    import os
+    import subprocess
+    # /S silent, /NS no shortcuts (as in the other suite installers), /D= the folder. NSIS wants /D= last and without quotes even when
+    # the folder has spaces, so the command line is given as it is: a quoted /D= would be ignored and the default folder used.
+    try:
+        return subprocess.run(f'"{setup}" /S /NS /D={folder}', timeout=120, check=False).returncode
+    finally:
+        assert not (Path(os.environ["LOCALAPPDATA"]) / TEST_PRODUCT).exists(), "the check installed into the default folder"
+
+
+def uninstall(folder):
+    import subprocess
+    # Run in place (_?=): NSIS's usual way, copying the uninstaller to a temporary folder and starting that copy, is what Settings > Apps
+    # does, but an antivirus can stop an unsigned test build doing it. In place, it waits and gives its exit code; it cannot delete
+    # itself, so the check removes uninstall.exe afterwards.
+    assert subprocess.run(f'"{folder / "uninstall.exe"}" /S _?={folder}', timeout=120, check=False).returncode == 0
+    (folder / "uninstall.exe").unlink()
+    if folder.is_dir() and not any(folder.iterdir()):
+        folder.rmdir()
+
+
+def installed_files(folder):
+    return sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*") if p.is_file())
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_setup_installs_lists_itself_in_apps_updates_and_uninstalls_keeping_saved_reviews(small_setup, tmp_path):
+    setup, payload = small_setup
+    folder = tmp_path / "Programs" / TEST_PRODUCT
+    assert run_setup(setup, folder) == 0
+    expected = sorted(installed_files(payload) + [".installation-complete.json", "uninstall.exe"])
+    assert installed_files(folder) == expected
+    assert all((folder / name).read_bytes() == (payload / name).read_bytes() for name in installed_files(payload))
+    assert json.loads((folder / ".installation-complete.json").read_text())["status"] == "installed"
+    assert registry_value("DisplayName") == TEST_PRODUCT and registry_value("DisplayVersion") == package.APP_VERSION
+    assert registry_value("Publisher") == package.PUBLISHER and registry_value("URLInfoAbout") == package.HOMEPAGE
+    assert registry_value("UninstallString") == f'"{folder}\\uninstall.exe"'
+    assert registry_value("QuietUninstallString") == f'"{folder}\\uninstall.exe" /S'
+    assert registry_value("InstallLocation") == f'"{folder}"' and registry_value("DisplayIcon") == f'"{folder}\\PDF Remediator.exe"'
+    assert registry_value("NoModify") == 1 and registry_value("NoRepair") == 1 and registry_value("EstimatedSize") >= 1
+    assert registry_value("", "Software\\" + TEST_PRODUCT) == str(folder)
+
+    # Updating: the old program files go (a file the new version does not have is not left behind), saved reviews stay.
+    saved = folder / "output/review-app/reviews/one.json"
+    saved.parent.mkdir(parents=True)
+    saved.write_text('{"saved": true}')
+    (folder / "src/pdf_remediator/old_module.py").write_text("# from an older version")
+    assert run_setup(setup, folder) == 0
+    assert not (folder / "src/pdf_remediator/old_module.py").exists()
+    assert saved.read_text() == '{"saved": true}'
+    assert installed_files(folder) == sorted(expected + ["output/review-app/reviews/one.json"])
+
+    # Uninstalling without ticking the box: everything of the program goes, the saved reviews and the folder holding them stay.
+    uninstall(folder)
+    assert installed_files(folder) == ["output/review-app/reviews/one.json"]
+    assert registry_value("DisplayName") is None and registry_value("", "Software\\" + TEST_PRODUCT) is None
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_setup_stops_while_the_program_is_open_and_changes_nothing(small_setup, tmp_path):
+    import os
+    import shutil
+    import subprocess
+    setup, payload = small_setup
+    folder = tmp_path / "Programs" / TEST_PRODUCT
+    assert run_setup(setup, folder) == 0
+    # A stand-in for the program's own Python, kept running (Windows' ping waiting 30 times).
+    stand_in = folder / "runtime/python/python.exe"
+    shutil.copyfile(Path(os.environ["WINDIR"]) / "System32/PING.EXE", stand_in)
+    running = subprocess.Popen([str(stand_in), "-n", "30", "127.0.0.1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        before = {name: (folder / name).read_bytes() for name in installed_files(folder)}
+        assert run_setup(setup, folder) == 2, "silent setup gives up (exit code 2) instead of replacing files in use"
+        assert {name: (folder / name).read_bytes() for name in installed_files(folder)} == before
+    finally:
+        running.kill()
+        running.wait(timeout=30)
+    assert run_setup(setup, folder) == 0 and not stand_in.exists(), "once it is closed, the update goes ahead"
+    uninstall(folder)
+    assert not folder.exists(), "with no saved reviews, nothing is left"
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_setup_runtime_check_reads_the_64_bit_system_folder(tmp_path):
+    """The check setup runs (windows-vc-runtime.nsh), built into a tiny program that writes down what it found."""
+    import os
+    import subprocess
+    check = (SOURCE.parent / "windows-vc-runtime.nsh").read_text(encoding="utf-8")
+
+    def found(minimum):
         folder = tmp_path / minimum.replace(".", "-")
         folder.mkdir()
-        source = folder / "installer.cs"
-        source.write_text(installer + "\n" + check.replace("__MIN_VC_RUNTIME__", minimum), encoding="utf-8")
-        program = folder / "setup.exe"
-        package.compile_cs(csc_path(), source, program, icon=icon)
-        result = folder / "result.json"
-        done = subprocess.run([str(program), "--install-dir", str(folder / "target"), "--no-launch", "--result", str(result)],
-                              capture_output=True, text=True, timeout=60, check=False)
-        assert done.returncode == 1 and not (folder / "target").exists()
-        return json.loads(result.read_text(encoding="utf-8"))
+        (folder / "windows-vc-runtime.nsh").write_text(check, encoding="utf-8")
+        (folder / "probe.nsi").write_text(
+            'Unicode true\nRequestExecutionLevel user\nSilentInstall silent\nOutFile "probe.exe"\n'
+            '!include LogicLib.nsh\n!include WordFunc.nsh\n!include x64.nsh\n'
+            f'!define MINVC "{minimum}"\n!include "windows-vc-runtime.nsh"\n'
+            'Section\n  Call CheckVcRuntime\n  FileOpen $0 "$EXEDIR\\found.txt" w\n  FileWrite $0 "[$R9]"\n  FileClose $0\nSectionEnd\n',
+            encoding="utf-8")
+        package.run_makensis(makensis_path(), folder / "probe.nsi")
+        assert subprocess.run([str(folder / "probe.exe")], timeout=60, check=False).returncode == 0
+        return (folder / "found.txt").read_text(encoding="utf-8")
 
-    too_new = run("99.0.0.0")
-    assert too_new["status"] == "installation-refused" and "Visual C++ Redistributable" in too_new["message"]
-    assert "version 99.0.0.0 or newer" in too_new["message"]
-    assert "learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist" in too_new["message"]
-    from os import environ
-    if (Path(environ["WINDIR"]) / "System32/vcruntime140.dll").is_file():
-        passes = run("1.0.0.0")
-        assert "Redistributable" not in passes["message"], "with an old enough minimum the check passes and the next step runs"
-
-
-@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
-def test_installer_shortcut_code_makes_a_working_shortcut_with_the_program_icon(tmp_path):
-    import subprocess
-    text = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
-    start = text.index("    static void MakeShortcut(")
-    end = text.index("    [STAThread]", start)
-    harness = ("using System;\nusing System.IO;\nusing System.Reflection;\n"
-               "internal static class T {\n"
-               "    static void Need(bool ok, string message) { if (!ok) throw new InvalidOperationException(message); }\n"
-               + text[start:end] +
-               "    static int Main(string[] a) { MakeShortcut(a[0], a[1]); return 0; }\n}\n")
-    source = tmp_path / "shortcut.cs"
-    source.write_text(harness, encoding="utf-8")
-    program = tmp_path / "shortcut-test.exe"
-    package.compile_cs(csc_path(), source, program, icon=SOURCE.parents[1] / package.ICON_ICO)
-    install = tmp_path / "install"
-    install.mkdir()
-    fake = install / "PDF Remediator.exe"
-    fake.write_bytes(b"MZ")  # only its path matters to a shortcut
-    where = tmp_path / "where"
-    where.mkdir()
-    done = subprocess.run([str(program), str(where), str(install)], capture_output=True, text=True, timeout=60, check=False)
-    assert done.returncode == 0, done.stderr + done.stdout
-    link = where / "PDF Remediator.lnk"
-    assert link.is_file()
-    read = subprocess.run(["powershell.exe", "-NoProfile", "-Command",
-                           "$l=(New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $l.TargetPath; $l.WorkingDirectory; $l.IconLocation" % str(link).replace("'", "''")],
-                          capture_output=True, text=True, timeout=60, check=False).stdout.splitlines()
-    assert read[0] == str(fake) and read[1] == str(install) and read[2].startswith(str(fake)), read
-    missing = subprocess.run([str(program), str(where), str(tmp_path / "nowhere")], capture_output=True, text=True, timeout=60, check=False)
-    assert missing.returncode != 0, "no shortcut is made for a program that is not there"
-
-
-@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
-def test_installer_suggests_a_folder_nobody_has_used(tmp_path):
-    import subprocess
-    text = (SOURCE.parent / "windows-installer.cs").read_text(encoding="utf-8")
-    start = text.index("    internal static string FreshFolder(")
-    end = text.index("    static string Install(", start)
-    harness = ("using System;\nusing System.IO;\ninternal static class T {\n" + text[start:end] +
-               "    static int Main(string[] a) { Console.Write(FreshFolder(a[0], a[1])); return 0; }\n}\n")
-    source = tmp_path / "fresh.cs"
-    source.write_text(harness, encoding="utf-8")
-    program = tmp_path / "fresh-test.exe"
-    package.compile_cs(csc_path(), source, program, icon=SOURCE.parents[1] / package.ICON_ICO)
-    parent = tmp_path / "PDFRemediator"
-    parent.mkdir()
-
-    def suggested():
-        done = subprocess.run([str(program), str(parent), "0.3.0"], capture_output=True, text=True, timeout=60, check=False)
-        assert done.returncode == 0, done.stderr + done.stdout
-        return done.stdout
-
-    assert suggested() == str(parent / "0.3.0")
-    (parent / "0.3.0").mkdir()
-    assert suggested() == str(parent / "0.3.0-2")
-    (parent / "0.3.0-2").write_bytes(b"")  # a file of that name counts as taken too
-    assert suggested() == str(parent / "0.3.0-3")
-    assert sorted(p.name for p in parent.iterdir()) == ["0.3.0", "0.3.0-2"], "it only looks; nothing is made or removed"
+    system = Path(os.environ["WINDIR"]) / "System32"
+    if not all((system / name).is_file() for name in package.MS_RUNTIME_SYSTEM_FILES):
+        assert "is missing." in found("1.0.0.0")
+        return
+    assert found("1.0.0.0") == "[]"
+    version = subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+                              "$v=[Diagnostics.FileVersionInfo]::GetVersionInfo('%s'); '{0}.{1}.{2}.{3}' -f "
+                              "$v.FileMajorPart,$v.FileMinorPart,$v.FileBuildPart,$v.FilePrivatePart" % (system / "vcruntime140.dll")],
+                             capture_output=True, text=True, timeout=60).stdout.strip()
+    assert found("99.0.0.0") == f"[vcruntime140.dll is version {version}, which is older than 99.0.0.0.]"
 
 
 def test_launcher_program_passes_the_arguments_that_launch_portable_understands():

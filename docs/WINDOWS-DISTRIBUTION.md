@@ -616,38 +616,42 @@ payload, because Microsoft limits who may pass them on. The builder leaves them 
 rewrites the two pikepdf native files so they load Microsoft's own `msvcp140.dll` instead of the renamed copy the wheel carried, lists
 what it did in the manifest's `microsoft_runtime` block, and refuses to build if one remains or a program needs a runtime file the
 installer does not check for. The computer needs Microsoft's free Visual C++ Redistributable (x64, `MS_RUNTIME_MINIMUM` in
-`scripts/package-windows.py` or newer). `scripts/windows-vc-runtime.cs` is added to the installer and the launcher at build time; it checks
-the Windows system folder before anything else and, if the runtime is missing or too old, offers to open Microsoft's download page (the
-program itself downloads nothing). Raise `MS_RUNTIME_MINIMUM` whenever the locked Python, wheels or Java change.
+`scripts/package-windows.py` or newer). The launcher carries `scripts/windows-vc-runtime.cs` and the installer
+`scripts/windows-vc-runtime.nsh`, the same check of the 64-bit Windows system folder; if the runtime is missing or too old,
+they offer to open Microsoft's download page (nothing is downloaded). Setup still finishes installing. Raise
+`MS_RUNTIME_MINIMUM` whenever the locked Python, wheels or Java change.
 
-The compiled installer defaults to a fresh per-user trial folder. It accepts no
-existing installation target, never overwrites or deletes an old installation,
-and has no automatic updater or uninstall/delete feature. The short local folder
-must be at most 100 characters and all package paths at most 240 characters.
-Links, redirected folders and network destinations are refused. All copied files
-are verified before an installation-complete marker permits the launcher to run.
-Failures retain partial output and advise choosing another new folder.
+### The installer (since 2026-11-12)
 
-What the installer window and `START-HERE.txt` tell the person installing it (2026-11-12): an early test
-version of PDF Remediator (version from `APP_VERSION` in the builder), installed for their Windows account
-only with no administrator rights, English OCR included but off until chosen under Scanned text, optional
-AI help only through a local model program they install themselves, nothing downloaded later, and that a
-lawyer has not yet reviewed the third-party licences. The window suggests a folder named after the version
-(`%LOCALAPPDATA%\PDFRemediator\0.3.0`, or `0.3.0-2` and so on when that one exists). The manifest's internal
-status values (`internal-unqualified`, `redistribution_cleared` false) are unchanged. `--sign` signs every
-unsigned program file and the installer with Azure Artifact Signing through `scripts/sign_windows.py`.
+The installer is a standard NSIS setup, `PDF-Remediator-Setup.exe`, made from `scripts/windows-installer.nsi` with the NSIS
+the other OpenStage-family apps use (Tauri's copy in `%LOCALAPPDATA%\tauri\NSIS`, or any NSIS 3 on PATH or in Program Files;
+`--makensis` names one). It replaced the earlier custom C# window (`windows-installer.cs`), which installed every copy into a
+new versioned folder, did not appear in Settings > Apps and had no uninstaller. It now works like the other suite installers:
 
-For noninteractive developer qualification, use the compiled internal installer:
+* Pages: Welcome, Licence (Apache-2.0), Choose Install Location, Installing, Finish (Run PDF Remediator, Create desktop
+  shortcut). The default folder is `%LOCALAPPDATA%\PDF Remediator`, for the current Windows account only, so no
+  administrator rights are needed; a later setup suggests the folder of the copy already installed. A folder that already
+  holds other files is refused, and the folder path may be at most 100 characters.
+* It writes the Settings > Apps entry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\PDF Remediator`: name,
+  version, publisher, icon, size, install location, uninstaller), remembers the folder in `HKCU\Software\PDF Remediator`, and
+  makes a Start menu shortcut (and the desktop one if that box stays ticked).
+* Updating: setup run over an installed copy first removes that copy's program files (the payload's top-level files and
+  folders, listed at build time in `payload-parts.nsh`), then installs the new ones. The `output` folder, where saved
+  reviews are, is never touched. Setup stops, with Retry, while the program or its local service is still running.
+* Uninstalling (Settings > Apps, or `uninstall.exe`): removes the program files, shortcuts and registry entries. Saved
+  reviews stay unless "Also delete my saved reviews and settings" is ticked; the folder itself goes only when empty.
+* `.installation-complete.json` is written after every file is in place; the launcher opens only a folder that has it.
+* Command line, as in the other suite installers: `/S` silent, `/NS` no shortcuts, `/D=FOLDER` (last, no quotes).
+  `uninstall.exe /S` uninstalls silently; `uninstall.exe /S _?=FOLDER` runs it in place and waits (it then cannot delete
+  itself). The tests use the in-place form, because McAfee or Webroot on the build PC can stop an unsigned test build's
+  uninstaller from starting its temporary copy.
+* `--sign` signs every unsigned program file in the payload, the uninstaller (through `!uninstfinalize`) and the installer,
+  each with a timestamp, through `scripts/sign_windows.py`.
 
-```text
-"PDF Remediator Internal Setup.exe" --install-dir NEW-FOLDER --no-launch --result NEW-RESULT.json
-```
-
-The parent folder must already exist. This explicit mode never opens the desktop
-or browser; it writes a new result file and returns a nonzero status on refusal.
-It does not qualify the graphical installer or an actually fresh Windows system.
-Then run the installed private interpreter's `doctor` with its own generated
-`local-runtime.toml`, and run a separate synthetic native processing trial.
+The checks in `tests/test_windows_package.py` build small installers from the real script under the name
+"PDF Remediator Test Build" (never the real name), install, update and uninstall them silently in temporary folders, and
+remove their registry entries afterwards. The manifest's internal status values (`internal-unqualified`,
+`redistribution_cleared` false) are unchanged; the person installing never sees them.
 
 Opening the installed `PDF Remediator.exe` runs the private interpreter and shows the page in its own window: Microsoft Edge (which
 Windows includes) or, failing that, Chrome, started in `--app` mode with a profile of its own at `output/review-app/window-profile`,
