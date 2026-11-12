@@ -638,7 +638,8 @@ new versioned folder, did not appear in Settings > Apps and had no uninstaller. 
 * Updating: setup run over an installed copy first removes that copy's program files (the payload's top-level files and
   folders, listed at build time in `payload-parts.nsh`), then installs the new ones. The `output` folder, where saved
   reviews are, is never touched. Setup stops, with Retry, while the program or its local service is still running.
-* Uninstalling (Settings > Apps, or `uninstall.exe`): removes the program files, shortcuts and registry entries. Saved
+* Uninstalling (Settings > Apps, or `uninstall.exe`): removes the program files, the registry entries and the shortcuts
+  that start this copy (a "PDF Remediator" shortcut to another copy stays). Saved
   reviews stay unless "Also delete my saved reviews and settings" is ticked; the folder itself goes only when empty.
 * `.installation-complete.json` is written after every file is in place; the launcher opens only a folder that has it.
 * Command line, as in the other suite installers: `/S` silent, `/NS` no shortcuts, `/D=FOLDER` (last, no quotes).
