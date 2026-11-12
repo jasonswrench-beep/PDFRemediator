@@ -1,6 +1,8 @@
-"""Build an offline, internal-only Windows x64 trial installer from reviewed inputs.
+"""Build the Windows x64 installer of PDF Remediator from reviewed inputs.
 
-No downloads, pip, registry changes, existing installation updates or publication.
+The installer is a standard NSIS setup (scripts/windows-installer.nsi), made with the same NSIS the other OpenStage-family apps use:
+it installs for the current Windows account, lists the program in Settings > Apps with an uninstaller, and updates a copy already
+installed while keeping its saved reviews. Building downloads nothing and publishes nothing.
 The explicit input map is local evidence, never a publisher trust mechanism.
 """
 from __future__ import annotations
@@ -18,6 +20,7 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
 import zipfile
 
 MAX_FILES = 20000
@@ -49,17 +52,24 @@ LAUNCH_PORTABLE = ('from pathlib import Path\nimport sys\nfrom pdf_remediator.la
 # snapshot committed 2026-08-24. Check the year again whenever Pillow, pypdfium2 or the Java runtime change.
 FREETYPE_CREDIT = ("Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.\n"
                    "This software is based in part on the work of the FreeType Team.\n")
-APP_VERSION = "0.3.0"  # keep equal to pyproject.toml; the installer window and its suggested folder show it
+APP_VERSION = "0.3.0"  # keep equal to pyproject.toml; the installer and Settings > Apps show it
+PRODUCT_NAME = "PDF Remediator"
+PUBLISHER = "PDF Remediator"
+COPYRIGHT = "Copyright 2026 Jason S. Wrench and the PDF Remediator contributors"
+HOMEPAGE = "https://github.com/jasonswrench-beep/PDFRemediator"
+INSTALLER_NAME = "PDF-Remediator-Setup.exe"
+# Names the installer itself puts in the install folder, or that hold the person's saved work: never part of the payload.
+INSTALLER_OWNED = {"output", "uninstall.exe", ".installation-complete.json"}
 
 
 def start_here(ocr_included, signed):
     """The START-HERE.txt every package carries: plain words for the person who installed it."""
-    return ('PDF Remediator ' + APP_VERSION + ' for Windows, an early test version\n\n'
-            'To start: use the PDF Remediator icon the installer put on your desktop and in the Start menu (if you left that box ticked),\n'
-            'or open PDF Remediator.exe in this folder.\n'
+    return ('PDF Remediator ' + APP_VERSION + ' for Windows\n\n'
+            'To start: use the PDF Remediator shortcut in the Start menu (or on your desktop, if you kept that box ticked at the end of\n'
+            'setup), or open PDF Remediator.exe in this folder.\n'
             'The program opens in its own window (Microsoft Edge, which comes with Windows; Chrome if Edge is missing; otherwise your\n'
-            'default browser). It is a web page that runs on this computer, so it looks like one; a stand-alone program window is\n'
-            'planned for version 2.0. Closing that window stops the program, as does Stop application.\n\n'
+            'default browser). It is a web page that runs on this computer, so it looks like one.\n'
+            'Closing that window stops the program, as does Stop application.\n\n'
             'PDF Remediator drafts accessibility repairs for PDFs and lists what a person still has to check. Every result is a draft\n'
             'for review. Your documents are processed on this computer and nothing is sent over the internet. Your original PDFs are\n'
             'never changed.\n\n' +
@@ -67,18 +77,18 @@ def start_here(ocr_included, signed):
              'Processing options and pick one of the OCR choices under Scanned text.\n' if ocr_included else
              'OCR (reading scanned pages): not included in this copy.\n') +
             'AI help (optional): the review screen has an "Optional local AI assistance" box. It works only with a model program that\n'
-            'you install yourself and run on this computer, such as the free Ollama. No AI model comes with PDF Remediator.\n'
-            'Administrator rights: not needed. PDF Remediator is installed for your Windows account only.\n'
-            'Updates: nothing is downloaded later and there are no automatic updates. To try a newer version, install it into a new folder.\n\n'
-            'Saved work stays in this folder, under output/review-app. Keep this entire installation in place: saved reviews are bound\n'
-            'to its files.\n'
-            'To remove the program, close it, delete the install folder, and delete the PDF Remediator icons from your desktop and\n'
-            'Start menu (there is no uninstaller yet).\n\n'
+            'you install yourself and run on this computer, such as the free Ollama. No AI model comes with PDF Remediator.\n\n'
+            'Where it is installed: for your Windows account only, so no administrator rights are needed. Unless you chose another\n'
+            'folder during setup, that is C:\\Users\\(your name)\\AppData\\Local\\PDF Remediator.\n'
+            'Saved work: your saved reviews are in the output folder inside the install folder.\n'
+            'Updating: run the setup program of the newer version. It replaces the program files and keeps your saved reviews.\n'
+            'Nothing is downloaded later, and there are no automatic updates.\n'
+            'Removing: Settings > Apps > Installed apps > PDF Remediator > Uninstall. Your saved reviews stay unless you tick\n'
+            '"Also delete my saved reviews and settings".\n\n'
             'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
-            'included because Microsoft\'s licence does not let us pass it on; the installer and the program check for it and point you\n'
-            'to Microsoft\'s page.\n\n'
-            'This is an early test version. A lawyer has not yet reviewed the third-party licences (they are in the NOTICES folder),\n'
-            'and it has not yet been tried on a freshly set-up computer.\n' +
+            'included because Microsoft\'s licence does not let us pass it on; setup and the program check for it and point you to\n'
+            'Microsoft\'s page.\n\n'
+            'The licences of the parts that come with PDF Remediator are in the NOTICES folder.\n' +
             ('Its program files are digitally signed: right-click PDF Remediator.exe, choose Properties, then Digital Signatures.\n' if signed else
              'Its program files are not digitally signed.\n') +
             '\n' + FREETYPE_CREDIT)
@@ -680,6 +690,11 @@ class ArtifactSigner:
         except self.sw.SignError as exc:
             raise ValueError("Signing stopped: " + str(exc)) from exc
 
+    def uninstaller_command(self):
+        """The command NSIS runs on the uninstaller it writes into the installer (!uninstfinalize), so that it is signed too."""
+        script = Path(__file__).resolve().with_name("sign_windows.py")
+        return f'"{sys.executable}" "{script}" --description "{self.DESCRIPTION}" "%1"'
+
     def statuses(self, files):
         found = []
         for start in range(0, len(files), 200):
@@ -694,7 +709,68 @@ class ArtifactSigner:
         require(not left, "Program files still not signed and timestamped: " + ", ".join(Path(i["path"]).name for i in left[:5]))
 
 
-def build(plan, output, csc, sign=False):
+def find_makensis():
+    """NSIS's compiler: on PATH, or the copy Tauri keeps for the other suite apps' installers, or a normal NSIS installation."""
+    candidates = [shutil.which("makensis")]
+    if os.environ.get("LOCALAPPDATA"):
+        candidates.append(str(Path(os.environ["LOCALAPPDATA"]) / "tauri" / "NSIS" / "makensis.exe"))
+    for variable in ("ProgramFiles(x86)", "ProgramFiles"):
+        if os.environ.get(variable):
+            candidates.append(str(Path(os.environ[variable]) / "NSIS" / "makensis.exe"))
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return Path(candidate)
+    raise Refusal("NSIS (makensis.exe) was not found. Install NSIS 3 from https://nsis.sourceforge.io, or pass --makensis.")
+
+
+def nsis_value(value):
+    """A value for an NSIS !define in double quotes: $ is written $$ so NSIS keeps it as it is."""
+    value = str(value)
+    require('"' not in value and "`" not in value and "\n" not in value and "\r" not in value, "A value cannot be passed to NSIS: " + value)
+    return value.replace("$", "$$")
+
+
+def payload_parts(payload):
+    """payload-parts.nsh: the macro that removes the program's own top-level files and folders, when updating or uninstalling.
+    It lists only what the payload has; the output folder (saved reviews) is never in it."""
+    lines = ["; Written by package-windows.py: the program's own top-level files and folders.", "!macro PAYLOAD_REMOVE"]
+    for item in sorted(Path(payload).iterdir(), key=lambda p: p.name.lower()):
+        require(item.name.lower() not in INSTALLER_OWNED, "The payload cannot hold " + item.name)
+        name = nsis_value(item.name)
+        lines.append(f'  RMDir /r "$INSTDIR\\{name}"' if item.is_dir() else f'  Delete "$INSTDIR\\{name}"')
+    return "\n".join(lines + ["!macroend", ""])
+
+
+def write_installer_script(output, payload, installer, icon, licence, sign_command=None, product_name=PRODUCT_NAME):
+    """installer-bound.nsi (the settings, then scripts/windows-installer.nsi) and the two files it includes, all in the build folder."""
+    script_root = Path(__file__).resolve().parent
+    require(Path(licence).is_file() and Path(icon).is_file(), "The installer needs the licence and the icon")
+    parts = [int(part) for part in APP_VERSION.split(".")]
+    require(len(parts) == 3, "APP_VERSION must be three numbers")
+    settings = {"PRODUCTNAME": product_name, "VERSION": APP_VERSION, "VERSIONWITHBUILD": APP_VERSION + ".0", "PUBLISHER": PUBLISHER,
+                "COPYRIGHT": COPYRIGHT, "HOMEPAGE": HOMEPAGE, "PAYLOAD": Path(payload).resolve(), "LICENSEFILE": Path(licence).resolve(),
+                "ICONFILE": Path(icon).resolve(), "OUTFILE": Path(installer).resolve(), "MINVC": MS_RUNTIME_MINIMUM}
+    lines = ["; Written by package-windows.py in front of scripts/windows-installer.nsi."]
+    lines += [f'!define {key} "{nsis_value(value)}"' for key, value in settings.items()]
+    if sign_command:
+        require("`" not in sign_command and "\n" not in sign_command, "The signing command cannot be passed to NSIS")
+        lines.append(f"!define UNINSTALLERSIGNCOMMAND `{sign_command}`")
+    write_new(Path(output) / "payload-parts.nsh", payload_parts(payload))
+    write_new(Path(output) / "windows-vc-runtime.nsh", (script_root / "windows-vc-runtime.nsh").read_text(encoding="utf-8"))
+    script = "\n".join(lines) + "\n\n" + (script_root / "windows-installer.nsi").read_text(encoding="utf-8")
+    write_new(Path(output) / "installer-bound.nsi", script)
+    return script
+
+
+def run_makensis(makensis, script):
+    """Compiles the installer. NSIS reads the script as UTF-8 and finds its include files beside it."""
+    done = subprocess.run([str(makensis), "/V2", "/INPUTCHARSET", "UTF8", str(Path(script).resolve())], cwd=str(Path(script).parent),
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    require(done.returncode == 0, "NSIS could not make the installer:\n" + (done.stdout + done.stderr)[-4000:])
+    return done.stdout
+
+
+def build(plan, output, csc, sign=False, makensis=None):
     require(os.name == "nt", "Windows x64 build host required")
     signer = ArtifactSigner() if sign else None
     require(plan.get("schema") == "windows-internal-inputs-1", "Unrecognized input schema")
@@ -776,30 +852,20 @@ def build(plan, output, csc, sign=False):
                 "files": snapshot(payload), "input_plan_sha256": hashlib.sha256(
                     json.dumps(plan, sort_keys=True).encode()).hexdigest()}
     write_new(payload / "package-manifest.json", json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-    archive = output / "payload.zip"
-    with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zipped:
-        for path in sorted(payload.rglob("*")):
-            if path.is_file():
-                zipped.write(path, path.relative_to(payload).as_posix())
-    installer_source = (script_root / "windows-installer.cs").read_text(encoding="utf-8")
-    installer_source = installer_source.replace("__PAYLOAD_SHA256__", sha(archive))
-    installer_source = installer_source.replace("__PYTHON_VERSION__", runtime["version"])
-    installer_source = installer_source.replace("__PYTHON_ABI__", runtime["abi"])
-    installer_source = installer_source.replace("__RUNTIME_LOCK_SHA256__", lock_sha)
-    installer_source = installer_source.replace("__OCR_ENABLED__", "true" if ocr else "false")
-    installer_source = installer_source.replace("__OCR_RUNTIME_LOCK_SHA256__", ocr["sha256"] if ocr else "")
-    installer_source = installer_source.replace("__APP_VERSION__", APP_VERSION)
-    installer_source += "\n" + vc_runtime_check
-    source_path = output / "installer-bound.cs"
-    write_new(source_path, installer_source)
-    installer = output / "PDF Remediator Internal Setup.exe"
-    compile_cs(csc, source_path, installer, [(archive, "payload.zip")], icon=package_icon(source, payload))
+    require(snapshot(payload) == {**metadata["files"], "package-manifest.json": sha(payload / "package-manifest.json")},
+            "The payload changed after its files were listed")
+    installer = output / INSTALLER_NAME
+    write_installer_script(output, payload, installer, package_icon(source, payload), payload / "NOTICES" / "LICENSE",
+                           sign_command=signer.uninstaller_command() if signer else None)
+    run_makensis(makensis or find_makensis(), output / "installer-bound.nsi")
+    require(installer.is_file(), "NSIS did not make the installer")
     package_icon(source, payload)
+    require(snapshot(payload) == {**metadata["files"], "package-manifest.json": sha(payload / "package-manifest.json")},
+            "The payload changed while the installer was made")
     if signer:
-        # The payload is a .NET resource inside the installer, found by its metadata, so the signature added at the end cannot disturb it.
         signer.sign([installer], output)
-    summary = {"status": "built-internal-unqualified", "installer": str(installer), "installer_sha256": sha(installer),
-               "payload_sha256": sha(archive), "payload_files": len(metadata["files"]) + 1,
+    summary = {"status": "built", "installer": str(installer), "installer_sha256": sha(installer),
+               "payload_files": len(metadata["files"]) + 1,
                "release_status": "internal-unqualified", "redistribution_cleared": False,
                "python_version": runtime["version"], "runtime_lock_sha256": lock_sha,
                "source_files": len(source["files"]), "ai_enabled": False, "ocr_enabled": bool(ocr),
@@ -816,13 +882,15 @@ def main():
     parser.add_argument("--inputs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--csc", type=Path, default=Path(os.environ.get("WINDIR", r"C:\Windows")) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe")
+    parser.add_argument("--makensis", type=Path, help="NSIS's makensis.exe (found by itself when left out)")
     parser.add_argument("--sign", action="store_true",
-                        help="sign every unsigned program file and the installer with Azure Artifact Signing (see scripts/sign_windows.py)")
+                        help="sign every unsigned program file, the uninstaller and the installer with Azure Artifact Signing (see scripts/sign_windows.py)")
     args = parser.parse_args()
     try:
-        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.csc), sign=args.sign)
+        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.csc), sign=args.sign,
+                       makensis=regular(args.makensis) if args.makensis else None)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile, subprocess.SubprocessError) as exc:
-        parser.exit(1, "Internal package build refused: " + str(exc) + "\n")
+        parser.exit(1, "The Windows package was not built: " + str(exc) + "\n")
     print(json.dumps(result, indent=2))
     return 0
 

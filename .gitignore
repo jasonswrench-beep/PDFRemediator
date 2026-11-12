@@ -50,7 +50,8 @@
 !/scripts/test-web-assets.cjs
 !/scripts/test-plain-evidence.cjs
 !/scripts/e2e-browser.cjs
-!/scripts/windows-installer.cs
+!/scripts/windows-installer.nsi
+!/scripts/windows-vc-runtime.nsh
 !/scripts/windows-launcher.cs
 !/scripts/windows-vc-runtime.cs
 !/scripts/windows-runtime-lock.json
