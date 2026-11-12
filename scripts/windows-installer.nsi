@@ -204,7 +204,8 @@ Section Install
   WriteRegStr HKCU "${UNINSTKEY}" "URLInfoAbout" "${HOMEPAGE}"
   WriteRegDWORD HKCU "${UNINSTKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTKEY}" "NoRepair" 1
-  ${GetSize} "$INSTDIR" "/S=0K /G=0" $0 $1 $2
+  ; The size Settings > Apps shows: every file in the folder and its subfolders, in kilobytes.
+  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKCU "${UNINSTKEY}" "EstimatedSize" "$0"
 

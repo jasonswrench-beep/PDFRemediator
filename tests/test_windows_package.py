@@ -1069,6 +1069,7 @@ def small_setup(tmp_path):
     payload = build / "payload"
     for name, data in {"PDF Remediator.exe": b"MZ authored stand-in", "package-manifest.json": b"{}", "local-runtime.toml": b"[runtime]\n",
                        "src/pdf_remediator/__init__.py": b"# authored", "runtime/python/README.txt": b"authored",
+                       "runtime/python/Lib/padding.bin": b"\0" * 400_000,  # most of the size is in subfolders, as in the real payload
                        "NOTICES/LICENSE": (SOURCE.parents[1] / "LICENSE").read_bytes()}.items():
         (payload / name).parent.mkdir(parents=True, exist_ok=True)
         (payload / name).write_bytes(data)
@@ -1123,7 +1124,9 @@ def test_setup_installs_lists_itself_in_apps_updates_and_uninstalls_keeping_save
     assert registry_value("UninstallString") == f'"{folder}\\uninstall.exe"'
     assert registry_value("QuietUninstallString") == f'"{folder}\\uninstall.exe" /S'
     assert registry_value("InstallLocation") == f'"{folder}"' and registry_value("DisplayIcon") == f'"{folder}\\PDF Remediator.exe"'
-    assert registry_value("NoModify") == 1 and registry_value("NoRepair") == 1 and registry_value("EstimatedSize") >= 1
+    assert registry_value("NoModify") == 1 and registry_value("NoRepair") == 1
+    payload_kb = sum((payload / name).stat().st_size for name in installed_files(payload)) // 1024
+    assert payload_kb >= 400 and registry_value("EstimatedSize") >= payload_kb, "the size counts the files in subfolders too"
     assert registry_value("", "Software\\" + TEST_PRODUCT) == str(folder)
 
     # Updating: the old program files go (a file the new version does not have is not left behind), saved reviews stay.
