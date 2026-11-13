@@ -4,6 +4,7 @@ import json
 import math
 import os
 import re
+import shutil
 import uuid
 
 import pikepdf
@@ -276,161 +277,166 @@ def run_ocr(input, output, settings=None, workdir=None, mode="skip", cancel=None
     directory = Path(workdir or destination.parent / "ocr").resolve()
     directory.mkdir(parents=True, exist_ok=True)
     # Native OCR helpers can reject deeply nested Windows temporary paths.
-    # Keep each unique temporary root short and retain its path as evidence.
-    temporary = tools['project_root'] / 'tmp' / 'ocr' / uuid.uuid4().hex[:12]
+    # Keep each unique temporary root short and retain its path as evidence. It lives under output/review-app, so deleting the
+    # saved work also deletes it, and it is removed after every run, finished, failed or cancelled (rendered page images of the
+    # person's document can be in it).
+    temporary = tools['project_root'] / 'output' / 'review-app' / 'tmp' / 'ocr' / uuid.uuid4().hex[:12]
     temporary.mkdir(parents=True)
-    env = local_environment(tools["java_home"])
-    env["PATH"] = str(tools["tesseract_dir"]) + os.pathsep + env.get("PATH", "")
-    env["TESSDATA_PREFIX"] = str(tools["tesseract_dir"] / "tessdata")
-    env["OMP_THREAD_LIMIT"] = "1"
-    env["TEMP"] = env["TMP"] = str(temporary)
-    for key in ('PDF_REMEDIATOR_TABLE_EVIDENCE', 'PDF_REMEDIATOR_TABLE_SOURCE_SHA256', *ANGLE_ENV_KEYS, *TURN_ENV_KEYS, *ocr_confidence.ENV_KEYS):
-        env.pop(key, None)
-    limit = option(settings, "memory_limit_bytes", 4 * 1024**3)
-    probe = run([tools["ocr_python"], "-I", "-B", "-X", "utf8", "-m", "ocrmypdf", "--version"], directory / "version",
-                min(option(settings, "timeout_seconds", 600), 30), limit, cancel, env)
-    if probe["status"] != "completed" or Path(probe["stdout"]).read_text(encoding="utf-8").strip() != OCR_VERSION:
-        return {"status": "error", "ocr_profile": profile, "mode": mode, 'requested_mode': mode, 'native_mode': native_mode,
-                'page_selection': selection, "error": "Pinned OCRmyPDF 17.13.0 startup failed", "version_probe": probe}
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    original_hash = sha(source)
-    command = [tools["ocr_python"], "-I", "-B", "-X", "utf8", "-m", "ocrmypdf", "--mode", native_mode, "--output-type", "pdf",
-               "--optimize", "0", "--rasterizer", "pypdfium", "--jobs", "1", "-l", language]
-    if selection is not None:
-        command.extend(['--pages', selection['native_page_clause']])
-    oversample = None
-    if profile in ('standard', 'turns'):
-        oversample = oversample_plan(source, selection['selected_pages'] if selection is not None else [p['page'] for p in image_pages])
-        if oversample['dpi']:
-            command.extend(['--oversample', str(oversample['dpi'])])
-    table_evidence = angle_evidence = turn_evidence = None
-    if profile == 'turns':
-        turn_evidence = directory / 'turns'
-        turn_evidence.mkdir()
-        env['PDF_REMEDIATOR_TURN_EVIDENCE'] = str(turn_evidence)
-        env['PDF_REMEDIATOR_TURN_SOURCE_SHA256'] = original_hash
-        word_confidence = directory / 'word-confidence.cfg'
-        word_confidence.write_bytes(b'tessedit_create_tsv 1\n')
-        command.extend(['--pdf-renderer', 'sandwich', '--tesseract-config', word_confidence, '--plugin', turn_paths['plugin_sha256']])
-    elif profile == 'table-lines':
-        table_evidence = directory / 'table-lines'
-        table_evidence.mkdir()
-        env['PDF_REMEDIATOR_TABLE_EVIDENCE'] = str(table_evidence)
-        env['PDF_REMEDIATOR_TABLE_SOURCE_SHA256'] = original_hash
-        command.extend(['--plugin', plugin])
-    elif profile == 'angles':
-        angle_evidence = directory / 'angles'
-        angle_evidence.mkdir()
-        env['PDF_REMEDIATOR_ANGLE_EVIDENCE'] = str(angle_evidence)
-        env['PDF_REMEDIATOR_ANGLE_SOURCE_SHA256'] = original_hash
-        command.extend(['--pdf-renderer', 'sandwich', '--max-ocr-image-mpixels', '32', '--plugin', angle_paths['plugin_sha256']])
-    # How surely each page was read: noted by a small fixed hook (standard and ruled-table layouts) or recorded by the turn hook
-    # itself (turns). The hook only observes; it cannot change what is read or written.
-    confidence_dir = confidence_binding = None
-    confidence_plugin = Path(__file__).resolve().with_name('ocr_confidence_plugin.py')
-    confidence_algorithm = Path(ocr_confidence.__file__).resolve()
-    if profile in ('standard', 'table-lines') and confidence_plugin.is_file() and confidence_algorithm.is_file():
-        confidence_binding = {'plugin_sha256': sha(confidence_plugin), 'algorithm_sha256': sha(confidence_algorithm)}
-        confidence_dir = directory / 'confidence'
-        confidence_dir.mkdir()
-        env[ocr_confidence.ENV_KEYS[0]] = str(confidence_dir)
-        env[ocr_confidence.ENV_KEYS[1]] = original_hash
-        command.extend(['--plugin', confidence_plugin])
-    command.extend([source, destination])
-    result = run(command, directory / "execution", option(settings, "timeout_seconds", 600), limit, cancel, env)
-    result.update(mode=mode, requested_mode=mode, native_mode=native_mode, language=language, ocr_profile=profile, input_sha256=original_hash, version_probe=probe,
-                  temporary_directory=str(temporary), document_network_calls=0, output_type="pdf", optimize=0, rasterizer="pypdfium",
-                  source_image_pages=[p["page"] for p in image_pages], no_force=True)
-    if oversample is not None:
-        result['oversample'] = oversample
-    if selection is not None:
-        result['page_selection'] = selection
-    if sha(source) != original_hash:
-        result.update(status="error", error="Input changed during OCR")
-    if result['status'] == 'completed' and table_evidence is not None:
-        pages = []
-        try:
-            for path in sorted(table_evidence.glob('*.json')):
-                proof = json.loads(path.read_text(encoding='utf-8'))
-                if (not isinstance(proof, dict) or proof.get('schema') != 'phase1-ocr-table-preprocess-1' or proof.get('profile') != profile
-                        or type(proof.get('page')) is not int or not 1 <= proof['page'] <= len(before['pages'])
-                        or path.name != f"{proof['page']:06d}.json" or proof.get('adapter_source_sha256') != original_hash
-                        or proof.get('plugin_sha256') != table_binding['plugin_sha256'] or proof.get('algorithm_sha256') != table_binding['algorithm_sha256']
-                        or proof.get('outside_detected_grids_unchanged') is not True
-                        or proof.get('status') not in ('filtered', 'no-grid')):
-                    raise ValueError('Ruled-table OCR preprocessing evidence is invalid.')
-                _require_table_preprocessing_shape(proof)
-                pages.append({**proof, 'path': str(path), 'sha256': sha(path)})
-            required_pages = set(selection['selected_pages']) if selection is not None else {page['page'] for page in image_pages}
-            actual_pages = {page['page'] for page in pages}
-            if (actual_pages != required_pages if selection is not None else not required_pages <= actual_pages):
-                raise ValueError('Ruled-table OCR preprocessing evidence is incomplete.')
-            if table_binding != {'plugin_sha256': sha(plugin), 'algorithm_sha256': sha(algorithm)}:
-                raise ValueError('Ruled-table OCR implementation changed during processing.')
-            result['recognition_preprocessing'] = {'profile': profile, **table_binding, 'pages': pages,
-                                                  'scope': 'Recognition-only conditioning; original painting and every existing preservation gate remain unchanged.'}
-        except (OSError, ValueError, TypeError) as error:
-            result.update(status='error', error=str(error))
-    if result['status'] == 'completed' and angle_evidence is not None:
-        try:
-            if angle_binding != {key: sha(path) for key, path in angle_paths.items()} or sha(font) != FONT_SHA256:
-                raise ValueError('Angle OCR implementation or font changed during processing.')
-            required_pages = selection['selected_pages'] if selection is not None else [page['page'] for page in image_pages]
-            pages = validate_angle_pages(angle_evidence, required_pages, angle_binding, font, original_hash, len(before['pages']))
-            if angle_binding != {key: sha(path) for key, path in angle_paths.items()} or sha(font) != FONT_SHA256:
-                raise ValueError('Angle OCR implementation or font changed during processing.')
-            result['recognition_alternatives'] = {'profile': profile, **angle_binding, 'font_sha256': FONT_SHA256, 'pages': pages,
-                'scope': 'Local recognition alternatives and hidden text only; original painting and all preservation gates remain required.'}
-        except Exception as error:
-            # This is a child-process evidence boundary, including bounded
-            # raster/font/PDF parsers. An unreadable proof can never pass.
-            result.update(status='error', error='Angle OCR evidence validation failed: ' + str(error))
-    if result['status'] == 'completed' and turn_evidence is not None:
-        try:
-            if turn_binding != {key: sha(path) for key, path in turn_paths.items()}:
-                raise ValueError('Turn recognition implementation changed during processing.')
-            required_pages = selection['selected_pages'] if selection is not None else [page['page'] for page in image_pages]
-            pages = validate_turn_pages(turn_evidence, required_pages, turn_binding, original_hash, len(before['pages']))
-            result['recognition_turns'] = {'profile': profile, **turn_binding, 'pages': pages,
-                'turned_pages': [p['page'] for p in pages if p['turn_ccw']],
-                'scope': 'Local right-angle turn trials and hidden text only; original painting and all preservation gates remain required.'}
-        except Exception as error:
-            # The evidence is written by a child process; an unreadable proof can never pass.
-            result.update(status='error', error='Turn recognition evidence validation failed: ' + str(error))
-    if result["status"] == "completed":
-        if not destination.is_file() or destination.stat().st_size == 0:
-            result.update(status="error", error="OCR completed without a PDF")
-        else:
-            result["fidelity"] = compare_fidelity(source, destination, cancel=cancel)
-            result["preservation"] = _ocr_preservation(result["fidelity"], expected_pages=len(before["pages"]))
-            after = inspect_pdf(destination, cancel=cancel)
-            result["output_inspection"] = after
-            if selection is not None:
-                coverage = check_textless_coverage(selection, result['fidelity'], after)
-                result['textless_page_coverage'] = coverage
-                result['preservation']['textless_page_coverage_status'] = coverage['status']
-                if coverage['status'] != 'pass':
-                    result['preservation']['status'] = 'fail'
-            if after.get("error"):
-                result.update(status="error", error="OCR output could not be inspected")
-            elif any(p["class"] == "scanned" for p in after["pages"]):
-                result.update(status="failed", error="Image-only output still has no selectable text")
-            elif result["preservation"]["status"] != "pass":
-                message = 'OCR changed an excluded text-bearing page or left a selected page without text' if selection is not None and coverage['status'] != 'pass' else 'OCR failed exact visible/original-text preservation'
-                result.update(status="failed", error=message)
-            elif before.get("structure", {}).get("present"):
-                # Tested skip scope: keep tag inventories and alternatives. This
-                # is a bounded signal, not a semantic-tree equivalence proof.
-                a, b = before["structure"], after["structure"]
-                same = a.get("tag_counts") == b.get("tag_counts") and [f["alt"] for f in a["figures"]] == [f["alt"] for f in b["figures"]]
-                result["existing_tag_inventory_preserved"] = same
-                if not same:
-                    result.update(status="failed", error="OCR changed existing tag inventory")
-            result.update(output=str(destination), output_sha256=sha(destination),
-                          human_review_pending=["OCR accuracy", "OCR completeness", "reading order"])
-    if result["status"] == "completed":
-        result['reading_confidence'] = _reading_confidence(
-            profile, selection['selected_pages'] if selection is not None else [p['page'] for p in image_pages], len(before['pages']), original_hash,
-            directory=confidence_dir, binding=confidence_binding,
-            turn_pages=result.get('recognition_turns', {}).get('pages'))
-    return result
+    try:
+        env = local_environment(tools["java_home"])
+        env["PATH"] = str(tools["tesseract_dir"]) + os.pathsep + env.get("PATH", "")
+        env["TESSDATA_PREFIX"] = str(tools["tesseract_dir"] / "tessdata")
+        env["OMP_THREAD_LIMIT"] = "1"
+        env["TEMP"] = env["TMP"] = str(temporary)
+        for key in ('PDF_REMEDIATOR_TABLE_EVIDENCE', 'PDF_REMEDIATOR_TABLE_SOURCE_SHA256', *ANGLE_ENV_KEYS, *TURN_ENV_KEYS, *ocr_confidence.ENV_KEYS):
+            env.pop(key, None)
+        limit = option(settings, "memory_limit_bytes", 4 * 1024**3)
+        probe = run([tools["ocr_python"], "-I", "-B", "-X", "utf8", "-m", "ocrmypdf", "--version"], directory / "version",
+                    min(option(settings, "timeout_seconds", 600), 30), limit, cancel, env)
+        if probe["status"] != "completed" or Path(probe["stdout"]).read_text(encoding="utf-8").strip() != OCR_VERSION:
+            return {"status": "error", "ocr_profile": profile, "mode": mode, 'requested_mode': mode, 'native_mode': native_mode,
+                    'page_selection': selection, "error": "Pinned OCRmyPDF 17.13.0 startup failed", "version_probe": probe}
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        original_hash = sha(source)
+        command = [tools["ocr_python"], "-I", "-B", "-X", "utf8", "-m", "ocrmypdf", "--mode", native_mode, "--output-type", "pdf",
+                   "--optimize", "0", "--rasterizer", "pypdfium", "--jobs", "1", "-l", language]
+        if selection is not None:
+            command.extend(['--pages', selection['native_page_clause']])
+        oversample = None
+        if profile in ('standard', 'turns'):
+            oversample = oversample_plan(source, selection['selected_pages'] if selection is not None else [p['page'] for p in image_pages])
+            if oversample['dpi']:
+                command.extend(['--oversample', str(oversample['dpi'])])
+        table_evidence = angle_evidence = turn_evidence = None
+        if profile == 'turns':
+            turn_evidence = directory / 'turns'
+            turn_evidence.mkdir()
+            env['PDF_REMEDIATOR_TURN_EVIDENCE'] = str(turn_evidence)
+            env['PDF_REMEDIATOR_TURN_SOURCE_SHA256'] = original_hash
+            word_confidence = directory / 'word-confidence.cfg'
+            word_confidence.write_bytes(b'tessedit_create_tsv 1\n')
+            command.extend(['--pdf-renderer', 'sandwich', '--tesseract-config', word_confidence, '--plugin', turn_paths['plugin_sha256']])
+        elif profile == 'table-lines':
+            table_evidence = directory / 'table-lines'
+            table_evidence.mkdir()
+            env['PDF_REMEDIATOR_TABLE_EVIDENCE'] = str(table_evidence)
+            env['PDF_REMEDIATOR_TABLE_SOURCE_SHA256'] = original_hash
+            command.extend(['--plugin', plugin])
+        elif profile == 'angles':
+            angle_evidence = directory / 'angles'
+            angle_evidence.mkdir()
+            env['PDF_REMEDIATOR_ANGLE_EVIDENCE'] = str(angle_evidence)
+            env['PDF_REMEDIATOR_ANGLE_SOURCE_SHA256'] = original_hash
+            command.extend(['--pdf-renderer', 'sandwich', '--max-ocr-image-mpixels', '32', '--plugin', angle_paths['plugin_sha256']])
+        # How surely each page was read: noted by a small fixed hook (standard and ruled-table layouts) or recorded by the turn hook
+        # itself (turns). The hook only observes; it cannot change what is read or written.
+        confidence_dir = confidence_binding = None
+        confidence_plugin = Path(__file__).resolve().with_name('ocr_confidence_plugin.py')
+        confidence_algorithm = Path(ocr_confidence.__file__).resolve()
+        if profile in ('standard', 'table-lines') and confidence_plugin.is_file() and confidence_algorithm.is_file():
+            confidence_binding = {'plugin_sha256': sha(confidence_plugin), 'algorithm_sha256': sha(confidence_algorithm)}
+            confidence_dir = directory / 'confidence'
+            confidence_dir.mkdir()
+            env[ocr_confidence.ENV_KEYS[0]] = str(confidence_dir)
+            env[ocr_confidence.ENV_KEYS[1]] = original_hash
+            command.extend(['--plugin', confidence_plugin])
+        command.extend([source, destination])
+        result = run(command, directory / "execution", option(settings, "timeout_seconds", 600), limit, cancel, env)
+        result.update(mode=mode, requested_mode=mode, native_mode=native_mode, language=language, ocr_profile=profile, input_sha256=original_hash, version_probe=probe,
+                      temporary_directory=str(temporary), document_network_calls=0, output_type="pdf", optimize=0, rasterizer="pypdfium",
+                      source_image_pages=[p["page"] for p in image_pages], no_force=True)
+        if oversample is not None:
+            result['oversample'] = oversample
+        if selection is not None:
+            result['page_selection'] = selection
+        if sha(source) != original_hash:
+            result.update(status="error", error="Input changed during OCR")
+        if result['status'] == 'completed' and table_evidence is not None:
+            pages = []
+            try:
+                for path in sorted(table_evidence.glob('*.json')):
+                    proof = json.loads(path.read_text(encoding='utf-8'))
+                    if (not isinstance(proof, dict) or proof.get('schema') != 'phase1-ocr-table-preprocess-1' or proof.get('profile') != profile
+                            or type(proof.get('page')) is not int or not 1 <= proof['page'] <= len(before['pages'])
+                            or path.name != f"{proof['page']:06d}.json" or proof.get('adapter_source_sha256') != original_hash
+                            or proof.get('plugin_sha256') != table_binding['plugin_sha256'] or proof.get('algorithm_sha256') != table_binding['algorithm_sha256']
+                            or proof.get('outside_detected_grids_unchanged') is not True
+                            or proof.get('status') not in ('filtered', 'no-grid')):
+                        raise ValueError('Ruled-table OCR preprocessing evidence is invalid.')
+                    _require_table_preprocessing_shape(proof)
+                    pages.append({**proof, 'path': str(path), 'sha256': sha(path)})
+                required_pages = set(selection['selected_pages']) if selection is not None else {page['page'] for page in image_pages}
+                actual_pages = {page['page'] for page in pages}
+                if (actual_pages != required_pages if selection is not None else not required_pages <= actual_pages):
+                    raise ValueError('Ruled-table OCR preprocessing evidence is incomplete.')
+                if table_binding != {'plugin_sha256': sha(plugin), 'algorithm_sha256': sha(algorithm)}:
+                    raise ValueError('Ruled-table OCR implementation changed during processing.')
+                result['recognition_preprocessing'] = {'profile': profile, **table_binding, 'pages': pages,
+                                                      'scope': 'Recognition-only conditioning; original painting and every existing preservation gate remain unchanged.'}
+            except (OSError, ValueError, TypeError) as error:
+                result.update(status='error', error=str(error))
+        if result['status'] == 'completed' and angle_evidence is not None:
+            try:
+                if angle_binding != {key: sha(path) for key, path in angle_paths.items()} or sha(font) != FONT_SHA256:
+                    raise ValueError('Angle OCR implementation or font changed during processing.')
+                required_pages = selection['selected_pages'] if selection is not None else [page['page'] for page in image_pages]
+                pages = validate_angle_pages(angle_evidence, required_pages, angle_binding, font, original_hash, len(before['pages']))
+                if angle_binding != {key: sha(path) for key, path in angle_paths.items()} or sha(font) != FONT_SHA256:
+                    raise ValueError('Angle OCR implementation or font changed during processing.')
+                result['recognition_alternatives'] = {'profile': profile, **angle_binding, 'font_sha256': FONT_SHA256, 'pages': pages,
+                    'scope': 'Local recognition alternatives and hidden text only; original painting and all preservation gates remain required.'}
+            except Exception as error:
+                # This is a child-process evidence boundary, including bounded
+                # raster/font/PDF parsers. An unreadable proof can never pass.
+                result.update(status='error', error='Angle OCR evidence validation failed: ' + str(error))
+        if result['status'] == 'completed' and turn_evidence is not None:
+            try:
+                if turn_binding != {key: sha(path) for key, path in turn_paths.items()}:
+                    raise ValueError('Turn recognition implementation changed during processing.')
+                required_pages = selection['selected_pages'] if selection is not None else [page['page'] for page in image_pages]
+                pages = validate_turn_pages(turn_evidence, required_pages, turn_binding, original_hash, len(before['pages']))
+                result['recognition_turns'] = {'profile': profile, **turn_binding, 'pages': pages,
+                    'turned_pages': [p['page'] for p in pages if p['turn_ccw']],
+                    'scope': 'Local right-angle turn trials and hidden text only; original painting and all preservation gates remain required.'}
+            except Exception as error:
+                # The evidence is written by a child process; an unreadable proof can never pass.
+                result.update(status='error', error='Turn recognition evidence validation failed: ' + str(error))
+        if result["status"] == "completed":
+            if not destination.is_file() or destination.stat().st_size == 0:
+                result.update(status="error", error="OCR completed without a PDF")
+            else:
+                result["fidelity"] = compare_fidelity(source, destination, cancel=cancel)
+                result["preservation"] = _ocr_preservation(result["fidelity"], expected_pages=len(before["pages"]))
+                after = inspect_pdf(destination, cancel=cancel)
+                result["output_inspection"] = after
+                if selection is not None:
+                    coverage = check_textless_coverage(selection, result['fidelity'], after)
+                    result['textless_page_coverage'] = coverage
+                    result['preservation']['textless_page_coverage_status'] = coverage['status']
+                    if coverage['status'] != 'pass':
+                        result['preservation']['status'] = 'fail'
+                if after.get("error"):
+                    result.update(status="error", error="OCR output could not be inspected")
+                elif any(p["class"] == "scanned" for p in after["pages"]):
+                    result.update(status="failed", error="Image-only output still has no selectable text")
+                elif result["preservation"]["status"] != "pass":
+                    message = 'OCR changed an excluded text-bearing page or left a selected page without text' if selection is not None and coverage['status'] != 'pass' else 'OCR failed exact visible/original-text preservation'
+                    result.update(status="failed", error=message)
+                elif before.get("structure", {}).get("present"):
+                    # Tested skip scope: keep tag inventories and alternatives. This
+                    # is a bounded signal, not a semantic-tree equivalence proof.
+                    a, b = before["structure"], after["structure"]
+                    same = a.get("tag_counts") == b.get("tag_counts") and [f["alt"] for f in a["figures"]] == [f["alt"] for f in b["figures"]]
+                    result["existing_tag_inventory_preserved"] = same
+                    if not same:
+                        result.update(status="failed", error="OCR changed existing tag inventory")
+                result.update(output=str(destination), output_sha256=sha(destination),
+                              human_review_pending=["OCR accuracy", "OCR completeness", "reading order"])
+        if result["status"] == "completed":
+            result['reading_confidence'] = _reading_confidence(
+                profile, selection['selected_pages'] if selection is not None else [p['page'] for p in image_pages], len(before['pages']), original_hash,
+                directory=confidence_dir, binding=confidence_binding,
+                turn_pages=result.get('recognition_turns', {}).get('pages'))
+        return result
+    finally:
+        shutil.rmtree(temporary, ignore_errors=True)

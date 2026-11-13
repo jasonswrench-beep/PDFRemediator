@@ -220,7 +220,7 @@ changing mode/layout requires a separate result. Existing reviews are retained.
 No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
-`C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
+`%USERPROFILE%\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
 This checkpoint does not claim that future receipt exists or invent its hash.
 
 **Prior-build text follows verbatim.** Earlier sections, including earlier

@@ -315,9 +315,9 @@ def test_ocr_uses_short_project_temporary_root_even_for_deep_work_directory(tmp_
     assert result["status"] == "failed"
     assert len(captured) == 2
     temporary = Path(result["temporary_directory"])
-    assert temporary.parent == project / "tmp/ocr"
+    assert temporary.parent == project / "output/review-app/tmp/ocr", "under the saved-work folder, so deleting saved work removes it"
     assert len(temporary.name) == 12
-    assert temporary.is_dir()
+    assert not temporary.exists(), "the run's temporary folder is removed after the run"
     assert all(item["TEMP"] == item["TMP"] == str(temporary) for item in captured)
     assert work not in temporary.parents
     assert len(str(temporary)) < len(str(work))

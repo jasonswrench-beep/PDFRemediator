@@ -30,7 +30,7 @@ This software is based in part on the work of the FreeType Team.
 
 FreeType is used under the FreeType License by Pillow, by PDFium inside pypdfium2, and by the Java runtime. The licence asks for this
 credit in the documentation of a binary distribution and says to use the year of the FreeType version actually used. Checked 2026-10-31:
-Pillow 13.0.0 and the Java runtime (Temurin 25.0.4.1) carry FreeType 2.14.3, released 2026-03-22 (freetype.org news page); PDFium
+Pillow 13.0.0 and the Java runtime (Temurin 25.0.5+8, checked again 2026-11-13) carry FreeType 2.14.3, released 2026-03-22 (freetype.org news page); PDFium
 156.0.8076.0 inside pypdfium2 5.14.0 carries a Chromium FreeType snapshot (commit `4800589f76dc`, committed 2026-08-24, from PDFium's
 `DEPS` for branch chromium/8076). All three are 2026. The credit is also in `START-HERE.txt`. The licence texts are in the packages:
 Pillow's `LICENSE` under `pillow-13.0.0.dist-info/licenses/`, pypdfium2's `BUILD_LICENSES/freetype.txt` under its `dist-info/licenses/`,
@@ -42,11 +42,11 @@ and `runtime/java/legal/java.desktop/freetype.md`. FreeType's wording is in its 
 |---|---|---|---|---|
 | OpenDataLoader PDF (the tagging engine, Hancom) | 2.5.13 | Apache-2.0 | https://github.com/opendataloader-project/opendataloader-pdf | `runtime/odl/LICENSE`, `NOTICE`, `THIRD_PARTY/` |
 | veraPDF command line (strict PDF/UA checker) | 1.30.3 | Dual licence GPL-3.0-or-later or MPL-2.0-or-later. **PDF Remediator uses it under MPL-2.0.** | https://github.com/veraPDF/veraPDF-apps and https://github.com/veraPDF/veraPDF-library | `third-party/licenses/verapdf-LICENSE.MPL.txt` and `MPL-2.0.txt` (the veraPDF folder in the package does not contain the licence files its README points to, so they are added here) |
-| Eclipse Temurin JRE (Java runtime, Adoptium) | 25.0.4.1+1 | GPL-2.0 with the Classpath Exception | https://github.com/adoptium/jdk25u (commit `520406d87195`, from the runtime's `release` file); build scripts https://github.com/adoptium/temurin-build | `runtime/java/legal/` (GPL, assembly exception, per-module notices), `runtime/java/NOTICE` |
+| Eclipse Temurin JRE (Java runtime, Adoptium) | 25.0.5+8 | GPL-2.0 with the Classpath Exception | https://github.com/adoptium/jdk25u (commit `7ec19fb1eda7`, from the runtime's `release` file); build scripts https://github.com/adoptium/temurin-build | `runtime/java/legal/` (GPL, assembly exception, per-module notices), `runtime/java/NOTICE` |
 | Tesseract OCR | 5.5.3 (Windows installer build 5.5.3.20260724) | Apache-2.0 | https://github.com/tesseract-ocr/tesseract ; Windows build https://github.com/UB-Mannheim/tesseract/wiki | `runtime/tesseract/doc/LICENSE` |
 | Tesseract English and orientation models (`tessdata_fast`, commit `87416418657359cb625c412a48b6e1d6d41c29bd`) | n/a | Apache-2.0 | https://github.com/tesseract-ocr/tessdata_fast | `runtime/tesseract/tessdata/LICENSE` |
 | PDF Remediator.exe, the program window (since 2026-11-12) | n/a | Built from about 80 Rust packages, mostly MIT OR Apache-2.0 (also MIT, Apache-2.0, Unicode-3.0, Zlib, CC0-1.0 or MIT-0 options); among them tao, wry, the `windows` crates and `webview2-com` (MIT), whose `webview2-com-sys` links in Microsoft's WebView2 loader | https://crates.io (exact versions in `scripts/windows-launcher/Cargo.lock`) | `NOTICES/program-window-licences.txt`, written at build time from the packages themselves |
-| Python (embeddable build) | 3.14.9 | PSF-2.0 | https://www.python.org/downloads/ | `runtime/python/LICENSE.txt` (and `runtime/ocr/`) |
+| Python (embeddable build) | 3.14.10 | PSF-2.0 | https://www.python.org/downloads/ | `runtime/python/LICENSE.txt` (and `runtime/ocr/`) |
 | Parts carried by Python | n/a | OpenSSL 3 (Apache-2.0), libffi (MIT), SQLite (public domain), libtommath (public domain), expat (MIT), Microsoft Visual C++ runtime DLLs (**not in the package**: Microsoft limits who may pass them on, so the user installs Microsoft's own copy; see "Still to do", item 2) | via python.org (OpenSSL 3.5.9 read from the DLL) | `openssl-LICENSE.txt`, `libffi-LICENSE.txt`, `expat-COPYING.txt`, `libtommath-LICENSE.txt`; SQLite is public domain (https://sqlite.org/copyright.html); Microsoft runtime: not in the package |
 
 Inside the OpenDataLoader PDF jar (all unmodified; its own list is `runtime/odl/THIRD_PARTY/THIRD_PARTY_LICENSES.md`, which also
@@ -234,3 +234,7 @@ Each package keeps its licence texts in its `*.dist-info/licenses` folder inside
    their manifests, so `NOTICES/program-window-licences.txt` says so (as the other suite programs' notices do). `webview2-com-sys` links in
    Microsoft's WebView2 loader (`WebView2LoaderStatic.lib` from Microsoft's WebView2 SDK); add the SDK's own licence text before a copy
    is given to anyone, and have the reviewer in item 7 look at it.
+9. Bundled tools, security updates (2026-11-13): Java is Temurin 25.0.5+8 and Python 3.14.10. The exact Java, OpenDataLoader and
+   veraPDF trees are pinned file by file in `scripts/windows-native-lock.json`. Tesseract stays at 5.5.3 until a Windows build of
+   5.5.4 (released 2026-10-28 as source only, with fixes for memory-safety advisories) is published; then update
+   `scripts/windows-ocr-runtime-lock.json` and rebuild.

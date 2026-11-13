@@ -221,4 +221,4 @@ The next acceptance milestone is the remaining Phase 3 testing with actual users
 
 ## 12 Version 2.0: a stand-alone program window
 
-The program is a local web page that the launcher shows in its own plain Edge (or Chrome) window with a separate profile. That is how version 1 ships, and the documents say so. Version 2.0 gives it its own program window (a web view built into Windows 11), so nothing from a browser shows. Decided by the owner on 1 November 2026. It is not started; it will need the screen-reader and keyboard checks run again on the new window.
+Done early, on 12 November 2026 (0.3.0 alpha 5): PDF Remediator has its own program window, drawn by the web view built into Windows, so nothing from a browser shows. Until then the launcher showed the page in a plain browser window with a separate profile (decided by the owner on 1 November 2026 as a stopgap). Still to do: run the screen-reader and keyboard checks again on the new window.

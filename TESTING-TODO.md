@@ -19,7 +19,7 @@ The full suite is expected to end with only the environment failures listed belo
   text, focus should land inside it, and Escape should return to the box unticked. In a review, change a field without saving and press "All documents": the "Leave this review without saving?"
   dialog should be announced with "Stay and keep editing" focused.
 
-- [ ] **Status bar and Auto-fix line.** With NVDA, Narrator or JAWS: start a scan and listen. The step should be spoken when it
+- [ ] **Status bar and Auto-fix line.** With a screen reader (NVDA, Narrator, or another): start a scan and listen. The step should be spoken when it
   changes; the clock ("Working for 1:23") must not be read out every second. Check that "Cancelling..." is announced after Cancel.
 - [ ] **Home, Reset (top bar) and "Reset choices".** Tab to each; the spoken name should say what it does (the top-bar Reset is
   announced as "Reset: go to the start screen and clear the PDFs you chose and every option"). Check that "Reset choices" is
@@ -48,7 +48,8 @@ The full suite is expected to end with only the environment failures listed belo
   (the suggested name already exists, so it must be changed), own window opens, Stop and X both close it, nothing left running.
 - [ ] **A PC without the Microsoft Visual C++ Redistributable.** The message in the installer and in the launcher has only been
   tried with an impossible minimum version, never on a real PC without the package (a virtual machine would settle it).
-- [ ] **A PC without Microsoft Edge.** The window should open in Google Chrome, or in the default browser if neither is there.
+- [ ] **A PC without the WebView2 Runtime** (an older Windows 10). The program should say it needs Microsoft's free WebView2
+  Runtime and offer Microsoft's page, instead of opening.
 - [ ] **Windows SmartScreen.** The installer is unsigned; check what a first-time user sees and that the note's wording matches.
 - [ ] **Relaunch after the program was killed** (not stopped): start it again; it should recover from the stale session file.
 
