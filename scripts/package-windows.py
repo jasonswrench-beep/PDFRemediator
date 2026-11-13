@@ -56,6 +56,9 @@ LAUNCH_PORTABLE = ('from pathlib import Path\nimport sys\nfrom pdf_remediator.la
 FREETYPE_CREDIT = ("Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.\n"
                    "This software is based in part on the work of the FreeType Team.\n")
 APP_VERSION = "0.3.0"  # keep equal to pyproject.toml; the installer and Settings > Apps show it
+# The exact release this package is (its GitHub release tag without the "v"). The Check for updates button compares it with the
+# newest published release, so raise it for every release.
+RELEASE = "0.3.0-alpha.7"
 PRODUCT_NAME = "PDF Remediator"
 PUBLISHER = "PDF Remediator"
 COPYRIGHT = "Copyright 2026 Jason S. Wrench and the PDF Remediator contributors"
@@ -72,7 +75,7 @@ def start_here(ocr_included, signed):
             'setup), or open PDF Remediator.exe in this folder.\n'
             'The program opens in its own window. Closing that window stops the program, as does Stop application.\n\n'
             'PDF Remediator drafts accessibility repairs for PDFs and lists what a person still has to check. Every result is a draft\n'
-            'for review. Your documents are processed on this computer and nothing is sent over the internet. Your original PDFs are\n'
+            'for review. Your documents are processed on this computer and are never sent over the internet. Your original PDFs are\n'
             'never changed.\n\n' +
             ('OCR (reading scanned pages): English OCR is included. It stays off until you choose it: on the start page, open\n'
              'Processing options and pick one of the OCR choices under Scanned text.\n' if ocr_included else
@@ -83,7 +86,9 @@ def start_here(ocr_included, signed):
             'folder during setup, that is C:\\Users\\(your name)\\AppData\\Local\\PDF Remediator.\n'
             'Saved work: your saved reviews are in the output folder inside the install folder.\n'
             'Updating: run the setup program of the newer version. It replaces the program files and keeps your saved reviews.\n'
-            'Nothing is downloaded later, and there are no automatic updates.\n'
+            'Nothing is downloaded later, and there are no automatic updates. To see whether a newer version is published, click\n'
+            'Check for updates at the bottom of the window. Only then does PDF Remediator ask GitHub for its list of versions; it sends\n'
+            'nothing about you or your documents, and it only shows a link to the download page.\n'
             'Removing: Settings > Apps > Installed apps > PDF Remediator > Uninstall. Your saved reviews stay unless you tick\n'
             '"Also delete my saved reviews and settings".\n\n'
             'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
@@ -783,7 +788,8 @@ def runtime_config(ocr_enabled):
     return ('[runtime]\nproject_root = "."\njava_home = "runtime/java"\n'
             'odl_jar = "runtime/odl/jar/opendataloader-pdf-cli.jar"\n'
             'validator_cli = "runtime/verapdf/verapdf.bat"\nocr_mode = "off"\n' + optional +
-            'preserve_painting = true\nallow_tag_regrouping = false\nrepair_source_mappings = false\n')
+            'preserve_painting = true\nallow_tag_regrouping = false\nrepair_source_mappings = false\n'
+            '# The Check for updates button: "manual" (only when clicked) or "off".\nupdate_check = "manual"\n')
 
 
 class ArtifactSigner:
@@ -964,7 +970,8 @@ def build(plan, output, cargo=None, sign=False, makensis=None):
         signer.sign_programs(payload, output)
         check_no_microsoft_runtime(payload)
     # "product" is what the installer reads to know a folder holds an installed copy of this program (IsOurInstallation).
-    metadata = {"schema": "windows-internal-package-1", "product": PRODUCT_NAME, "release_status": "internal-unqualified",
+    require(RELEASE.split("-")[0] == APP_VERSION, "RELEASE must start with APP_VERSION")
+    metadata = {"schema": "windows-internal-package-1", "product": PRODUCT_NAME, "release": RELEASE, "release_status": "internal-unqualified",
                 "redistribution_cleared": False, "version": APP_VERSION, "architecture": "x64",
                 "ai_enabled": False, "ocr_enabled": bool(ocr), "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
                 "python_version": runtime["version"],

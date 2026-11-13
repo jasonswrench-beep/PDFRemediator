@@ -32,6 +32,8 @@ class RuntimeConfig:
     ocr_mode: str = 'off'
     ocr_profile: str = 'standard'
     bookmark_min_pages: int = 20
+    # The Check for updates button: "manual" (only when clicked) or "off" (an IT department can turn it off here).
+    update_check: str = 'manual'
 
     def public(self):
         return {key:str(value) if isinstance(value,Path) else value for key,value in asdict(self).items()}
@@ -70,5 +72,6 @@ def load_config(path=None,**overrides):
     if type(result.java_heap_mb) is not int or not 64<=result.java_heap_mb<=16384:raise ValueError('Invalid integer Java heap budget.')
     if type(result.bookmark_min_pages) is not int or result.bookmark_min_pages<1:raise ValueError('Invalid positive bookmark threshold.')
     if not isinstance(result.language,str) or not result.language.strip():raise ValueError('A language code is required.')
+    if result.update_check not in ('manual','off'):raise ValueError('update_check must be manual or off.')
     return result
 

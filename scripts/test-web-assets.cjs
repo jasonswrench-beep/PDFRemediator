@@ -134,7 +134,7 @@ function nodeDouble(tag = 'div', environment = {}) {
 async function settle() { await new Promise(resolve => setImmediate(resolve)); }
 
 async function boot({hash = '', stored, accepted = VALID, denied = false, documents = [], jobs = [], bundles = [], workspaces = {}, capabilities,
-    expectedMutations = [], expectedReads = [], expectedUploads = [], captureTimers = false} = {}) {
+    expectedMutations = [], expectedReads = [], expectedUploads = [], captureTimers = false, updateCheck} = {}) {
   const nodes = new Map();
   const focusEvents = [];
   const environment = {nodes, focusEvents};
@@ -261,6 +261,13 @@ async function boot({hash = '', stored, accepted = VALID, denied = false, docume
     let payload;
     if (url === '/api/dashboard') payload = {documents, jobs, ...(capabilities === undefined ? {} : {capabilities})};
     else if (url === '/api/bundles') payload = {bundles};
+    else if (url === '/api/update-check') {
+      if (updateCheck === undefined) {
+        unexpectedRequests.push({url, method: 'GET'});
+        assert.fail('An update check needs an authored answer.');
+      }
+      payload = updateCheck;
+    }
     else {
       const match = /^\/api\/workspaces\/([a-z0-9]+)(?:\/(context|page|ocr)\?(.*))?$/.exec(url);
       const saved = match && workspaces[match[1]];
@@ -5989,4 +5996,43 @@ test('REVIEW figures: figures on one page share one page image and a new review 
   await showPicture(result, 'figure-one');
   // The reopened page preview reads page 1 once; the figure then needs its own fresh read because the old image was released.
   assert.equal(result.requests.slice(again).filter(request => request.url.includes('/page?kind=original&page=1')).length, 2);
+});
+
+// Check for updates: the page shows the local service's answer as text, and only a github.com page as a plain link that opens outside
+// the program. The answer is an HTTP double; no test reaches the network.
+const UPDATE_PAGE = 'https://github.com/jasonswrench-beep/PDFRemediator/releases/tag/v0.3.0-alpha.8';
+test('Check for updates shows a newer version with its download page as a plain link', async () => {
+  const answer = {status: 'available', message: 'PDF Remediator 0.3.0 alpha 8 is available. You have 0.3.0 alpha 7. Installing it over this copy keeps your saved reviews.',
+    url: UPDATE_PAGE, link_text: 'Open the download page'};
+  const result = await boot({stored: VALID, updateCheck: answer});
+  await result.dispatch('update-check', 'click');
+  const out = result.getNode('update-result');
+  assert.equal(out.hidden, false);
+  assert.equal(out.textContent, answer.message);
+  assert.equal(out.children.length, 1);
+  const [link] = out.children;
+  assert.equal(link.tagName, 'A');
+  assert.equal(link.textContent, 'Open the download page');
+  assert.equal(link.href, UPDATE_PAGE);
+  assert.equal(link.target, '_blank');
+  assert.equal(link.rel, 'noopener noreferrer');
+  assert.equal(result.getNode('update-check').disabled, false, 'The button can be used again.');
+  assert(result.requests.some(request => request.url === '/api/update-check' && request.token === VALID));
+  assert.equal(result.getNode('notice').hidden, true, 'An update check is not an error.');
+});
+
+test('Check for updates never makes a link from an address outside github.com', async () => {
+  const answer = {status: 'available', message: 'PDF Remediator 9.9.9 is available.', url: 'https://example.org/setup.exe', link_text: 'Download'};
+  const result = await boot({stored: VALID, updateCheck: answer});
+  await result.dispatch('update-check', 'click');
+  assert.equal(result.getNode('update-result').textContent, answer.message);
+  assert.equal(result.getNode('update-result').children.length, 0);
+});
+
+test('Check for updates says when this is the newest version, without a link', async () => {
+  const answer = {status: 'current', message: 'You have the newest version, PDF Remediator 0.3.0 alpha 8.'};
+  const result = await boot({stored: VALID, updateCheck: answer});
+  await result.dispatch('update-check', 'click');
+  assert.equal(result.getNode('update-result').textContent, answer.message);
+  assert.equal(result.getNode('update-result').children.length, 0);
 });
