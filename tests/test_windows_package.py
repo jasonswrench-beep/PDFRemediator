@@ -733,6 +733,11 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     manifest = json.loads((payload / "package-manifest.json").read_text())
     bound = (output / "installer-bound.nsi").read_text(encoding="utf-8")
     assert config["ocr_mode"] == "off" and manifest["ai_enabled"] is False
+    # Check for updates: the switch an IT department can set, and the exact release the button compares with the published ones.
+    assert config["update_check"] == "manual" and manifest["release"] == package.RELEASE
+    assert package.RELEASE.startswith(package.APP_VERSION + "-") or package.RELEASE == package.APP_VERSION
+    from pdf_remediator.config import load_config
+    assert load_config(payload / "local-runtime.toml").update_check == "manual", "the packaged settings load as they are"
     assert result["ocr_enabled"] is manifest["ocr_enabled"] is ocr_enabled
     assert nsis_scripts == [(Path("declared-makensis"), output / "installer-bound.nsi")]
     assert result["status"] == "built" and result["installer"] == str(output / package.INSTALLER_NAME)
@@ -1038,6 +1043,8 @@ def test_start_text_says_where_the_program_is_and_how_to_update_and_remove_it():
             assert "Settings > Apps > Installed apps > PDF Remediator > Uninstall" in text
             assert '"Also delete my saved reviews and settings"' in text and "Also delete my saved reviews and settings" in installer_code()
             assert "It replaces the program files and keeps your saved reviews." in text and "Nothing is downloaded later" in text
+            assert "click\nCheck for updates at the bottom of the window" in text and "it sends\nnothing about you or your documents" in text
+            assert "are never sent over the internet" in text
             assert "such as the free Ollama. No AI model comes with PDF Remediator." in text
             assert ("English OCR is included. It stays off until you choose it" in text) is ocr_included
             assert ("OCR (reading scanned pages): not included in this copy." in text) is (not ocr_included)

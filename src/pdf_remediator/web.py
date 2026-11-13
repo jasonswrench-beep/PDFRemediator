@@ -687,6 +687,9 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/favicon.ico':return self.respond(200,(ASSETS/'PDFRemediator.ico').read_bytes(),'image/vnd.microsoft.icon')
             if path=='/api/dashboard':return self.respond(200,self.app.dashboard())
             if path=='/api/bundles':return self.respond(200,self.app.catalog())
+            if path=='/api/update-check':
+                from .updates import check
+                return self.respond(200,check(self.app.config))
             if path=='/api/models':
                 from .assistance import list_models
                 query=urllib.parse.parse_qs(parsed.query)
