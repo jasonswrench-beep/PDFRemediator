@@ -148,18 +148,53 @@ Function un.IsOurInstallation
   !insertmacro IS_OUR_INSTALLATION
 FunctionEnd
 
+; Removes the program folder $R1 (relative to $INSTDIR) with the cache the program's Python writes in it (__pycache__), then each
+; folder above it, as long as each is empty. A folder that still holds something stays. Uses $R0, $R1 and $8.
+!macro REMOVE_EMPTY_FOLDERS
+  RMDir /r "$INSTDIR\$R1\__pycache__"
+  ${Do}
+    RMDir "$INSTDIR\$R1"
+    StrLen $R0 $R1
+    ${Do}
+      IntOp $R0 $R0 - 1
+      ${If} $R0 < 0
+        ${Break}
+      ${EndIf}
+      StrCpy $8 $R1 1 $R0
+      ${If} $8 == "\"
+        ${Break}
+      ${EndIf}
+    ${Loop}
+    ${If} $R0 < 1
+      ${Break}
+    ${EndIf}
+    StrCpy $R1 $R1 $R0
+  ${Loop}
+!macroend
+Function RemoveEmptyFolders
+  !insertmacro REMOVE_EMPTY_FOLDERS
+FunctionEnd
+Function un.RemoveEmptyFolders
+  !insertmacro REMOVE_EMPTY_FOLDERS
+FunctionEnd
+
 ; Removes an installed copy's program files: the ones its own manifest lists ("files"), one by one, then each folder above them that
 ; that leaves empty, with the cache the program's Python writes beside its .py files (__pycache__). Every version's manifest lists
 ; exactly what that version installed, so an update removes the older version's files and an uninstall this version's, and nothing
 ; else: a file the person put in one of those folders stays, and so does a same-named folder that was never the program's. A listed
 ; name with a drive, a leading separator or ".." in it is skipped. The output folder (saved reviews) is never listed.
-; Only called after IsOurInstallation said yes ($R8 = 1). Uses $R0-$R7 and $6-$9.
-!macro REMOVE_PROGRAM
+; Only called after IsOurInstallation said yes ($R8 = 1). UN is "" in setup and "un." in the uninstaller. Uses $R0-$R7 and $5-$9.
+; The manifest lists files sorted by name, so each folder's files come together: a folder (and those above it) is tried once, when
+; the list moves on to another folder, after its last file is gone. No detail line is shown per file, which kept a visible setup
+; busy for minutes.
+!macro REMOVE_PROGRAM UN
   ${If} $R8 = 1
+    SetDetailsPrint none
     ClearErrors
     FileOpen $R7 "$INSTDIR\package-manifest.json" r
     ${IfNot} ${Errors}
       StrCpy $R5 0
+      StrCpy $6 ""
       ${Do}
         ClearErrors
         FileRead $R7 $R6
@@ -230,43 +265,41 @@ FunctionEnd
         ${EndIf}
         ${If} $9 = 0
           Delete "$INSTDIR\$R1"
-          StrCpy $6 0
-          StrCpy $8 $R1 3 -3
-          ${If} $8 == ".py"
-            StrCpy $6 1
-          ${EndIf}
-          ; Each folder above the file, if that leaves it empty.
+          ; The file's folder ($5); when it differs from the previous file's ($6), the previous folder is finished.
+          StrLen $R0 $R1
           ${Do}
-            StrLen $R0 $R1
-            ${Do}
-              IntOp $R0 $R0 - 1
-              ${If} $R0 < 0
-                ${Break}
-              ${EndIf}
-              StrCpy $8 $R1 1 $R0
-              ${If} $8 == "\"
-                ${Break}
-              ${EndIf}
-            ${Loop}
-            ${If} $R0 < 1
-              ${If} $6 = 1
-                RMDir /r "$INSTDIR\__pycache__"
-              ${EndIf}
+            IntOp $R0 $R0 - 1
+            ${If} $R0 < 0
               ${Break}
             ${EndIf}
-            StrCpy $R1 $R1 $R0
-            ${If} $6 = 1
-              RMDir /r "$INSTDIR\$R1\__pycache__"
-              StrCpy $6 0
+            StrCpy $8 $R1 1 $R0
+            ${If} $8 == "\"
+              ${Break}
             ${EndIf}
-            RMDir "$INSTDIR\$R1"
           ${Loop}
+          StrCpy $5 ""
+          ${If} $R0 > 0
+            StrCpy $5 $R1 $R0
+          ${EndIf}
+          ${If} $5 != $6
+            ${If} $6 != ""
+              StrCpy $R1 $6
+              Call ${UN}RemoveEmptyFolders
+            ${EndIf}
+            StrCpy $6 $5
+          ${EndIf}
         ${EndIf}
       ${Loop}
       FileClose $R7
+      ${If} $6 != ""
+        StrCpy $R1 $6
+        Call ${UN}RemoveEmptyFolders
+      ${EndIf}
+      RMDir /r "$INSTDIR\__pycache__"
     ${EndIf}
     Delete "$INSTDIR\package-manifest.json"
     Delete "$INSTDIR\.installation-complete.json"
+    SetDetailsPrint both
   ${EndIf}
 !macroend
 
@@ -346,7 +379,7 @@ Section Install
   Call IsOurInstallation
   ${If} $R8 = 1
     DetailPrint "Removing the previous version's program files. Saved reviews stay."
-    !insertmacro REMOVE_PROGRAM
+    !insertmacro REMOVE_PROGRAM ""
   ${EndIf}
 
   SetOutPath "$INSTDIR"
@@ -462,7 +495,7 @@ Section Uninstall
   !insertmacro WAIT_UNTIL_CLOSED
 
   Call un.IsOurInstallation
-  !insertmacro REMOVE_PROGRAM
+  !insertmacro REMOVE_PROGRAM "un."
   Delete "$INSTDIR\uninstall.exe"
   ; Copies made before version 0.3.0 alpha 6 kept OCR's temporary files here; they now live under output and are removed after each run.
   RMDir /r "$INSTDIR\tmp"
