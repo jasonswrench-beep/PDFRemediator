@@ -265,7 +265,8 @@ The separate OCR runtime holds 31 packages (six are the same as above), all with
   name in place to plain `msvcp140.dll` (same file size, rest padded with zero bytes) so they load Microsoft's own copy. Each file must hold
   the name exactly once or the build is refused. This changes two third-party binaries (`_core.pyd`, MPL-2.0; qpdf's DLL, Apache-2.0); it is
   described in the notices and recorded with before-and-after SHA-256 values. For the qualified reviewer.
-* `scripts/windows-vc-runtime.cs` is added to the end of the installer and the launcher at build time. It checks the Windows system folder
+* (Since 2026-11-12 this check is in `scripts/windows-vc-runtime.nsh` for the installer and in the program window's own source,
+  `scripts/windows-launcher/src/main.rs`; the C# file described here is gone.) `scripts/windows-vc-runtime.cs` was added to the end of the installer and the launcher at build time. It checks the Windows system folder
   for `ucrtbase.dll`, `vcruntime140.dll`, `vcruntime140_1.dll` and `msvcp140.dll` (at least 14.51.36247.0, the newest copy that used to be
   carried), and if one is missing or older it says so and offers to open Microsoft's download page. The program downloads nothing.
 * Tests: the package tests went from 127 to 170, among them a real compile of the installer that is run with a minimum version no PC has (it refuses, writes

@@ -2537,7 +2537,7 @@ test('DOM focus races: a job started during a pending Save keeps refreshed field
 // Shutdown regressions exercise the complete actual script and its real
 // listeners. The named Stop response is an HTTP double, never a live service
 // shutdown. Deferred body reads model requests already in flight at its ack.
-const STOP_NOTICE = 'The local application has stopped. You may close this tab.';
+const STOP_NOTICE = 'PDF Remediator has stopped. You can close this window.';
 function assertStoppedNotice(result) {
   assert.equal(result.getNode('notice').textContent, STOP_NOTICE);
   assert.equal(result.getNode('notice').hidden, false);
@@ -5799,7 +5799,7 @@ test('DOM credentials: saved but unapplied choices remain in the original review
 test('DOM credentials: Stop invalidates a pending copy response without starting later polling or opening a result',async()=>{
  const saved=credentialCopyFixture(),gate=deferredResponse(),url='/api/workspaces/'+saved.workspace_id+'/credential-copy',payload=credentialPayload(saved),expected=[{url,payload,allowCredentialCopy:true,response:gate.promise},{url:'/api/stop',payload:{},response:{status:'stopping'}}];
  const result=await bootSavedReview(saved,{captureTimers:true,expectedMutations:expected});await openSavedReview(result);await authorizeCredentialCopy(result);const pending=result.dispatch('credential-copy','click');await settle();await result.dispatch('stop','click');const notice=result.getNode('notice').textContent;gate.resolve({job_id:'a'.repeat(24)});await pending;
- expectOnlyMutations(result,expected.map(({url,payload})=>({url,payload})));assert.match(notice,/application has stopped/);assert.equal(result.getNode('notice').textContent,notice);assert.equal(result.scheduledTimers.length,0);
+ expectOnlyMutations(result,expected.map(({url,payload})=>({url,payload})));assert.match(notice,/PDF Remediator has stopped/);assert.equal(result.getNode('notice').textContent,notice);assert.equal(result.scheduledTimers.length,0);
 });
 
 test('DOM credentials: a delayed refusal from the previous review cannot overwrite the current review notice',async()=>{

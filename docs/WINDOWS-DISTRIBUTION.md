@@ -616,8 +616,8 @@ payload, because Microsoft limits who may pass them on. The builder leaves them 
 rewrites the two pikepdf native files so they load Microsoft's own `msvcp140.dll` instead of the renamed copy the wheel carried, lists
 what it did in the manifest's `microsoft_runtime` block, and refuses to build if one remains or a program needs a runtime file the
 installer does not check for. The computer needs Microsoft's free Visual C++ Redistributable (x64, `MS_RUNTIME_MINIMUM` in
-`scripts/package-windows.py` or newer). The launcher carries `scripts/windows-vc-runtime.cs` and the installer
-`scripts/windows-vc-runtime.nsh`, the same check of the 64-bit Windows system folder; if the runtime is missing or too old,
+`scripts/package-windows.py` or newer). The program window (`scripts/windows-launcher/src/main.rs`) and the installer
+(`scripts/windows-vc-runtime.nsh`) make the same check of the 64-bit Windows system folder; if the runtime is missing or too old,
 they offer to open Microsoft's download page (nothing is downloaded). Setup still finishes installing. Raise
 `MS_RUNTIME_MINIMUM` whenever the locked Python, wheels or Java change.
 
@@ -654,16 +654,34 @@ The checks in `tests/test_windows_package.py` build small installers from the re
 remove their registry entries afterwards. The manifest's internal status values (`internal-unqualified`,
 `redistribution_cleared` false) are unchanged; the person installing never sees them.
 
-Opening the installed `PDF Remediator.exe` runs the private interpreter and shows the page in its own window: Microsoft Edge (which
-Windows includes) or, failing that, Chrome, started in `--app` mode with a profile of its own at `output/review-app/window-profile`,
-so the window has no tabs or address bar and never touches the person's own browsing. Nothing is installed or downloaded for this.
-If neither browser is found, the ordinary default browser is used. One launcher per installation (a named mutex) waits for the
-window to close and then stops the service the way the Stop application button does; opening the program again while it is
-running only opens another window. `launch_portable.py` takes `--no-open` (start the service only) and `--stop`. Tried on the
-developer PC on 2026-10-31 from a real build: the Edge window opened as its own process tree (it did not hand the page to the
-Edge that was already running), and both the Stop application button and the window's X button closed it and left no Edge,
-Python or launcher process and a closed port. Not tried: Chrome as the window, a PC without Edge, and relaunch after the
-service is killed rather than stopped.
+### The program window (since 2026-11-12)
+
+`PDF Remediator.exe` is PDF Remediator's own program window, built from `scripts/windows-launcher` (Rust, with tao and wry,
+the window libraries the other OpenStage-family programs use through Tauri). It replaced an earlier C# launcher that showed
+the page in a Microsoft Edge (or Chrome) "app" window. That design failed on 2026-11-12 on the owner's PC: the Edge process
+the launcher started handed its window to another Edge process and ended within half a second, the launcher took that as the
+window closing and stopped the service, and the window that stayed open showed "127.0.0.1 refused to connect".
+
+* It checks for the Visual C++ Redistributable and for Microsoft's WebView2 Runtime (part of Windows 11 and current Windows
+  10) first, and offers Microsoft's page for either one that is missing. It links its own C runtime, so it can show that
+  message on a PC that lacks the Redistributable, and it needs no other file beside it.
+* It runs `launch_portable.py --no-open` with the private interpreter, reads the private address from
+  `output/review-app/.private-session.json`, and shows the page in a normal window titled PDF Remediator, with the
+  program's icon, drawn by WebView2. WebView2 keeps its own data in `output/review-app/program-window`.
+* The window and the service end together: closing the window (after asking, if the open review has unsaved changes) runs
+  `launch_portable.py --stop`, and when the service process ends (the page's Stop application button) the window closes.
+* One program per installation (a named mutex): a second start brings the open window forward and ends.
+* Links to other web sites open in the person's own browser; files the page offers are saved through a Save As dialog.
+* Problems are shown in a message box and noted in `output/review-app/program-window.log`.
+* The build (`build_launcher` in `scripts/package-windows.py`) runs `cargo build --release --locked --offline` for
+  `x86_64-pc-windows-msvc`, so nothing is downloaded; on a new build PC run
+  `cargo fetch --locked --manifest-path scripts/windows-launcher/Cargo.toml` once. The licences of the Rust packages built
+  into the program are written to `NOTICES/program-window-licences.txt`, grouped by licence text.
+
+Tried on 2026-11-12 from a test copy of the alpha 4 payload with the new program (three runs, two of them with a new
+WebView2 data folder): the window opened with the page, the service was still running 8 seconds later, a second start
+brought the same window forward and ended, the window's close button stopped the service and ended the program, and the
+Stop application route closed the window by itself. No Edge process was involved.
 Startup errors produce a concise explanation and
 a bounded local diagnostic. No tkinter installation is needed. Reviews remain
 under that installation's `output/review-app`; keep the full installation in

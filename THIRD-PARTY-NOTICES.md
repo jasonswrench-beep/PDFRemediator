@@ -45,6 +45,7 @@ and `runtime/java/legal/java.desktop/freetype.md`. FreeType's wording is in its 
 | Eclipse Temurin JRE (Java runtime, Adoptium) | 25.0.4.1+1 | GPL-2.0 with the Classpath Exception | https://github.com/adoptium/jdk25u (commit `520406d87195`, from the runtime's `release` file); build scripts https://github.com/adoptium/temurin-build | `runtime/java/legal/` (GPL, assembly exception, per-module notices), `runtime/java/NOTICE` |
 | Tesseract OCR | 5.5.3 (Windows installer build 5.5.3.20260724) | Apache-2.0 | https://github.com/tesseract-ocr/tesseract ; Windows build https://github.com/UB-Mannheim/tesseract/wiki | `runtime/tesseract/doc/LICENSE` |
 | Tesseract English and orientation models (`tessdata_fast`, commit `87416418657359cb625c412a48b6e1d6d41c29bd`) | n/a | Apache-2.0 | https://github.com/tesseract-ocr/tessdata_fast | `runtime/tesseract/tessdata/LICENSE` |
+| PDF Remediator.exe, the program window (since 2026-11-12) | n/a | Built from about 80 Rust packages, mostly MIT OR Apache-2.0 (also MIT, Apache-2.0, Unicode-3.0, Zlib, CC0-1.0 or MIT-0 options); among them tao, wry, the `windows` crates and `webview2-com` (MIT), whose `webview2-com-sys` links in Microsoft's WebView2 loader | https://crates.io (exact versions in `scripts/windows-launcher/Cargo.lock`) | `NOTICES/program-window-licences.txt`, written at build time from the packages themselves |
 | Python (embeddable build) | 3.14.9 | PSF-2.0 | https://www.python.org/downloads/ | `runtime/python/LICENSE.txt` (and `runtime/ocr/`) |
 | Parts carried by Python | n/a | OpenSSL 3 (Apache-2.0), libffi (MIT), SQLite (public domain), libtommath (public domain), expat (MIT), Microsoft Visual C++ runtime DLLs (**not in the package**: Microsoft limits who may pass them on, so the user installs Microsoft's own copy; see "Still to do", item 2) | via python.org (OpenSSL 3.5.9 read from the DLL) | `openssl-LICENSE.txt`, `libffi-LICENSE.txt`, `expat-COPYING.txt`, `libtommath-LICENSE.txt`; SQLite is public domain (https://sqlite.org/copyright.html); Microsoft runtime: not in the package |
 
@@ -229,3 +230,7 @@ Each package keeps its licence texts in its `*.dist-info/licenses` folder inside
    change to a FreeType from another year.
 6. Check each library's licence against the version in the package on the day of release (MSYS2 versions above were read on 2026-10-30).
 7. One review by someone qualified (your university or the OpenStage side).
+8. Program window (since 2026-11-12): `webview2-com`, `webview2-com-macros` and `webview2-com-sys` carry no licence file, only "MIT" in
+   their manifests, so `NOTICES/program-window-licences.txt` says so (as the other suite programs' notices do). `webview2-com-sys` links in
+   Microsoft's WebView2 loader (`WebView2LoaderStatic.lib` from Microsoft's WebView2 SDK); add the SDK's own licence text before a copy
+   is given to anyone, and have the reviewer in item 7 look at it.

@@ -7,7 +7,7 @@ Your original PDF is never changed, nothing is sent to the cloud, and nothing it
 
 * **What it does and does not do:** [docs/WHAT-IT-DOES-AND-DOES-NOT-DO.md](docs/WHAT-IT-DOES-AND-DOES-NOT-DO.md)
 * **Install it on Windows:** download `PDF-Remediator-Setup.exe` from [Releases](https://github.com/jasonswrench-beep/PDFRemediator/releases) and run it. It installs like any Windows program, for your Windows account only (no administrator rights), into `AppData\Local\PDF Remediator`, and appears in Settings > Apps with an uninstaller. English OCR for scanned pages is included, and optional AI help needs a local model program you install yourself. To run it from the source code instead: [START-HERE.md](START-HERE.md) and [docs/WINDOWS-DISTRIBUTION.md](docs/WINDOWS-DISTRIBUTION.md).
-* **What the window is:** the program is a web page that runs on your own computer and is shown in its own plain Microsoft Edge (or Chrome) window, with no tabs or address bar. That is why it looks like a web page. Nothing is sent over the internet. A stand-alone program window is planned for version 2.0.
+* **What the window is:** PDF Remediator opens in its own program window, like the other OpenStage-family programs. Its screens are drawn by Microsoft's WebView2, which is part of Windows; no browser window is opened. Closing the window stops the program. Nothing is sent over the internet.
 * **Options in the app and on the command line:** [docs/REPAIR-OPTIONS.md](docs/REPAIR-OPTIONS.md)
 * **PDFs with Content Credentials (C2PA labels):** [docs/C2PA-LABELS-POLICY.md](docs/C2PA-LABELS-POLICY.md)
 * **Licence:** Apache-2.0 ([LICENSE](LICENSE), [NOTICE](NOTICE)). Bundled third-party parts and their licences: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

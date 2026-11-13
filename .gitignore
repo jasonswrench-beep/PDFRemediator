@@ -52,8 +52,8 @@
 !/scripts/e2e-browser.cjs
 !/scripts/windows-installer.nsi
 !/scripts/windows-vc-runtime.nsh
-!/scripts/windows-launcher.cs
-!/scripts/windows-vc-runtime.cs
+!/scripts/windows-launcher/
+/scripts/windows-launcher/target/
 !/scripts/windows-runtime-lock.json
 !/scripts/windows-ocr-runtime-lock.json
 !/.github/
