@@ -60,33 +60,56 @@ def test_font_allowlist_does_not_admit_arbitrary_binary_fonts(name):
         package.validate_source({"files": files})
 
 
-def test_compile_cs_binds_exact_icon_and_resources_with_space_safe_arguments(tmp_path, monkeypatch):
+def test_build_launcher_builds_offline_from_the_lock_with_the_checked_icon(tmp_path, monkeypatch):
     from types import SimpleNamespace
     icon = tmp_path / "reviewed icon.ico"
-    icon.write_bytes(b"authored compiler-input stub; no real executable")
+    icon.write_bytes(b"authored icon stub")
+    payload = tmp_path / "payload"
+    (payload / "NOTICES").mkdir(parents=True)
     calls = []
-    def compile_stub(argv, **kwargs):
+    def cargo_stub(argv, **kwargs):
         calls.append((argv, kwargs))
+        target = Path(argv[argv.index("--target-dir") + 1]) / package.LAUNCHER_TARGET / "release"
+        target.mkdir(parents=True)
+        (target / "pdf-remediator.exe").write_bytes(b"authored program stub; never a qualified executable")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
-    monkeypatch.setattr(package.subprocess, "run", compile_stub)
-    package.compile_cs(Path("declared-csc"), tmp_path / "source.cs", tmp_path / "output.exe",
-                       [(tmp_path / "payload.zip", "payload.zip")], icon=icon)
+    monkeypatch.setattr(package.subprocess, "run", cargo_stub)
+    monkeypatch.setattr(package, "launcher_components", lambda cargo, env: [
+        {"name": "authored-part", "version": "1.0.0", "license": "MIT", "texts": ["authored licence text"]},
+        {"name": "unlicensed-part", "version": "2.0.0", "license": "MIT", "texts": []}])
+    package.build_launcher(Path("declared cargo"), tmp_path / "out", icon, payload)
     argv, options = calls[0]
-    assert [arg for arg in argv if arg.startswith("/win32icon:")] == ["/win32icon:" + str(icon)]
-    assert "/resource:" + str(tmp_path / "payload.zip") + ",payload.zip" in argv
-    assert options == {"capture_output": True, "text": True, "timeout": 120, "check": False}
+    assert argv[:2] == ["declared cargo", "build"] and "--locked" in argv and "--offline" in argv and "--release" in argv
+    assert argv[argv.index("--target") + 1] == "x86_64-pc-windows-msvc"
+    assert Path(argv[argv.index("--manifest-path") + 1]) == SOURCE.parent / "windows-launcher" / "Cargo.toml"
+    env = options["env"]
+    assert env["PDFR_LAUNCHER_ICON"] == str(icon) and env["PDFR_MIN_VC_RUNTIME"] == package.MS_RUNTIME_MINIMUM
+    assert env["CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS"] == "-C target-feature=+crt-static" and "RUSTFLAGS" not in env
+    assert (payload / "PDF Remediator.exe").read_bytes() == b"authored program stub; never a qualified executable"
+    notices = (payload / "NOTICES" / package.LAUNCHER_NOTICES).read_text(encoding="utf-8")
+    assert "Used by: authored-part 1.0.0\n" in notices and "authored licence text" in notices
+    assert "Used by: unlicensed-part 2.0.0\n" in notices and "its manifest says MIT" in notices
 
 
-def test_compile_cs_refuses_icon_changed_during_compilation(tmp_path, monkeypatch):
+def test_build_launcher_refuses_icon_changed_during_the_build(tmp_path, monkeypatch):
     from types import SimpleNamespace
     icon = tmp_path / "reviewed.ico"
     icon.write_bytes(b"authored original icon")
-    def compile_stub(*args, **kwargs):
+    def cargo_stub(*args, **kwargs):
         icon.write_bytes(b"authored replacement icon")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
-    monkeypatch.setattr(package.subprocess, "run", compile_stub)
-    with pytest.raises(package.Refusal, match="icon changed during compilation"):
-        package.compile_cs(Path("declared-csc"), tmp_path / "source.cs", tmp_path / "output.exe", icon=icon)
+    monkeypatch.setattr(package.subprocess, "run", cargo_stub)
+    with pytest.raises(package.Refusal, match="icon changed during the build"):
+        package.build_launcher(Path("declared cargo"), tmp_path / "out", icon, tmp_path / "payload")
+
+
+def test_build_launcher_reports_a_failed_build(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    icon = tmp_path / "reviewed.ico"
+    icon.write_bytes(b"authored icon")
+    monkeypatch.setattr(package.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=101, stdout="", stderr="error[E0425]: authored failure"))
+    with pytest.raises(package.Refusal, match="did not build: error\\[E0425\\]: authored failure"):
+        package.build_launcher(Path("declared cargo"), tmp_path / "out", icon, tmp_path / "payload")
 
 
 def wheel_metadata(archive, metadata_path, text, filename, requires_python=">=3.11"):
@@ -655,12 +678,13 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     monkeypatch.setattr(package, "prepare_runtime_inputs", lambda _: (core, core_sha, core_raw, tmp_path / core["python"]["filename"], []))
     from types import SimpleNamespace
     monkeypatch.setattr(package, "os", SimpleNamespace(name="nt"))
-    compiled_icons, compiled_sources, checked_payloads = [], [], []
-    def compile_authored_stub(csc, source, output, resources=(), *, icon):
+    compiled_icons, launcher_builds, checked_payloads = [], [], []
+    def build_launcher_stub(cargo, output, icon, payload):
         compiled_icons.append((Path(icon), package.sha(icon)))
-        compiled_sources.append(Path(source))
-        output.write_bytes(b"authored compiler stub; never a qualified executable")
-    monkeypatch.setattr(package, "compile_cs", compile_authored_stub)
+        launcher_builds.append((Path(cargo), Path(output)))
+        (payload / "PDF Remediator.exe").write_bytes(b"authored program stub; never a qualified executable")
+        (payload / "NOTICES" / package.LAUNCHER_NOTICES).write_text("authored notices stub", encoding="utf-8")
+    monkeypatch.setattr(package, "build_launcher", build_launcher_stub)
     nsis_scripts = []
     def makensis_stub(makensis, script):
         nsis_scripts.append((Path(makensis), Path(script)))
@@ -696,7 +720,7 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     (notices / "LICENSE").write_bytes(b"authored notice")
     plan["notices"] = {"root": str(notices), "origin": "authored notices", "files": package.snapshot(notices)}
     output = tmp_path / "new-build"
-    result = package.build(plan, output, Path("not-executed"), makensis=Path("declared-makensis"))
+    result = package.build(plan, output, Path("declared-cargo"), makensis=Path("declared-makensis"))
     payload = output / "payload"
     config = tomllib.loads((payload / "local-runtime.toml").read_text())["runtime"]
     manifest = json.loads((payload / "package-manifest.json").read_text())
@@ -726,17 +750,18 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     assert all(manifest["files"][name] == plan["source"]["files"][name] == digest == package.sha(payload / name)
                for name, digest in package.EDITOR_FONT_ASSETS.items())
     assert manifest["version"] == package.APP_VERSION
-    launcher = (output / "launcher-bound.cs").read_text()
-    assert "__MIN_VC_RUNTIME__" not in launcher and 'const string Minimum = "' + package.MS_RUNTIME_MINIMUM + '";' in launcher
-    assert "internal static class VcRuntime" in launcher and "VcRuntime.Problem()" in launcher
+    assert (payload / "PDF Remediator.exe").read_bytes() == b"authored program stub; never a qualified executable"
+    assert manifest["files"]["NOTICES/" + package.LAUNCHER_NOTICES] == package.sha(payload / "NOTICES" / package.LAUNCHER_NOTICES)
     start_here = (payload / "START-HERE.txt").read_text(encoding="utf-8")
     assert start_here == package.start_here(ocr_enabled, False)
     assert "opens in its own window" in start_here and "Closing that window stops the program" in start_here
+    for word in ("edge", "chrome", "browser", "web page", "tab", "tabs"):
+        assert not re.search(r"" + word + r"", start_here.lower()), word
     assert (payload / "launch_portable.py").read_text(encoding="utf-8") == package.LAUNCH_PORTABLE
     assert package.FREETYPE_CREDIT in start_here
     assert package.FREETYPE_CREDIT.startswith("Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.\n")
     assert "based in part on the work of the FreeType Team" in start_here
-    assert compiled_sources == [output / "launcher-bound.cs"]
+    assert launcher_builds == [(Path("declared-cargo"), output)]
     assert checked_payloads == [payload], "the finished payload is checked for Microsoft runtime files before it is listed"
     microsoft = manifest["microsoft_runtime"]
     assert microsoft["minimum_version"] == package.MS_RUNTIME_MINIMUM
@@ -908,16 +933,17 @@ def test_payload_check_refuses_a_program_still_loading_a_renamed_copy(tmp_path):
 def test_installer_and_launcher_check_for_the_runtime_before_anything_else():
     scripts = SOURCE.parent
     installer = (scripts / "windows-installer.nsi").read_text(encoding="utf-8")
-    launcher = (scripts / "windows-launcher.cs").read_text(encoding="utf-8")
-    check = (scripts / "windows-vc-runtime.cs").read_text(encoding="utf-8")
+    launcher = launcher_source()
     nsis_check = (scripts / "windows-vc-runtime.nsh").read_text(encoding="utf-8")
     assert installer.index("Call CheckVcRuntime") < installer.index('File /r "${PAYLOAD}\\*"')
-    assert launcher.index("VcRuntime.Problem()") < launcher.index("File.Exists(python)") < launcher.index("RunPython(root, python")
-    assert check.count("__MIN_VC_RUNTIME__") == 1
+    run = launcher[launcher.index("fn run() -> i32"):]
+    assert run.index("vc_runtime_problem()") < run.index("python.is_file()") < run.index('run_python(&root, &python, "--no-open"')
+    assert 'env!("PDFR_MIN_VC_RUNTIME")' in launcher
     files = {name.lower() for name in package.MS_RUNTIME_SYSTEM_FILES}
+    check = launcher[launcher.index("fn vc_runtime_problem()"):launcher.index("fn keep_end(")]
     assert files == set(re.findall(r'"([a-z0-9_]+\.dll)"', check)) - {"ucrtbase.dll"}
     assert files == set(re.findall(r'VC_FILE "([a-z0-9_]+\.dll)"', nsis_check))
-    page = re.search(r'DownloadPage = "([^"]+)"', check).group(1)
+    page = re.search(r'VC_RUNTIME_PAGE: &str = "([^"]+)"', launcher).group(1)
     assert f'!define VCPAGE "{page}"' in installer
     assert "${DisableX64FSRedirection}" in nsis_check and "${EnableX64FSRedirection}" in nsis_check
 
@@ -965,8 +991,7 @@ def test_installer_is_a_standard_setup_like_the_other_suite_apps():
     assert "PAYLOAD_REMOVE" in macro
     # The program opens only a complete installation: the marker it looks for is written after the files.
     assert code.index('File /r "${PAYLOAD}\\*"') < code.index('FileOpen $0 "$INSTDIR\\.installation-complete.json" w')
-    launcher = (SOURCE.parent / "windows-launcher.cs").read_text(encoding="utf-8")
-    assert '".installation-complete.json"' in launcher
+    assert '".installation-complete.json"' in launcher_source()
 
 
 def test_start_text_says_where_the_program_is_and_how_to_update_and_remove_it():
@@ -1026,11 +1051,8 @@ def test_signed_build_signs_the_uninstaller_with_the_same_script():
     assert '"' + str((SOURCE.parent / "sign_windows.py").resolve()) + '"' in command
 
 
-def csc_path():
-    import os
-    windir = os.environ.get("WINDIR")
-    path = Path(windir) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe" if windir else None
-    return path if path is not None and path.is_file() else None
+def launcher_source():
+    return (SOURCE.parent / "windows-launcher" / "src" / "main.rs").read_text(encoding="utf-8")
 
 
 def makensis_path():
@@ -1224,26 +1246,68 @@ def test_setup_runtime_check_reads_the_64_bit_system_folder(tmp_path):
     assert found("99.0.0.0") == f"[vcruntime140.dll is version {version}, which is older than 99.0.0.0.]"
 
 
-def test_launcher_program_passes_the_arguments_that_launch_portable_understands():
-    launcher = (SOURCE.parent / "windows-launcher.cs").read_text(encoding="utf-8")
-    assert '"--no-open"' in launcher and '"--stop"' in launcher
+def test_program_window_passes_the_arguments_that_launch_portable_understands():
+    launcher = launcher_source()
+    run = launcher[launcher.index("fn run() -> i32"):]
+    assert '"--no-open"' in run and '"--stop"' in run
     assert '"--no-open"' in package.LAUNCH_PORTABLE and '"--stop"' in package.LAUNCH_PORTABLE
-    assert launcher.index("VcRuntime.Problem()") < launcher.index("AppWindow.Find()") < launcher.index('RunPython(root, python, "--no-open"')
-    assert launcher.index('RunPython(root, python, "--no-open"') < launcher.index("AppWindow.Open(") < launcher.index('RunPython(root, python, "--stop"')
-    assert "if (host && window != null) window.WaitForExit();" in launcher and "if (host) {" in launcher, "only one launcher per installation waits for the window and stops the service"
-    assert "--app=" in launcher and "--user-data-dir=" in launcher
+    assert run.index("vc_runtime_problem()") < run.index("wry::webview_version()") < run.index('run_python(&root, &python, "--no-open"')
+    # One program per installation owns the window; a second start only brings that window forward.
+    assert run.index("CreateMutexW(") < run.index("ERROR_ALREADY_EXISTS") < run.index('run_python(&root, &python, "--no-open"')
+    assert run.index('run_python(&root, &python, "--no-open"') < run.index("WebViewBuilder::") < run.rindex('run_python(&root, &python, "--stop"')
+    # The window and the service end together, whichever ends first.
+    assert "OpenProcess(PROCESS_SYNCHRONIZE" in run and "WaitForSingleObject(" in run and "Note::ServiceEnded" in run
+    # The page is shown inside the program; nothing starts a browser for it.
+    for word in ("msedge", "chrome.exe", "--app=", "--user-data-dir", "webbrowser"):
+        assert word not in launcher, word
+    assert "with_navigation_handler" in run and "with_new_window_req_handler" in run and "with_download_started_handler" in run
 
 
-@pytest.mark.skipif(csc_path() is None, reason="needs the Windows C# compiler")
-def test_launcher_source_compiles_together_with_the_runtime_check(tmp_path):
-    scripts = SOURCE.parent
-    source = tmp_path / "launcher.cs"
-    source.write_text((scripts / "windows-launcher.cs").read_text(encoding="utf-8") + "\n" +
-                      (scripts / "windows-vc-runtime.cs").read_text(encoding="utf-8").replace("__MIN_VC_RUNTIME__", package.MS_RUNTIME_MINIMUM),
-                      encoding="utf-8")
-    program = tmp_path / "launcher.exe"
-    package.compile_cs(csc_path(), source, program, icon=SOURCE.parents[1] / package.ICON_ICO)
-    assert program.stat().st_size > 0
+def launcher_build_folder():
+    import tempfile
+    return Path(tempfile.gettempdir()) / "pdfr-launcher-check-build"
+
+
+def cargo_path():
+    try:
+        return package.find_cargo()
+    except package.Refusal:
+        return None
+
+
+@pytest.mark.skipif(cargo_path() is None, reason="needs Rust's cargo")
+def test_program_window_builds_and_needs_only_windows_own_libraries(tmp_path):
+    import struct
+    payload = tmp_path / "payload"
+    (payload / "NOTICES").mkdir(parents=True)
+    build = launcher_build_folder()
+    build.mkdir(exist_ok=True)
+    package.build_launcher(cargo_path(), build, SOURCE.parents[1] / package.ICON_ICO, payload)
+    data = (payload / "PDF Remediator.exe").read_bytes()
+    pe = struct.unpack_from("<I", data, 0x3C)[0]
+    assert data[pe:pe + 4] == b"PE\0\0" and struct.unpack_from("<H", data, pe + 24)[0] == 0x20B, "a 64-bit Windows program"
+    assert struct.unpack_from("<H", data, pe + 24 + 68)[0] == 2, "a windowed program, so no console window opens with it"
+    sections = [struct.unpack_from("<8sIIII", data, pe + 24 + struct.unpack_from("<H", data, pe + 20)[0] + i * 40)
+                for i in range(struct.unpack_from("<H", data, pe + 6)[0])]
+    def at(rva):
+        for _, size, address, raw_size, raw in sections:
+            if address <= rva < address + max(size, raw_size):
+                return rva - address + raw
+        raise ValueError(rva)
+    imports, entry = [], at(struct.unpack_from("<I", data, pe + 24 + 112 + 8)[0])
+    while any(struct.unpack_from("<5I", data, entry)):
+        start = at(struct.unpack_from("<5I", data, entry)[3])
+        imports.append(data[start:data.index(b"\0", start)].decode().lower())
+        entry += 20
+    # It can tell the person about a missing Visual C++ Redistributable only if it does not need one itself.
+    # (api-ms-win-core-* names are parts of Windows itself; api-ms-win-crt-* would mean the separately installed C runtime.)
+    assert not [name for name in imports if name.startswith(("vcruntime", "msvcp", "ucrtbase", "api-ms-win-crt-"))], imports
+    assert "webview2loader.dll" not in imports, "the WebView2 loader is built in, so no extra file has to travel with the program"
+    assert b"P\0D\0F\0 \0R\0e\0m\0e\0d\0i\0a\0t\0o\0r\0" in data, "its version details name the program"
+    notices = (payload / "NOTICES" / package.LAUNCHER_NOTICES).read_text(encoding="utf-8")
+    for name in ("tao", "wry", "windows", "webview2-com-sys"):
+        assert re.search(r"^" + re.escape(name) + r" +\d", notices, re.MULTILINE), name
+    assert "embed-resource" not in notices, "a build-time helper is not part of the program"
 
 
 @pytest.mark.parametrize("arguments,name,opens", [([], "launch", True), (["--no-open"], "launch", False), (["--stop"], "stop", None)])

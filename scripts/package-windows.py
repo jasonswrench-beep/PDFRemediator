@@ -32,7 +32,7 @@ OCR_SCRIPT_MEMBERS = {"pdfminer_six-20260107.data/scripts/dumppdf.py", "pdfminer
 NATIVE_ALWAYS_KEPT = {"tesseract.exe", "tessdata/pdf.ttf", "doc/LICENSE", "doc/README.md", "doc/AUTHORS"}
 # Microsoft's Visual C++ runtime files are left out of the package: Microsoft limits who may pass them on (THIRD-PARTY-NOTICES.md, "Still
 # to do", item 2). The programs use the copy Microsoft's own Redistributable puts in the Windows system folder, and the installer and
-# launcher check for it (scripts/windows-vc-runtime.cs). MS_RUNTIME_MINIMUM is the newest of the copies that used to be carried (Python
+# the program window check for it (scripts/windows-vc-runtime.nsh, scripts/windows-launcher/src/main.rs). MS_RUNTIME_MINIMUM is the newest of the copies that used to be carried (Python
 # 3.14.9 and pikepdf 10.17.0, both 14.51.36247.0); a program built with newer tools can need a newer runtime than an older installed one,
 # so raise it whenever the locked Python, wheels or Java change.
 MS_RUNTIME_MINIMUM = "14.51.36247.0"
@@ -40,8 +40,8 @@ MS_RUNTIME_SYSTEM_FILES = {"vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.d
 MS_RUNTIME_FILE = re.compile(r"(vcruntime\d+(_\d+)?|msvcp\d+(_[a-z0-9_]+|-[0-9a-f]{32})?|concrt\d+|vcomp\d+|vccorlib\d+|vcamp\d+|ucrtbase|"
                              r"(api|ext)-ms-win-[a-z0-9-]+)\.dll", re.IGNORECASE)
 MS_RENAMED_COPY = re.compile(rb"msvcp\d+-[0-9a-f]{32}\.dll", re.IGNORECASE)  # a copy renamed by delvewheel, as in pikepdf's wheel
-# What the launcher program runs: no argument opens the default browser, --no-open only makes sure the service is running (the launcher
-# program shows its own window), --stop asks the service to stop (the launcher does that when its window is closed).
+# What the program window (PDF Remediator.exe) runs: --no-open makes sure the service is running (the window shows its page), --stop asks
+# the service to stop (the window does that when it is closed). With no argument the default browser is opened instead (developer use).
 LAUNCH_PORTABLE = ('from pathlib import Path\nimport sys\nfrom pdf_remediator.launcher import launch, stop\n'
                    'root = Path(__file__).resolve().parent\ndata_dir, config = root/"output/review-app", root/"local-runtime.toml"\n'
                    'arguments = sys.argv[1:]\n'
@@ -67,9 +67,7 @@ def start_here(ocr_included, signed):
     return ('PDF Remediator ' + APP_VERSION + ' for Windows\n\n'
             'To start: use the PDF Remediator shortcut in the Start menu (or on your desktop, if you kept that box ticked at the end of\n'
             'setup), or open PDF Remediator.exe in this folder.\n'
-            'The program opens in its own window (Microsoft Edge, which comes with Windows; Chrome if Edge is missing; otherwise your\n'
-            'default browser). It is a web page that runs on this computer, so it looks like one.\n'
-            'Closing that window stops the program, as does Stop application.\n\n'
+            'The program opens in its own window. Closing that window stops the program, as does Stop application.\n\n'
             'PDF Remediator drafts accessibility repairs for PDFs and lists what a person still has to check. Every result is a draft\n'
             'for review. Your documents are processed on this computer and nothing is sent over the internet. Your original PDFs are\n'
             'never changed.\n\n' +
@@ -87,7 +85,9 @@ def start_here(ocr_included, signed):
             '"Also delete my saved reviews and settings".\n\n'
             'Needs Microsoft\'s free Visual C++ Redistributable (x64, version ' + MS_RUNTIME_MINIMUM + ' or newer) on this computer. It is not\n'
             'included because Microsoft\'s licence does not let us pass it on; setup and the program check for it and point you to\n'
-            'Microsoft\'s page.\n\n'
+            'Microsoft\'s page.\n'
+            'Its window uses Microsoft\'s WebView2 Runtime, which comes with Windows 11 and current Windows 10; the program offers\n'
+            'Microsoft\'s page if it is missing.\n\n'
             'The licences of the parts that come with PDF Remediator are in the NOTICES folder.\n' +
             ('Its program files are digitally signed: right-click PDF Remediator.exe, choose Properties, then Digital Signatures.\n' if signed else
              'Its program files are not digitally signed.\n') +
@@ -608,17 +608,89 @@ def package_icon(source, payload):
     return payload / ICON_ICO
 
 
-def compile_cs(csc, source, output, resources=(), *, icon):
+LAUNCHER_DIR = Path(__file__).resolve().with_name("windows-launcher")
+LAUNCHER_TARGET = "x86_64-pc-windows-msvc"
+LAUNCHER_NOTICES = "program-window-licences.txt"
+LICENCE_FILE = re.compile(r"(licen[cs]e|copying|notice|copyright)([-_.][A-Za-z0-9.-]*)?", re.IGNORECASE)
+
+
+def find_cargo():
+    """Rust's cargo: on PATH, or where rustup puts it."""
+    found = shutil.which("cargo")
+    for candidate in ([Path(found)] if found else []) + [Path(os.environ.get("USERPROFILE", "")) / ".cargo/bin/cargo.exe"]:
+        if candidate.is_file():
+            return candidate
+    raise Refusal("Rust's cargo was not found. Install Rust (rustup), or name cargo.exe with --cargo")
+
+
+def launcher_environment(icon):
+    env = {key: value for key, value in os.environ.items() if key not in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_BUILD_RUSTFLAGS")}
+    # The program window links the C runtime into itself, so it can tell the person about a missing Visual C++ Redistributable.
+    env.update(PDFR_LAUNCHER_ICON=str(icon), PDFR_MIN_VC_RUNTIME=MS_RUNTIME_MINIMUM,
+               CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS="-C target-feature=+crt-static")
+    return env
+
+
+def launcher_components(cargo, env):
+    """The Rust packages built into PDF Remediator.exe for Windows x64, as Cargo.lock resolves them, each with its licence texts."""
+    done = subprocess.run([str(cargo), "metadata", "--format-version", "1", "--locked", "--offline", "--filter-platform", LAUNCHER_TARGET,
+                           "--manifest-path", str(LAUNCHER_DIR / "Cargo.toml")],
+                          capture_output=True, text=True, timeout=600, check=False, env=env)
+    require(done.returncode == 0, "Cargo could not list the program window's parts: " + done.stderr[-2000:])
+    meta = json.loads(done.stdout)
+    packages = {item["id"]: item for item in meta["packages"]}
+    nodes = {node["id"]: node for node in meta["resolve"]["nodes"]}
+    linked, waiting = set(), [meta["resolve"]["root"]]
+    while waiting:
+        for dependency in nodes[waiting.pop()]["deps"]:
+            # Only what is built into the program: build scripts' own helpers (the icon compiler) never reach it.
+            if any(kind.get("kind") is None for kind in dependency["dep_kinds"]) and dependency["pkg"] not in linked:
+                linked.add(dependency["pkg"])
+                waiting.append(dependency["pkg"])
+    components = []
+    for item in sorted((packages[key] for key in linked), key=lambda item: (item["name"], item["version"])):
+        folder = Path(item["manifest_path"]).parent
+        names = sorted(path.name for path in folder.iterdir() if path.is_file() and LICENCE_FILE.fullmatch(path.name))
+        if item.get("license_file") and Path(item["license_file"]).name not in names:
+            names.append(item["license_file"])
+        texts = [(folder / name).read_text(encoding="utf-8", errors="replace").strip() for name in names]
+        components.append({"name": item["name"], "version": item["version"], "license": item.get("license") or "", "texts": texts})
+    return components
+
+
+def launcher_notices(components):
+    lines = ["PDF Remediator.exe, the program's window, is built from the Rust packages listed below. Each licence text follows,",
+             "with the packages it covers. The window's contents are drawn by Microsoft's WebView2 Runtime, which is part of Windows",
+             "and is not included in this package.", ""]
+    width = max(len(item["name"]) for item in components)
+    lines += ["%-*s  %-10s  %s" % (width, item["name"], item["version"], item["license"]) for item in components]
+    groups = {}
+    for item in components:
+        key = "\n\n".join(item["texts"]) or "(no licence file was found in the package; its manifest says " + (item["license"] or "nothing") + ")"
+        groups.setdefault(key, []).append(item["name"] + " " + item["version"])
+    for key, users in groups.items():
+        lines += ["", "=" * 78, "Used by: " + ", ".join(users), "=" * 78, key]
+    return "\n".join(lines) + "\n"
+
+
+def build_launcher(cargo, output, icon, payload):
+    """Builds PDF Remediator.exe from scripts/windows-launcher with the locked parts already on this computer, and lists their licences.
+
+    Nothing is downloaded: cargo runs with --locked --offline. On a new build computer run
+    `cargo fetch --locked --manifest-path scripts/windows-launcher/Cargo.toml` once first."""
     icon = regular(icon)
     icon_sha = sha(icon)
-    args = [str(csc), "/nologo", "/target:winexe", "/platform:x64", "/optimize+",
-            "/r:System.Windows.Forms.dll", "/r:System.Drawing.dll", "/r:System.Web.Extensions.dll",
-            "/r:System.IO.Compression.dll", "/r:System.IO.Compression.FileSystem.dll",
-            "/win32icon:" + str(icon), "/out:" + str(output),
-            *["/resource:" + str(p) + "," + n for p, n in resources], str(source)]
-    result = subprocess.run(args, capture_output=True, text=True, timeout=120, check=False)
-    require(result.returncode == 0, "Windows compiler refused: " + result.stdout + result.stderr)
-    require(sha(regular(icon)) == icon_sha, "Application icon changed during compilation")
+    env = launcher_environment(icon)
+    target = output / "launcher-build"
+    done = subprocess.run([str(cargo), "build", "--release", "--locked", "--offline", "--target", LAUNCHER_TARGET,
+                           "--manifest-path", str(LAUNCHER_DIR / "Cargo.toml"), "--target-dir", str(target)],
+                          capture_output=True, text=True, timeout=3600, check=False, env=env)
+    require(done.returncode == 0, "The program window did not build: " + done.stderr[-4000:])
+    require(sha(regular(icon)) == icon_sha, "Application icon changed during the build")
+    built = regular(target / LAUNCHER_TARGET / "release" / "pdf-remediator.exe")
+    with built.open("rb") as source, (payload / "PDF Remediator.exe").open("xb") as copy:
+        shutil.copyfileobj(source, copy)
+    write_new(payload / "NOTICES" / LAUNCHER_NOTICES, launcher_notices(launcher_components(cargo, env)))
 
 
 def assemble_ocr_runtime(prepared, payload, occupied, microsoft=None):
@@ -770,7 +842,7 @@ def run_makensis(makensis, script):
     return done.stdout
 
 
-def build(plan, output, csc, sign=False, makensis=None):
+def build(plan, output, cargo=None, sign=False, makensis=None):
     require(os.name == "nt", "Windows x64 build host required")
     signer = ArtifactSigner() if sign else None
     require(plan.get("schema") == "windows-internal-inputs-1", "Unrecognized input schema")
@@ -830,11 +902,7 @@ def build(plan, output, csc, sign=False, makensis=None):
     write_new(payload / "START-HERE.txt", start_here(bool(ocr), bool(signer)))
     with (payload / "runtime-baseline.json").open("xb") as stream:
         stream.write(lock_raw)
-    script_root = Path(__file__).resolve().parent
-    vc_runtime_check = (script_root / "windows-vc-runtime.cs").read_text(encoding="utf-8").replace("__MIN_VC_RUNTIME__", MS_RUNTIME_MINIMUM)
-    launcher_path = output / "launcher-bound.cs"
-    write_new(launcher_path, (script_root / "windows-launcher.cs").read_text(encoding="utf-8") + "\n" + vc_runtime_check)
-    compile_cs(csc, launcher_path, payload / "PDF Remediator.exe", icon=package_icon(source, payload))
+    build_launcher(cargo or find_cargo(), output, package_icon(source, payload), payload)
     package_icon(source, payload)
     check_no_microsoft_runtime(payload)
     if signer:
@@ -881,13 +949,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--inputs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--csc", type=Path, default=Path(os.environ.get("WINDIR", r"C:\Windows")) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe")
+    parser.add_argument("--cargo", type=Path, help="Rust's cargo.exe, which builds the program window (found by itself when left out)")
     parser.add_argument("--makensis", type=Path, help="NSIS's makensis.exe (found by itself when left out)")
     parser.add_argument("--sign", action="store_true",
                         help="sign every unsigned program file, the uninstaller and the installer with Azure Artifact Signing (see scripts/sign_windows.py)")
     args = parser.parse_args()
     try:
-        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.csc), sign=args.sign,
+        result = build(json.loads(args.inputs.read_text(encoding="utf-8")), args.output.absolute(), regular(args.cargo) if args.cargo else None, sign=args.sign,
                        makensis=regular(args.makensis) if args.makensis else None)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile, subprocess.SubprocessError) as exc:
         parser.exit(1, "The Windows package was not built: " + str(exc) + "\n")

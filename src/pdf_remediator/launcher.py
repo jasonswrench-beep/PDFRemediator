@@ -31,7 +31,7 @@ def _running(session,expected=None):
             if response.status!=200:return None
             if expected is not None and any(saved.get(key)!=value for key,value in expected.items()):
                 raise RuntimeError('PDF Remediator is still running with older code or different settings. '
-                    'Open its existing window or browser page and click Stop application, then start it again. '
+                    'Open its existing window and click Stop application, then start it again. '
                     'Your PDFs and saved reviews stay in place.')
             return saved['url']
         finally:connection.close()

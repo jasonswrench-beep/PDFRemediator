@@ -1,0 +1,35 @@
+[package]
+name = "pdf-remediator-launcher"
+version = "0.3.0"
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+description = "PDF Remediator's own program window: starts the local service and shows it, and stops it when the window closes."
+
+[[bin]]
+name = "pdf-remediator"
+path = "src/main.rs"
+
+[dependencies]
+tao = { version = "=0.37.2", default-features = false, features = ["rwh_06"] }
+wry = { version = "=0.57.2", default-features = false, features = ["os-webview"] }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+embed-resource = "=3.0.12"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
