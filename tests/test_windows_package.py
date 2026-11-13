@@ -1013,9 +1013,17 @@ def test_installer_is_a_standard_setup_like_the_other_suite_apps():
         assert '${FileExists} "$INSTDIR\\' + name + '"' in check, name
     assert '"product": "${PRODUCTNAME}"' in check
     begin = code.index("!macro REMOVE_PROGRAM")
-    macro = code[begin:code.index("!macroend", begin)]
+    removal = code[begin:code.index("!macroend", begin)]
+    begin = code.index("!macro REMOVE_EMPTY_FOLDERS")
+    folders = code[begin:code.index("!macroend", begin)]
+    macro = removal + folders
     assert "${If} $R8 = 1" in macro and 'FileOpen $R7 "$INSTDIR\\package-manifest.json" r' in macro and """'  "files": {'""" in macro
-    assert 'Delete "$INSTDIR\\$R1"' in macro and 'RMDir "$INSTDIR\\$R1"' in macro and "RMDir /r \"$INSTDIR\\$R1\\__pycache__\"" in macro
+    assert 'Delete "$INSTDIR\\$R1"' in removal and 'RMDir "$INSTDIR\\$R1"' in folders and "RMDir /r \"$INSTDIR\\$R1\\__pycache__\"" in folders
+    # Fast enough for a visible setup: no detail line per file, and each folder is tried once, when the list leaves it.
+    assert removal.index("SetDetailsPrint none") < removal.index('Delete "$INSTDIR\\$R1"') < removal.index("SetDetailsPrint both")
+    assert removal.count("Call ${UN}RemoveEmptyFolders") == 2 and "${If} $5 != $6" in removal
+    assert '!insertmacro REMOVE_PROGRAM ""' in code[code.index("Section Install"):code.index("Section Uninstall")]
+    assert '!insertmacro REMOVE_PROGRAM "un."' in code[code.index("Section Uninstall"):]
     assert "RMDir /r" not in macro.replace('RMDir /r "$INSTDIR\\$R1\\__pycache__"', "").replace('RMDir /r "$INSTDIR\\__pycache__"', ""), \
         "a whole folder is only ever removed when it is the program's Python cache"
     assert "ExecWait" not in code, "no second program is started to remove files"
