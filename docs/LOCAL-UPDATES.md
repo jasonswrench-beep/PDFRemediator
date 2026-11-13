@@ -25,10 +25,10 @@ Do not paste private codeload URLs or browser session tokens into commands/logs.
    with the actual selected download, not a guessed wildcard match.
 
 ```powershell
-& "C:\Users\Jason\PDFRemediator\.venvs\app\Scripts\python.exe" `
+& "$env:USERPROFILE\PDFRemediator\.venvs\app\Scripts\python.exe" `
   "C:\path\to\extracted\scripts\update-local-source.py" `
   --archive "C:\path\to\trusted-source.zip" `
-  --target "C:\Users\Jason\PDFRemediator"
+  --target "$env:USERPROFILE\PDFRemediator"
 ```
 
 Default mode does not write to the installation. A successful check prints JSON

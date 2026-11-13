@@ -200,7 +200,7 @@ changing mode/layout requires a separate result. Existing reviews are retained.
 No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
-`C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
+`%USERPROFILE%\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
 This checkpoint does not claim that future receipt exists or invent its hash.
 
 **Prior-build text follows verbatim.** Earlier sections, including earlier
@@ -631,20 +631,28 @@ new versioned folder, did not appear in Settings > Apps and had no uninstaller. 
 * Pages: Welcome, Licence (Apache-2.0), Choose Install Location, Installing, Finish (Run PDF Remediator, Create desktop
   shortcut). The default folder is `%LOCALAPPDATA%\PDF Remediator`, for the current Windows account only, so no
   administrator rights are needed; a later setup suggests the folder of the copy already installed. A folder that already
-  holds other files is refused, and the folder path may be at most 100 characters.
+  holds other files is refused unless it is an installed copy (it has `package-manifest.json` naming the program,
+  `PDF Remediator.exe` and `.installation-complete.json`), and the folder path may be at most 100 characters. A silent
+  setup (`/S /D=`) makes the same checks and ends with exit code 2 if one fails.
 * It writes the Settings > Apps entry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\PDF Remediator`: name,
   version, publisher, icon, size, install location, uninstaller), remembers the folder in `HKCU\Software\PDF Remediator`, and
   makes a Start menu shortcut (and the desktop one if that box stays ticked).
-* Updating: setup run over an installed copy first removes that copy's program files (the payload's top-level files and
-  folders, listed at build time in `payload-parts.nsh`), then installs the new ones. The `output` folder, where saved
-  reviews are, is never touched. Setup stops, with Retry, while the program or its local service is still running.
-* Uninstalling (Settings > Apps, or `uninstall.exe`): removes the program files, the registry entries and the shortcuts
-  that start this copy (a "PDF Remediator" shortcut to another copy stays). Saved
-  reviews stay unless "Also delete my saved reviews and settings" is ticked; the folder itself goes only when empty.
+* Removing program files (since 0.3.0 alpha 6): setup and the uninstaller read the installed copy's own
+  `package-manifest.json`, which lists exactly the files that version installed, delete those one by one, and then remove
+  each folder that leaves empty, with the cache the program's Python writes beside its `.py` files (`__pycache__`). So a
+  file the person put in one of those folders stays, and so does a same-named folder that was never the program's. A
+  listed name with a drive, a leading separator or `..` is skipped, and the builder refuses names that are not plain ASCII.
+* Updating: setup run over an installed copy first removes that copy's program files that way, then installs the new
+  ones. The `output` folder, where saved reviews are, is never touched. Setup stops, with Retry, while the program or its
+  local service is still running.
+* Uninstalling (Settings > Apps, or `uninstall.exe`): removes the program files, the registry entries, the shortcuts
+  that start this copy (a "PDF Remediator" shortcut to another copy stays) and the `tmp` folder older copies used for
+  OCR. Saved reviews stay unless "Also delete my saved reviews and settings" is ticked (`/DELETEDATA` does the same for a
+  silent uninstall); the folder itself goes only when empty.
 * `.installation-complete.json` is written after every file is in place; the launcher opens only a folder that has it.
 * Command line, as in the other suite installers: `/S` silent, `/NS` no shortcuts, `/D=FOLDER` (last, no quotes).
   `uninstall.exe /S` uninstalls silently; `uninstall.exe /S _?=FOLDER` runs it in place and waits (it then cannot delete
-  itself). The tests use the in-place form, because McAfee or Webroot on the build PC can stop an unsigned test build's
+  itself). The tests use the in-place form, because an antivirus program on the build PC can stop an unsigned test build's
   uninstaller from starting its temporary copy.
 * `--sign` signs every unsigned program file in the payload, the uninstaller (through `!uninstfinalize`) and the installer,
   each with a timestamp, through `scripts/sign_windows.py`.
@@ -658,8 +666,8 @@ remove their registry entries afterwards. The manifest's internal status values 
 
 `PDF Remediator.exe` is PDF Remediator's own program window, built from `scripts/windows-launcher` (Rust, with tao and wry,
 the window libraries the other OpenStage-family programs use through Tauri). It replaced an earlier C# launcher that showed
-the page in a Microsoft Edge (or Chrome) "app" window. That design failed on 2026-11-12 on the owner's PC: the Edge process
-the launcher started handed its window to another Edge process and ended within half a second, the launcher took that as the
+the page in a web browser's "app" window. That design failed on 2026-11-12 on the owner's PC: the browser process
+the launcher started handed its window to another browser process and ended within half a second, the launcher took that as the
 window closing and stopped the service, and the window that stayed open showed "127.0.0.1 refused to connect".
 
 * It checks for the Visual C++ Redistributable and for Microsoft's WebView2 Runtime (part of Windows 11 and current Windows
@@ -681,7 +689,7 @@ window closing and stopped the service, and the window that stayed open showed "
 Tried on 2026-11-12 from a test copy of the alpha 4 payload with the new program (three runs, two of them with a new
 WebView2 data folder): the window opened with the page, the service was still running 8 seconds later, a second start
 brought the same window forward and ended, the window's close button stopped the service and ended the program, and the
-Stop application route closed the window by itself. No Edge process was involved.
+Stop application route closed the window by itself. No browser process was involved.
 Startup errors produce a concise explanation and
 a bounded local diagnostic. No tkinter installation is needed. Reviews remain
 under that installation's `output/review-app`; keep the full installation in

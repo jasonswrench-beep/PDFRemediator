@@ -84,7 +84,11 @@ def test_build_launcher_builds_offline_from_the_lock_with_the_checked_icon(tmp_p
     assert Path(argv[argv.index("--manifest-path") + 1]) == SOURCE.parent / "windows-launcher" / "Cargo.toml"
     env = options["env"]
     assert env["PDFR_LAUNCHER_ICON"] == str(icon) and env["PDFR_MIN_VC_RUNTIME"] == package.MS_RUNTIME_MINIMUM
-    assert env["CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS"] == "-C target-feature=+crt-static" and "RUSTFLAGS" not in env
+    flags = env["CARGO_ENCODED_RUSTFLAGS"].split("\x1f")
+    assert flags[:2] == ["-C", "target-feature=+crt-static"] and "RUSTFLAGS" not in env
+    assert "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS" not in env, "only one set of flags, so none is silently ignored"
+    remaps = [flag for flag in flags if flag.startswith("--remap-path-prefix=")]
+    assert [flag.rsplit("=", 1)[1] for flag in remaps] == ["home", "rustup", "cargo", "launcher", "target"], "broadest first"
     assert (payload / "PDF Remediator.exe").read_bytes() == b"authored program stub; never a qualified executable"
     notices = (payload / "NOTICES" / package.LAUNCHER_NOTICES).read_text(encoding="utf-8")
     assert "Used by: authored-part 1.0.0\n" in notices and "authored licence text" in notices
@@ -676,6 +680,9 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     core_raw = json.dumps(core, sort_keys=True).encode()
     core_sha = hashlib.sha256(core_raw).hexdigest()
     monkeypatch.setattr(package, "prepare_runtime_inputs", lambda _: (core, core_sha, core_raw, tmp_path / core["python"]["filename"], []))
+    # The synthetic Java, OpenDataLoader and veraPDF trees below stand in for the locked ones.
+    monkeypatch.setattr(package, "load_native_lock", lambda: (
+        {name: {"files": plan["native"][name]["files"], "version": "authored " + name} for name in package.NATIVE_TOOLS}, "0" * 64))
     from types import SimpleNamespace
     monkeypatch.setattr(package, "os", SimpleNamespace(name="nt"))
     compiled_icons, launcher_builds, checked_payloads = [], [], []
@@ -739,11 +746,15 @@ def test_built_payload_config_and_compiled_installer_bind_optional_ocr_policy(tm
     assert "!define UNINSTALLERSIGNCOMMAND" not in bound, "an unsigned build has no signing step"
     assert bound.endswith((SOURCE.parent / "windows-installer.nsi").read_text(encoding="utf-8"))
     assert (output / "windows-vc-runtime.nsh").read_text(encoding="utf-8") == (SOURCE.parent / "windows-vc-runtime.nsh").read_text(encoding="utf-8")
-    parts = (output / "payload-parts.nsh").read_text(encoding="utf-8")
-    assert parts == package.payload_parts(payload)
-    for item in payload.iterdir():
-        assert (('RMDir /r "$INSTDIR\\' if item.is_dir() else 'Delete "$INSTDIR\\') + item.name + '"') in parts
-    assert "output" not in [item.name for item in payload.iterdir()] and "$INSTDIR\\output" not in parts
+    assert not (output / "payload-parts.nsh").exists(), "removal reads the installed copy's own manifest, not a list built in"
+    assert manifest["product"] == "PDF Remediator", "the installer finds an installed copy by this line"
+    assert manifest["native_lock_sha256"] == "0" * 64 and manifest["native_versions"]["java"] == "authored java"
+    manifest_text = (payload / "package-manifest.json").read_text(encoding="utf-8")
+    assert '  "product": "PDF Remediator",\n' in manifest_text
+    # The layout REMOVE_PROGRAM reads: the "files" block, one "    \"name\": \"64 hex\"" line per file, closed by "  },".
+    block = manifest_text[manifest_text.index('  "files": {\n') + len('  "files": {\n'):manifest_text.index("\n  },\n")].split("\n")
+    assert len(block) == len(manifest["files"]) and all(re.fullmatch(r'    "[^"]+": "[0-9a-f]{64}",?', line) for line in block)
+    assert "output" not in [item.name for item in payload.iterdir()]
     assert compiled_icons == [(payload / package.ICON_ICO, plan["source"]["files"][package.ICON_ICO])]
     assert all(manifest["files"][name] == plan["source"]["files"][name] == package.sha(payload / name)
                for name in package.ICON_ASSETS)
@@ -958,10 +969,15 @@ def installer_code():
     return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(";"))
 
 
+def shown_installer_code():
+    """installer_code() without the manifest's schema name, an identifier the installer compares and never shows."""
+    return installer_code().replace("windows-internal-package-1", "")
+
+
 def test_installer_is_a_standard_setup_like_the_other_suite_apps():
     code = installer_code()
     for word in NOT_SHOWN:
-        assert word not in code.lower(), word
+        assert word not in shown_installer_code().lower(), word
     pages = re.findall(r"!insertmacro (MUI_(?:UN)?PAGE_[A-Z]+)", code)
     assert pages == ["MUI_PAGE_WELCOME", "MUI_PAGE_LICENSE", "MUI_PAGE_DIRECTORY", "MUI_PAGE_INSTFILES", "MUI_PAGE_FINISH",
                      "MUI_UNPAGE_CONFIRM", "MUI_UNPAGE_INSTFILES"]
@@ -984,11 +1000,28 @@ def test_installer_is_a_standard_setup_like_the_other_suite_apps():
     at = code.index('RMDir /r "$INSTDIR\\output"')
     assert code.rindex("${If} $DeleteDataState = 1", 0, at) > code.rindex("Section Uninstall", 0, at)
     assert 'RMDir "$INSTDIR"' in code and 'RMDir /r "$INSTDIR"' not in code
-    # The program's own files are removed only from a folder that holds an installed copy.
+    # The program's own files are removed only from a folder that holds an installed copy: the program, its marker, and a manifest
+    # that names it.
+    begin = code.index("!macro IS_OUR_INSTALLATION")
+    check = code[begin:code.index("!macroend", begin)]
+    for name in ("package-manifest.json", "${MAINBINARY}", ".installation-complete.json"):
+        assert '${FileExists} "$INSTDIR\\' + name + '"' in check, name
+    assert '"product": "${PRODUCTNAME}"' in check
     begin = code.index("!macro REMOVE_PROGRAM")
     macro = code[begin:code.index("!macroend", begin)]
-    assert '${FileExists} "$INSTDIR\\package-manifest.json"' in macro and '${FileExists} "$INSTDIR\\${MAINBINARY}"' in macro
-    assert "PAYLOAD_REMOVE" in macro
+    assert "${If} $R8 = 1" in macro and 'FileOpen $R7 "$INSTDIR\\package-manifest.json" r' in macro and """'  "files": {'""" in macro
+    assert 'Delete "$INSTDIR\\$R1"' in macro and 'RMDir "$INSTDIR\\$R1"' in macro and "RMDir /r \"$INSTDIR\\$R1\\__pycache__\"" in macro
+    assert "RMDir /r" not in macro.replace('RMDir /r "$INSTDIR\\$R1\\__pycache__"', "").replace('RMDir /r "$INSTDIR\\__pycache__"', ""), \
+        "a whole folder is only ever removed when it is the program's Python cache"
+    assert "ExecWait" not in code, "no second program is started to remove files"
+    uninstall_section = code[code.index("Section Uninstall"):]
+    assert uninstall_section.index("Call un.IsOurInstallation") < uninstall_section.index("!insertmacro REMOVE_PROGRAM")
+    install_section = code[code.index("Section Install"):code.index("SectionEnd", code.index("Section Install"))]
+    assert install_section.index("Call IsOurInstallation") < install_section.index('File /r "${PAYLOAD}\\*"')
+    # A silent setup checks the folder too.
+    on_init = code[code.index("Function .onInit"):code.index("FunctionEnd", code.index("Function .onInit"))]
+    assert "${If} ${Silent}" in on_init and "Call ValidateInstallFolder" in on_init and "Quit" in on_init
+    assert 'RMDir /r "$INSTDIR\\tmp"' in uninstall_section, "OCR's old temporary folder goes on uninstall"
     # The program opens only a complete installation: the marker it looks for is written after the files.
     assert code.index('File /r "${PAYLOAD}\\*"') < code.index('FileOpen $0 "$INSTDIR\\.installation-complete.json" w')
     assert '".installation-complete.json"' in launcher_source()
@@ -1020,20 +1053,45 @@ def test_app_version_matches_the_project_version():
     assert package.APP_VERSION == project["version"]
 
 
-def test_payload_parts_list_only_the_programs_own_files(tmp_path):
-    (tmp_path / "runtime").mkdir()
-    (tmp_path / "src").mkdir()
+def test_native_tools_lock_names_each_tool_and_every_file():
+    lock, digest = package.load_native_lock()
+    assert re.fullmatch(r"[0-9a-f]{64}", digest)
+    assert lock["java"]["origin"].startswith("https://github.com/adoptium/temurin25-binaries/releases/download/")
+    assert lock["odl"]["version"] == "2.5.13" and lock["verapdf"]["version"] == "1.30.3"
+    for name in package.NATIVE_TOOLS:
+        assert lock[name]["files"] and all(re.fullmatch(r"[0-9a-f]{64}", value) for value in lock[name]["files"].values())
+
+
+def test_build_refuses_a_java_or_tool_tree_that_is_not_the_locked_one():
+    lock, _ = package.load_native_lock()
+    plan = {"native": {name: {"files": dict(lock[name]["files"])} for name in package.NATIVE_TOOLS}}
+    package.check_native_inputs(plan, lock)
+    for name, changed in (("java", "bin/java.exe"), ("odl", "jar/opendataloader-pdf-cli.jar"), ("verapdf", "verapdf.bat")):
+        altered = {key: {"files": dict(value["files"])} for key, value in plan["native"].items()}
+        altered[name]["files"][changed] = "0" * 64
+        with pytest.raises(package.Refusal, match="The " + name + " files are not the ones"):
+            package.check_native_inputs({"native": altered}, lock)
+    extra = {key: {"files": dict(value["files"])} for key, value in plan["native"].items()}
+    extra["java"]["files"]["bin/added.dll"] = "0" * 64
+    with pytest.raises(package.Refusal, match="java files"):
+        package.check_native_inputs({"native": extra}, lock)
+
+
+def test_payload_names_are_ones_the_installer_can_remove_safely(tmp_path):
+    (tmp_path / "src/pdf_remediator").mkdir(parents=True)
+    (tmp_path / "src/pdf_remediator/__init__.py").write_text("x")
     (tmp_path / "PDF Remediator.exe").write_bytes(b"MZ")
-    (tmp_path / "START-HERE.txt").write_text("x")
-    assert package.payload_parts(tmp_path).splitlines() == [
-        "; Written by package-windows.py: the program's own top-level files and folders.", "!macro PAYLOAD_REMOVE",
-        '  Delete "$INSTDIR\\PDF Remediator.exe"', '  RMDir /r "$INSTDIR\\runtime"', '  RMDir /r "$INSTDIR\\src"',
-        '  Delete "$INSTDIR\\START-HERE.txt"', "!macroend"]
+    package.check_payload_names(tmp_path)
     for name in ("output", "Output", "uninstall.exe", ".installation-complete.json"):
         (tmp_path / name).mkdir()
         with pytest.raises(package.Refusal, match="cannot hold"):
-            package.payload_parts(tmp_path)
+            package.check_payload_names(tmp_path)
         (tmp_path / name).rmdir()
+    for bad, reason in (("café.txt", "plain ASCII"), ("a..b.txt", "safely"), ("x" * 151, "too long")):
+        (tmp_path / bad).write_text("x")
+        with pytest.raises(package.Refusal, match=reason):
+            package.check_payload_names(tmp_path)
+        (tmp_path / bad).unlink()
 
 
 def test_nsis_values_keep_dollar_signs_and_refuse_quotes():
@@ -1084,26 +1142,50 @@ def remove_test_registry_keys():
             pass
 
 
-@pytest.fixture
-def small_setup(tmp_path):
-    """A small installer made from the real script under the test product name, and its payload."""
-    build = tmp_path / "build"
+def build_small_setup(build, extra=None, earlier_manifest=False):
+    """A small installer made from the real script under the test product name, and its payload. Its manifest has the real layout
+    (written as package-windows.py writes it), listing every payload file; an earlier installer's manifest had no product line."""
     payload = build / "payload"
-    for name, data in {"PDF Remediator.exe": b"MZ authored stand-in", "package-manifest.json": b"{}", "local-runtime.toml": b"[runtime]\n",
-                       "src/pdf_remediator/__init__.py": b"# authored", "runtime/python/README.txt": b"authored",
-                       "runtime/python/Lib/padding.bin": b"\0" * 400_000,  # most of the size is in subfolders, as in the real payload
-                       "NOTICES/LICENSE": (SOURCE.parents[1] / "LICENSE").read_bytes()}.items():
+    files = {"PDF Remediator.exe": b"MZ authored stand-in",
+             "local-runtime.toml": b"[runtime]\n", "src/pdf_remediator/__init__.py": b"# authored", "runtime/python/README.txt": b"authored",
+             "runtime/python/python.exe": b"MZ authored stand-in for the program's Python",
+             "runtime/python/Lib/padding.bin": b"\0" * 400_000,  # most of the size is in subfolders, as in the real payload
+             "NOTICES/LICENSE": (SOURCE.parents[1] / "LICENSE").read_bytes()}
+    files.update(extra or {})
+    for name, data in files.items():
         (payload / name).parent.mkdir(parents=True, exist_ok=True)
         (payload / name).write_bytes(data)
+    metadata = {"schema": "windows-internal-package-1", "version": package.APP_VERSION, "files": package.snapshot(payload)}
+    if not earlier_manifest:
+        metadata["product"] = TEST_PRODUCT
+    package.write_new(payload / "package-manifest.json", json.dumps(metadata, indent=2, sort_keys=True) + "\n")
     setup = build / "Test-Setup.exe"
     package.write_installer_script(build, payload, setup, SOURCE.parents[1] / package.ICON_ICO, payload / "NOTICES/LICENSE",
                                    product_name=TEST_PRODUCT)
     package.run_makensis(makensis_path(), build / "installer-bound.nsi")
+    return setup, payload
+
+
+@pytest.fixture
+def small_setup(tmp_path):
     remove_test_registry_keys()
     try:
-        yield setup, payload
+        yield build_small_setup(tmp_path / "build")
     finally:
         remove_test_registry_keys()
+
+
+@pytest.fixture
+def short_root():
+    """A short folder for test installations: setup refuses folders longer than 100 characters, and pytest's own are longer."""
+    import os
+    import shutil
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="pdfr-", dir=os.environ["TEMP"]))
+    try:
+        yield root
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def run_setup(setup, folder):
@@ -1117,12 +1199,13 @@ def run_setup(setup, folder):
         assert not (Path(os.environ["LOCALAPPDATA"]) / TEST_PRODUCT).exists(), "the check installed into the default folder"
 
 
-def uninstall(folder):
+def uninstall(folder, delete_data=False):
     import subprocess
     # Run in place (_?=): NSIS's usual way, copying the uninstaller to a temporary folder and starting that copy, is what Settings > Apps
     # does, but an antivirus can stop an unsigned test build doing it. In place, it waits and gives its exit code; it cannot delete
     # itself, so the check removes uninstall.exe afterwards.
-    assert subprocess.run(f'"{folder / "uninstall.exe"}" /S _?={folder}', timeout=120, check=False).returncode == 0
+    switches = "/S /DELETEDATA" if delete_data else "/S"
+    assert subprocess.run(f'"{folder / "uninstall.exe"}" {switches} _?={folder}', timeout=120, check=False).returncode == 0
     (folder / "uninstall.exe").unlink()
     if folder.is_dir() and not any(folder.iterdir()):
         folder.rmdir()
@@ -1133,9 +1216,9 @@ def installed_files(folder):
 
 
 @pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
-def test_setup_installs_lists_itself_in_apps_updates_and_uninstalls_keeping_saved_reviews(small_setup, tmp_path):
+def test_setup_installs_lists_itself_in_apps_updates_and_uninstalls_keeping_saved_reviews(small_setup, tmp_path, short_root):
     setup, payload = small_setup
-    folder = tmp_path / "Programs" / TEST_PRODUCT
+    folder = short_root / "Programs" / TEST_PRODUCT
     assert run_setup(setup, folder) == 0
     expected = sorted(installed_files(payload) + [".installation-complete.json", "uninstall.exe"])
     assert installed_files(folder) == expected
@@ -1151,29 +1234,115 @@ def test_setup_installs_lists_itself_in_apps_updates_and_uninstalls_keeping_save
     assert payload_kb >= 400 and registry_value("EstimatedSize") >= payload_kb, "the size counts the files in subfolders too"
     assert registry_value("", "Software\\" + TEST_PRODUCT) == str(folder)
 
-    # Updating: the old program files go (a file the new version does not have is not left behind), saved reviews stay.
+    # Updating: saved reviews stay, and the program's files are the new version's.
     saved = folder / "output/review-app/reviews/one.json"
     saved.parent.mkdir(parents=True)
     saved.write_text('{"saved": true}')
-    (folder / "src/pdf_remediator/old_module.py").write_text("# from an older version")
     assert run_setup(setup, folder) == 0
-    assert not (folder / "src/pdf_remediator/old_module.py").exists()
     assert saved.read_text() == '{"saved": true}'
     assert installed_files(folder) == sorted(expected + ["output/review-app/reviews/one.json"])
 
-    # Uninstalling without ticking the box: everything of the program goes, the saved reviews and the folder holding them stay.
+    # Uninstalling without ticking the box: everything of the program goes, with the cache its Python writes and OCR's old temporary
+    # folder; the saved reviews and the folder holding them stay.
+    (folder / "src/pdf_remediator/__pycache__").mkdir()
+    (folder / "src/pdf_remediator/__pycache__/__init__.cpython-314.pyc").write_bytes(b"authored cache stand-in")
+    (folder / "tmp/ocr/abc123def456").mkdir(parents=True)
+    (folder / "tmp/ocr/abc123def456/page-1.png").write_bytes(b"authored page image stand-in")
     uninstall(folder)
     assert installed_files(folder) == ["output/review-app/reviews/one.json"]
+    assert sorted(p.name for p in folder.iterdir()) == ["output"]
     assert registry_value("DisplayName") is None and registry_value("", "Software\\" + TEST_PRODUCT) is None
 
 
 @pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
-def test_setup_stops_while_the_program_is_open_and_changes_nothing(small_setup, tmp_path):
+def test_update_removes_exactly_the_older_versions_files_and_keeps_the_persons_own(tmp_path, short_root):
+    remove_test_registry_keys()
+    try:
+        old_setup, _ = build_small_setup(tmp_path / "old", extra={"src/pdf_remediator/old_module.py": b"# only in the older version"})
+        new_setup, new_payload = build_small_setup(tmp_path / "new")
+        folder = short_root / "Programs" / TEST_PRODUCT
+        assert run_setup(old_setup, folder) == 0
+        own = folder / "src/notes-the-person-wrote.txt"
+        own.write_text("mine")
+        assert run_setup(new_setup, folder) == 0
+        assert not (folder / "src/pdf_remediator/old_module.py").exists(), "the older version's own uninstaller removed its files"
+        assert own.read_text() == "mine", "a file the person put in a program folder is not the program's to delete"
+        assert sorted(set(installed_files(folder)) - {own.relative_to(folder).as_posix()}) == sorted(
+            installed_files(new_payload) + [".installation-complete.json", "uninstall.exe"])
+        assert registry_value("DisplayName") == TEST_PRODUCT, "the Apps entry is there again after the update"
+        uninstall(folder)
+        assert installed_files(folder) == ["src/notes-the-person-wrote.txt"], "the person's file and its folder stay"
+    finally:
+        remove_test_registry_keys()
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_uninstall_with_delete_data_leaves_nothing(small_setup, tmp_path, short_root):
+    setup, _ = small_setup
+    folder = short_root / "Programs" / TEST_PRODUCT
+    assert run_setup(setup, folder) == 0
+    (folder / "output/review-app/tmp/ocr/abc123def456").mkdir(parents=True)
+    (folder / "output/review-app/tmp/ocr/abc123def456/page-1.png").write_bytes(b"authored page image stand-in")
+    (folder / "output/review-app/reviews").mkdir(parents=True)
+    (folder / "output/review-app/reviews/one.json").write_text("{}")
+    (folder / "tmp/ocr/0123456789ab").mkdir(parents=True)
+    (folder / "src/pdf_remediator/__pycache__").mkdir()
+    (folder / "src/pdf_remediator/__pycache__/__init__.cpython-314.pyc").write_bytes(b"authored cache stand-in")
+    uninstall(folder, delete_data=True)
+    assert not folder.exists(), "with the box ticked (or /DELETEDATA) nothing of the program or the person's work is left"
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+@pytest.mark.parametrize("contents", ["dummy manifest and src", "all three files but an unnamed manifest", "someone else's files"])
+def test_silent_setup_refuses_a_folder_that_is_not_an_installed_copy(small_setup, tmp_path, contents, short_root):
+    setup, _ = small_setup
+    folder = short_root / "Someone Else's Program"
+    files = {"dummy manifest and src": {"package-manifest.json": "{}", "src/theirs.py": "# not ours"},
+             "all three files but an unnamed manifest": {"package-manifest.json": '{\n  "files": {\n    "src/theirs.py": "' + "0" * 64 + '"\n  }\n}\n',
+                                                         "PDF Remediator.exe": "theirs", ".installation-complete.json": "{}",
+                                                         "src/theirs.py": "# not ours"},
+             "someone else's files": {"runtime/theirs.dll": "x", "NOTICES/theirs.txt": "x"}}[contents]
+    for name, data in files.items():
+        (folder / name).parent.mkdir(parents=True, exist_ok=True)
+        (folder / name).write_text(data)
+    before = {name: (folder / name).read_bytes() for name in installed_files(folder)}
+    assert run_setup(setup, folder) == 2, "silent setup gives up (exit code 2) on a folder that already has other files"
+    assert {name: (folder / name).read_bytes() for name in installed_files(folder)} == before, "nothing in it was changed"
+    assert registry_value("DisplayName") is None
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_silent_setup_refuses_a_folder_longer_than_100_characters(small_setup, short_root):
+    setup, _ = small_setup
+    folder = short_root / ("Programs-" + "x" * 100)
+    assert len(str(folder)) > 100
+    assert run_setup(setup, folder) == 2 and not folder.exists()
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_setup_updates_a_copy_made_by_an_earlier_installer(tmp_path, short_root):
+    """Copies installed by the earlier versions of this installer have no product line in their manifest; the schema line names them."""
+    remove_test_registry_keys()
+    try:
+        old_setup, _ = build_small_setup(tmp_path / "old", earlier_manifest=True)
+        new_setup, new_payload = build_small_setup(tmp_path / "new")
+        folder = short_root / "Programs" / TEST_PRODUCT
+        assert run_setup(old_setup, folder) == 0
+        assert run_setup(new_setup, folder) == 0
+        assert (folder / "package-manifest.json").read_bytes() == (new_payload / "package-manifest.json").read_bytes()
+        uninstall(folder)
+        assert not folder.exists()
+    finally:
+        remove_test_registry_keys()
+
+
+@pytest.mark.skipif(makensis_path() is None, reason="needs NSIS (makensis.exe)")
+def test_setup_stops_while_the_program_is_open_and_changes_nothing(small_setup, tmp_path, short_root):
     import os
     import shutil
     import subprocess
     setup, payload = small_setup
-    folder = tmp_path / "Programs" / TEST_PRODUCT
+    folder = short_root / "Programs" / TEST_PRODUCT
     assert run_setup(setup, folder) == 0
     # A stand-in for the program's own Python, kept running (Windows' ping waiting 30 times).
     stand_in = folder / "runtime/python/python.exe"
@@ -1186,7 +1355,8 @@ def test_setup_stops_while_the_program_is_open_and_changes_nothing(small_setup, 
     finally:
         running.kill()
         running.wait(timeout=30)
-    assert run_setup(setup, folder) == 0 and not stand_in.exists(), "once it is closed, the update goes ahead"
+    assert run_setup(setup, folder) == 0, "once it is closed, the update goes ahead"
+    assert stand_in.read_bytes() == (payload / "runtime/python/python.exe").read_bytes(), "the program's own file is back"
     uninstall(folder)
     assert not folder.exists(), "with no saved reviews, nothing is left"
 
@@ -1261,6 +1431,9 @@ def test_program_window_passes_the_arguments_that_launch_portable_understands():
     for word in ("msedge", "chrome.exe", "--app=", "--user-data-dir", "webbrowser"):
         assert word not in launcher, word
     assert "with_navigation_handler" in run and "with_new_window_req_handler" in run and "with_download_started_handler" in run
+    # Only the program's own pages and the blob: files they make are shown; any other kind of address is refused, not let through.
+    assert "fn is_own_address" in launcher and 'format!("blob:{origin}/")' in launcher
+    assert '!address.starts_with("http")' not in launcher and 'address.starts_with("blob:")' not in launcher
 
 
 def launcher_build_folder():
@@ -1304,7 +1477,14 @@ def test_program_window_builds_and_needs_only_windows_own_libraries(tmp_path):
     assert not [name for name in imports if name.startswith(("vcruntime", "msvcp", "ucrtbase", "api-ms-win-crt-"))], imports
     assert "webview2loader.dll" not in imports, "the WebView2 loader is built in, so no extra file has to travel with the program"
     assert b"P\0D\0F\0 \0R\0e\0m\0e\0d\0i\0a\0t\0o\0r\0" in data, "its version details name the program"
-    notices = (payload / "NOTICES" / package.LAUNCHER_NOTICES).read_text(encoding="utf-8")
+    # The build computer's account folder (and so its user name) is not in the program: Rust's source paths are remapped.
+    import os
+    home = str(Path(os.environ["USERPROFILE"]))
+    for form in {home, home.replace("\\", "/")}:
+        for encoding in ("utf-8", "utf-16-le"):
+            assert form.lower().encode(encoding) not in data.lower(), (form, encoding)
+    assert b"registry\\src\\index.crates.io" in data, "the remapped source paths are still there, just without the account folder"
+    notices =(payload / "NOTICES" / package.LAUNCHER_NOTICES).read_text(encoding="utf-8")
     for name in ("tao", "wry", "windows", "webview2-com-sys"):
         assert re.search(r"^" + re.escape(name) + r" +\d", notices, re.MULTILINE), name
     assert "embed-resource" not in notices, "a build-time helper is not part of the program"

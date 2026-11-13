@@ -116,8 +116,8 @@ documents the previous adapter behavior; its expectation that missing individual
 failure detail must be an infrastructure error is superseded by these tests.
 
 Historical repository recovery was attempted read-only through the web tool at
-`https://github.com/jasonswrench-beep/claude-test`, its
-`claude/epic-shannon-q23swq` branch, the corresponding raw README, and the public
+an earlier test repository of the owner's, one of its work
+branches, the corresponding raw README, and the public
 branch API URL. The web tool returned cache/fetch/access errors and search found
 no indexed match. Those initial web attempts did not establish availability.
 Subsequently, desktop Git access resolved the branch and recovered a clean sparse

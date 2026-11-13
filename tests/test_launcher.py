@@ -217,7 +217,7 @@ def test_the_service_turns_on_the_crash_report_and_says_it_is_starting(tmp_path,
         def close(self):pass
     monkeypatch.setattr(web,'Application',App)
     monkeypatch.setattr(web,'ReviewServer',lambda application,port:Stub())
-    web.serve(tmp_path)
+    web.serve(tmp_path,open_browser=False)
     assert turned_on==[{'all_threads':True}]
     said=capsys.readouterr().out
     assert 'PDF Remediator service starting (process ' in said
@@ -240,7 +240,7 @@ def test_a_service_with_no_standard_error_still_starts(tmp_path,monkeypatch):
         def close(self):pass
     monkeypatch.setattr(web,'Application',App)
     monkeypatch.setattr(web,'ReviewServer',lambda application,port:Stub())
-    web.serve(tmp_path)
+    web.serve(tmp_path,open_browser=False)
 
 
 def test_a_hard_crash_of_the_service_leaves_where_it_was_in_its_log(tmp_path):
@@ -260,7 +260,7 @@ def test_a_hard_crash_of_the_service_leaves_where_it_was_in_its_log(tmp_path):
             def close(self):pass
         web.Application=App
         web.ReviewServer=lambda application,port:Stub()
-        web.serve(sys.argv[1])
+        web.serve(sys.argv[1],open_browser=False)   # never a real browser window during the tests
     """)
     log=tmp_path/'application.log'
     src=Path(__file__).resolve().parents[1]/'src'

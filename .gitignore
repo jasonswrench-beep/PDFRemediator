@@ -27,6 +27,7 @@
 /tests/*
 !/tests/test_*.py
 !/tests/browser_page.py
+!/tests/conftest.py
 !/eval/
 /eval/*
 !/eval/*.py
@@ -56,6 +57,7 @@
 /scripts/windows-launcher/target/
 !/scripts/windows-runtime-lock.json
 !/scripts/windows-ocr-runtime-lock.json
+!/scripts/windows-native-lock.json
 !/.github/
 /.github/*
 !/.github/workflows/

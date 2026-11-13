@@ -27,6 +27,9 @@ MAX_FILES = 20000
 MAX_BYTES = 2 * 1024**3
 RUNTIME_LOCK = Path(__file__).with_name("windows-runtime-lock.json")
 OCR_RUNTIME_LOCK = Path(__file__).with_name("windows-ocr-runtime-lock.json")
+# Java, OpenDataLoader and veraPDF: every file of each tree, with its SHA-256, so a changed or different local copy is refused.
+NATIVE_LOCK = Path(__file__).with_name("windows-native-lock.json")
+NATIVE_TOOLS = ("java", "odl", "verapdf")
 OCR_SCRIPT_MEMBERS = {"pdfminer_six-20260107.data/scripts/dumppdf.py", "pdfminer_six-20260107.data/scripts/pdf2txt.py"}
 # Files of the locked Tesseract factory that the lock's omission list may never remove.
 NATIVE_ALWAYS_KEPT = {"tesseract.exe", "tessdata/pdf.ttf", "doc/LICENSE", "doc/README.md", "doc/AUTHORS"}
@@ -188,6 +191,38 @@ def load_runtime_lock(path=None, schema="windows-private-runtime-lock-1"):
     require(bool(roots) and len(set(roots)) == len(roots) and set(roots) <= set(names) and
             all(name == canonicalize_name(name) for name in roots), "Invalid direct dependency roots")
     return lock, hashlib.sha256(raw).hexdigest(), raw
+
+
+def load_native_lock(path=None):
+    """The committed lock of the Java runtime, OpenDataLoader and veraPDF trees (scripts/windows-native-lock.json)."""
+    raw = regular(NATIVE_LOCK if path is None else path).read_bytes()
+    lock = json.loads(raw)
+    require(lock.get("schema") == "windows-native-tools-lock-1", "Unrecognized native tools lock")
+    for name in NATIVE_TOOLS:
+        item = lock.get(name)
+        require(isinstance(item, dict) and isinstance(item.get("version"), str) and bool(item["version"]) and
+                isinstance(item.get("origin"), str) and item["origin"].startswith("https://"), "Native tools lock entry incomplete: " + name)
+        files = item.get("files")
+        require(isinstance(files, dict) and 0 < len(files) <= MAX_FILES and
+                all(re.fullmatch(r"[0-9a-f]{64}", digest or "") for digest in files.values()), "Invalid native tools file map: " + name)
+        require(len({safe_name(file).casefold() for file in files}) == len(files), "Native tools file names collide: " + name)
+    java = lock["java"]
+    archive = java.get("archive", {})
+    require(archive.get("filename") and java["origin"].endswith("/" + archive["filename"]) and
+            java["origin"].startswith("https://github.com/adoptium/") and re.fullmatch(r"[0-9a-f]{64}", archive.get("sha256", "")),
+            "The Java lock needs the official Temurin archive and its SHA-256")
+    require({"bin/java.exe", "release"} <= set(java["files"]) and any(name.startswith("legal/") for name in java["files"]),
+            "The Java lock is missing the runtime, its release file or its legal notices")
+    require("jar/opendataloader-pdf-cli.jar" in lock["odl"]["files"], "The OpenDataLoader lock is missing its jar")
+    require("bin/cli-" + lock["verapdf"]["version"] + ".jar" in lock["verapdf"]["files"], "The veraPDF lock is missing its CLI jar")
+    return lock, hashlib.sha256(raw).hexdigest()
+
+
+def check_native_inputs(plan, lock):
+    """The plan's Java, OpenDataLoader and veraPDF trees must be exactly the locked ones; copy_map then checks every file's bytes."""
+    for name in NATIVE_TOOLS:
+        require(plan["native"][name]["files"] == lock[name]["files"],
+                "The " + name + " files are not the ones in scripts/windows-native-lock.json; update the lock deliberately first")
 
 
 def load_ocr_lock():
@@ -623,11 +658,25 @@ def find_cargo():
     raise Refusal("Rust's cargo was not found. Install Rust (rustup), or name cargo.exe with --cargo")
 
 
-def launcher_environment(icon):
-    env = {key: value for key, value in os.environ.items() if key not in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_BUILD_RUSTFLAGS")}
+def launcher_path_remaps(target=None):
+    """Rust keeps the source paths of the code it builds (for its error messages). These remaps turn the build computer's folders into
+    short neutral names, so the program file holds no account name or folder layout. The broadest folder comes first: rustc uses the
+    last remap that matches."""
+    home = Path(os.environ.get("USERPROFILE") or Path.home())
+    folders = [(home, "home"), (Path(os.environ.get("RUSTUP_HOME") or home / ".rustup"), "rustup"),
+               (Path(os.environ.get("CARGO_HOME") or home / ".cargo"), "cargo"), (LAUNCHER_DIR, "launcher")]
+    if target is not None:
+        folders.append((Path(target), "target"))
+    return ["--remap-path-prefix=" + str(Path(folder).resolve()) + "=" + name for folder, name in folders]
+
+
+def launcher_environment(icon, target=None):
+    env = {key: value for key, value in os.environ.items()
+           if key not in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_BUILD_RUSTFLAGS", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS")}
     # The program window links the C runtime into itself, so it can tell the person about a missing Visual C++ Redistributable.
-    env.update(PDFR_LAUNCHER_ICON=str(icon), PDFR_MIN_VC_RUNTIME=MS_RUNTIME_MINIMUM,
-               CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS="-C target-feature=+crt-static")
+    # With --target, these flags reach only the program, not build scripts. (Separated by 0x1F, so folders may hold spaces.)
+    flags = ["-C", "target-feature=+crt-static", *launcher_path_remaps(target)]
+    env.update(PDFR_LAUNCHER_ICON=str(icon), PDFR_MIN_VC_RUNTIME=MS_RUNTIME_MINIMUM, CARGO_ENCODED_RUSTFLAGS="\x1f".join(flags))
     return env
 
 
@@ -680,8 +729,8 @@ def build_launcher(cargo, output, icon, payload):
     `cargo fetch --locked --manifest-path scripts/windows-launcher/Cargo.toml` once first."""
     icon = regular(icon)
     icon_sha = sha(icon)
-    env = launcher_environment(icon)
     target = output / "launcher-build"
+    env = launcher_environment(icon, target)
     done = subprocess.run([str(cargo), "build", "--release", "--locked", "--offline", "--target", LAUNCHER_TARGET,
                            "--manifest-path", str(LAUNCHER_DIR / "Cargo.toml"), "--target-dir", str(target)],
                           capture_output=True, text=True, timeout=3600, check=False, env=env)
@@ -802,15 +851,18 @@ def nsis_value(value):
     return value.replace("$", "$$")
 
 
-def payload_parts(payload):
-    """payload-parts.nsh: the macro that removes the program's own top-level files and folders, when updating or uninstalling.
-    It lists only what the payload has; the output folder (saved reviews) is never in it."""
-    lines = ["; Written by package-windows.py: the program's own top-level files and folders.", "!macro PAYLOAD_REMOVE"]
-    for item in sorted(Path(payload).iterdir(), key=lambda p: p.name.lower()):
+def check_payload_names(payload):
+    """The installer removes an installed copy's files by reading the names its manifest lists (REMOVE_PROGRAM in
+    windows-installer.nsi), with NSIS's plain text reading. So every name must be plain ASCII, short enough, and free of anything that
+    could point outside the install folder; and names the installer itself owns, or that hold the person's work, are never in it."""
+    payload = Path(payload)
+    for item in payload.iterdir():
         require(item.name.lower() not in INSTALLER_OWNED, "The payload cannot hold " + item.name)
-        name = nsis_value(item.name)
-        lines.append(f'  RMDir /r "$INSTDIR\\{name}"' if item.is_dir() else f'  Delete "$INSTDIR\\{name}"')
-    return "\n".join(lines + ["!macroend", ""])
+    for path in payload.rglob("*"):
+        name = path.relative_to(payload).as_posix()
+        require(name.isascii() and name.isprintable(), "The installer cannot remove a file whose name is not plain ASCII: " + name)
+        require(".." not in name and ":" not in name and "\\" not in name, "The installer cannot remove this file safely: " + name)
+        require(len(name) <= 150, "A file name in the package is too long for the installer: " + name)
 
 
 def write_installer_script(output, payload, installer, icon, licence, sign_command=None, product_name=PRODUCT_NAME):
@@ -827,7 +879,7 @@ def write_installer_script(output, payload, installer, icon, licence, sign_comma
     if sign_command:
         require("`" not in sign_command and "\n" not in sign_command, "The signing command cannot be passed to NSIS")
         lines.append(f"!define UNINSTALLERSIGNCOMMAND `{sign_command}`")
-    write_new(Path(output) / "payload-parts.nsh", payload_parts(payload))
+    check_payload_names(payload)
     write_new(Path(output) / "windows-vc-runtime.nsh", (script_root / "windows-vc-runtime.nsh").read_text(encoding="utf-8"))
     script = "\n".join(lines) + "\n\n" + (script_root / "windows-installer.nsi").read_text(encoding="utf-8")
     write_new(Path(output) / "installer-bound.nsi", script)
@@ -883,6 +935,8 @@ def build(plan, output, cargo=None, sign=False, makensis=None):
             "Embedded Python runtime components are missing")
     pth.write_text(stem + ".zip\n.\nLib/site-packages\n../../src\n", encoding="ascii")
     ocr_relocations = assemble_ocr_runtime(ocr, payload, occupied, microsoft) if ocr else []
+    native_lock, native_lock_sha = load_native_lock()
+    check_native_inputs(plan, native_lock)
     required = {"java": "bin/java.exe", "odl": "jar/opendataloader-pdf-cli.jar",
                 "verapdf": "verapdf.bat"}
     for name, marker in required.items():
@@ -909,11 +963,14 @@ def build(plan, output, cargo=None, sign=False, makensis=None):
         # Before the manifest: the installer checks every installed file against the hashes recorded there, so they must be the signed files.
         signer.sign_programs(payload, output)
         check_no_microsoft_runtime(payload)
-    metadata = {"schema": "windows-internal-package-1", "release_status": "internal-unqualified",
+    # "product" is what the installer reads to know a folder holds an installed copy of this program (IsOurInstallation).
+    metadata = {"schema": "windows-internal-package-1", "product": PRODUCT_NAME, "release_status": "internal-unqualified",
                 "redistribution_cleared": False, "version": APP_VERSION, "architecture": "x64",
                 "ai_enabled": False, "ocr_enabled": bool(ocr), "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
                 "python_version": runtime["version"],
                 "runtime_lock_sha256": lock_sha, "python_abi": runtime["abi"],
+                "native_lock_sha256": native_lock_sha,
+                "native_versions": {name: native_lock[name]["version"] for name in NATIVE_TOOLS},
                 "wheel_relocations": relocations, "ocr_wheel_relocations": ocr_relocations,
                 "microsoft_runtime": {"minimum_version": MS_RUNTIME_MINIMUM, "left_out": sorted(microsoft["left_out"]),
                                       "redirected_imports": microsoft["redirected"]},

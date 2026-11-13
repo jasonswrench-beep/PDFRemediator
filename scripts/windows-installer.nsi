@@ -8,7 +8,7 @@
 ;
 ; package-windows.py puts these defines in front of this file (installer-bound.nsi):
 ;   PRODUCTNAME, VERSION, VERSIONWITHBUILD, PUBLISHER, COPYRIGHT, HOMEPAGE, PAYLOAD (folder), LICENSEFILE, ICONFILE, OUTFILE, MINVC
-;   and, when signing, UNINSTALLERSIGNCOMMAND. It also writes payload-parts.nsh (the program's own top-level files and folders).
+;   and, when signing, UNINSTALLERSIGNCOMMAND.
 
 Unicode true
 ManifestDPIAware true
@@ -24,7 +24,6 @@ RequestExecutionLevel user
 !include WordFunc.nsh
 !include x64.nsh
 !include "Win\COM.nsh"
-!include "payload-parts.nsh"
 
 !define MAINBINARY "PDF Remediator.exe"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCTNAME}"
@@ -113,36 +112,174 @@ Var DeleteDataState
   ${Loop}
 !macroend
 
-; The program's own files and folders, as listed in payload-parts.nsh. Only called on a folder that holds an installed copy
-; (it has package-manifest.json and the program), so nothing else of the person's is touched. The output folder (saved reviews) is never in the list.
-!macro REMOVE_PROGRAM
+; Sets $R8 to 1 when $INSTDIR holds an installed copy of this program: the program, its installation marker and its manifest are
+; there, and the manifest names the program. Copies made by the first two versions of this installer have no product line in their
+; manifest; their schema line, which only this program's packages use, names them instead. Only such a folder is updated or uninstalled.
+!macro IS_OUR_INSTALLATION
+  StrCpy $R8 0
   ${If} ${FileExists} "$INSTDIR\package-manifest.json"
   ${AndIf} ${FileExists} "$INSTDIR\${MAINBINARY}"
-    !insertmacro PAYLOAD_REMOVE
+  ${AndIf} ${FileExists} "$INSTDIR\.installation-complete.json"
+    ClearErrors
+    FileOpen $R7 "$INSTDIR\package-manifest.json" r
+    ${IfNot} ${Errors}
+      ${Do}
+        ClearErrors
+        FileRead $R7 $R6
+        ${If} ${Errors}
+          ${Break}
+        ${EndIf}
+        ${If} $R6 == '  "product": "${PRODUCTNAME}",$\n'
+        ${OrIf} $R6 == '  "product": "${PRODUCTNAME}",$\r$\n'
+        ${OrIf} $R6 == '  "schema": "windows-internal-package-1",$\n'
+        ${OrIf} $R6 == '  "schema": "windows-internal-package-1",$\r$\n'
+          StrCpy $R8 1
+          ${Break}
+        ${EndIf}
+      ${Loop}
+      FileClose $R7
+    ${EndIf}
+  ${EndIf}
+!macroend
+Function IsOurInstallation
+  !insertmacro IS_OUR_INSTALLATION
+FunctionEnd
+Function un.IsOurInstallation
+  !insertmacro IS_OUR_INSTALLATION
+FunctionEnd
+
+; Removes an installed copy's program files: the ones its own manifest lists ("files"), one by one, then each folder above them that
+; that leaves empty, with the cache the program's Python writes beside its .py files (__pycache__). Every version's manifest lists
+; exactly what that version installed, so an update removes the older version's files and an uninstall this version's, and nothing
+; else: a file the person put in one of those folders stays, and so does a same-named folder that was never the program's. A listed
+; name with a drive, a leading separator or ".." in it is skipped. The output folder (saved reviews) is never listed.
+; Only called after IsOurInstallation said yes ($R8 = 1). Uses $R0-$R7 and $6-$9.
+!macro REMOVE_PROGRAM
+  ${If} $R8 = 1
+    ClearErrors
+    FileOpen $R7 "$INSTDIR\package-manifest.json" r
+    ${IfNot} ${Errors}
+      StrCpy $R5 0
+      ${Do}
+        ClearErrors
+        FileRead $R7 $R6
+        ${If} ${Errors}
+          ${Break}
+        ${EndIf}
+        ${Do}
+          StrCpy $R4 $R6 1 -1
+          ${If} $R4 == "$\n"
+          ${OrIf} $R4 == "$\r"
+            StrCpy $R6 $R6 -1
+          ${Else}
+            ${Break}
+          ${EndIf}
+        ${Loop}
+        ${If} $R5 = 0
+          ${If} $R6 == '  "files": {'
+            StrCpy $R5 1
+          ${EndIf}
+          ${Continue}
+        ${EndIf}
+        StrCpy $R4 $R6 3
+        ${If} $R4 == "  }"
+          ${Break}
+        ${EndIf}
+        ; Each entry is four spaces, "name": "64 hex digits", and a comma unless it is the last one.
+        StrLen $R3 $R6
+        StrCpy $R4 $R6 1 -1
+        ${If} $R4 == ","
+          IntOp $R3 $R3 - 1
+        ${EndIf}
+        IntOp $R3 $R3 - 74
+        ${If} $R3 < 1
+          ${Continue}
+        ${EndIf}
+        StrCpy $R4 $R6 5
+        IntOp $R2 $R3 + 5
+        StrCpy $R1 $R6 4 $R2
+        ${If} $R4 != '    "'
+        ${OrIf} $R1 != '": "'
+          ${Continue}
+        ${EndIf}
+        StrCpy $R4 $R6 $R3 5
+        ; The name with Windows separators, refused if it could reach outside the folder.
+        StrCpy $R1 ""
+        StrCpy $R0 0
+        StrCpy $9 0
+        ${Do}
+          StrCpy $8 $R4 1 $R0
+          ${If} $8 == ""
+            ${Break}
+          ${EndIf}
+          StrCpy $7 $R4 2 $R0
+          ${If} $8 == ":"
+          ${OrIf} $8 == "\"
+          ${OrIf} $7 == ".."
+            StrCpy $9 1
+          ${EndIf}
+          ${If} $8 == "/"
+            StrCpy $8 "\"
+          ${EndIf}
+          StrCpy $R1 "$R1$8"
+          IntOp $R0 $R0 + 1
+        ${Loop}
+        StrCpy $8 $R1 1
+        ${If} $8 == "\"
+          StrCpy $9 1
+        ${EndIf}
+        ${If} $9 = 0
+          Delete "$INSTDIR\$R1"
+          StrCpy $6 0
+          StrCpy $8 $R1 3 -3
+          ${If} $8 == ".py"
+            StrCpy $6 1
+          ${EndIf}
+          ; Each folder above the file, if that leaves it empty.
+          ${Do}
+            StrLen $R0 $R1
+            ${Do}
+              IntOp $R0 $R0 - 1
+              ${If} $R0 < 0
+                ${Break}
+              ${EndIf}
+              StrCpy $8 $R1 1 $R0
+              ${If} $8 == "\"
+                ${Break}
+              ${EndIf}
+            ${Loop}
+            ${If} $R0 < 1
+              ${If} $6 = 1
+                RMDir /r "$INSTDIR\__pycache__"
+              ${EndIf}
+              ${Break}
+            ${EndIf}
+            StrCpy $R1 $R1 $R0
+            ${If} $6 = 1
+              RMDir /r "$INSTDIR\$R1\__pycache__"
+              StrCpy $6 0
+            ${EndIf}
+            RMDir "$INSTDIR\$R1"
+          ${Loop}
+        ${EndIf}
+      ${Loop}
+      FileClose $R7
+    ${EndIf}
+    Delete "$INSTDIR\package-manifest.json"
     Delete "$INSTDIR\.installation-complete.json"
   ${EndIf}
 !macroend
 
-Function .onInit
-  ${GetOptions} $CMDLINE "/NS" $0
-  ${IfNot} ${Errors}
-    StrCpy $NoShortcutMode 1
-  ${EndIf}
-  ${IfNot} ${RunningX64}
-    MessageBox MB_OK|MB_ICONSTOP "${PRODUCTNAME} needs 64-bit Windows 10 or 11." /SD IDOK
-    Abort
-  ${EndIf}
-FunctionEnd
-
-; The chosen folder must be new, empty, or a copy of PDF Remediator (which is then updated, keeping its saved reviews).
-Function CheckInstallFolder
+; The chosen folder must be new, empty, or an installed copy of this program (which is then updated, keeping its saved reviews).
+; Sets $R9 to "" when it can be used, otherwise to the message that says why not.
+Function ValidateInstallFolder
+  StrCpy $R9 ""
   StrLen $0 $INSTDIR
   ${If} $0 > 100
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Choose a shorter folder (at most 100 characters). Some of the program's files have long names." /SD IDOK
-    Abort
+    StrCpy $R9 "Choose a shorter folder (at most 100 characters). Some of the program's files have long names."
+    Return
   ${EndIf}
   ${If} ${FileExists} "$INSTDIR\*.*"
-  ${AndIfNot} ${FileExists} "$INSTDIR\package-manifest.json"
     StrCpy $1 0
     FindFirst $2 $3 "$INSTDIR\*.*"
     ${DoWhile} $3 != ""
@@ -155,9 +292,38 @@ Function CheckInstallFolder
     ${Loop}
     FindClose $2
     ${If} $1 = 1
-      MessageBox MB_OK|MB_ICONEXCLAMATION "That folder already has other files in it.$\n$\nChoose a new or empty folder, or the folder ${PRODUCTNAME} is already installed in." /SD IDOK
-      Abort
+      Call IsOurInstallation
+      ${If} $R8 != 1
+        StrCpy $R9 "That folder already has other files in it.$\n$\nChoose a new or empty folder, or the folder ${PRODUCTNAME} is already installed in."
+      ${EndIf}
     ${EndIf}
+  ${EndIf}
+FunctionEnd
+
+Function .onInit
+  ${GetOptions} $CMDLINE "/NS" $0
+  ${IfNot} ${Errors}
+    StrCpy $NoShortcutMode 1
+  ${EndIf}
+  ${IfNot} ${RunningX64}
+    MessageBox MB_OK|MB_ICONSTOP "${PRODUCTNAME} needs 64-bit Windows 10 or 11." /SD IDOK
+    Abort
+  ${EndIf}
+  ; A silent setup (/S /D=folder) never shows the folder page, so the same check runs here; setup ends with exit code 2 if it fails.
+  ${If} ${Silent}
+    Call ValidateInstallFolder
+    ${If} $R9 != ""
+      SetErrorLevel 2
+      Quit
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
+Function CheckInstallFolder
+  Call ValidateInstallFolder
+  ${If} $R9 != ""
+    MessageBox MB_OK|MB_ICONEXCLAMATION "$R9" /SD IDOK
+    Abort
   ${EndIf}
 FunctionEnd
 
@@ -175,9 +341,10 @@ Section Install
     ExecShell "open" "${VCPAGE}"
   ${EndIf}
 
-  ; Updating a copy that is already here: its old program files go first, so nothing of the old version is left mixed in.
-  ; Saved reviews (the output folder) stay.
-  ${If} ${FileExists} "$INSTDIR\package-manifest.json"
+  ; Updating a copy that is already here: its old program files go first, the ones its own manifest lists, so nothing of the old
+  ; version is left mixed in. Saved reviews (the output folder) stay.
+  Call IsOurInstallation
+  ${If} $R8 = 1
     DetailPrint "Removing the previous version's program files. Saved reviews stay."
     !insertmacro REMOVE_PROGRAM
   ${EndIf}
@@ -283,11 +450,22 @@ FunctionEnd
   ${EndIf}
 !macroend
 
+; /DELETEDATA does what the "Also delete my saved reviews and settings" box does, for a silent uninstall (/S).
+Function un.onInit
+  ${un.GetOptions} $CMDLINE "/DELETEDATA" $0
+  ${IfNot} ${Errors}
+    StrCpy $DeleteDataState 1
+  ${EndIf}
+FunctionEnd
+
 Section Uninstall
   !insertmacro WAIT_UNTIL_CLOSED
 
+  Call un.IsOurInstallation
   !insertmacro REMOVE_PROGRAM
   Delete "$INSTDIR\uninstall.exe"
+  ; Copies made before version 0.3.0 alpha 6 kept OCR's temporary files here; they now live under output and are removed after each run.
+  RMDir /r "$INSTDIR\tmp"
   ${If} $DeleteDataState = 1
     RMDir /r "$INSTDIR\output"
   ${EndIf}

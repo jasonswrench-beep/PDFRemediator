@@ -81,6 +81,11 @@ fn open_outside(address: &str) {
     }
 }
 
+// An address of the program's own private service, or a blob: address that service's page made.
+fn is_own_address(address: &str, origin: &str) -> bool {
+    address == origin || address.starts_with(&format!("{origin}/")) || address.starts_with(&format!("blob:{origin}/"))
+}
+
 // Shows the message and, if the person agrees, opens Microsoft's page in their browser. Nothing is downloaded by this program.
 fn offer_page(text: &str, page: &str) -> i32 {
     note_problem(text);
@@ -406,9 +411,10 @@ fn run() -> i32 {
     let built = WebViewBuilder::new_with_web_context(&mut context)
         .with_url(&session.url)
         .with_focused(true)
-        // Links to other web sites (help pages, licences) open in the person's own browser; the program's pages stay in this window.
+        // Only the program's own pages (and the files they hand over as blob: addresses) are shown in this window. Links to other web
+        // sites (help pages, licences) open in the person's own browser; any other kind of address (file:, data: and so on) is refused.
         .with_navigation_handler(move |address| {
-            if address == navigation_origin || address.starts_with(&format!("{navigation_origin}/")) || !address.starts_with("http") {
+            if is_own_address(&address, &navigation_origin) || address == "about:blank" {
                 true
             } else {
                 open_outside(&address);
@@ -416,7 +422,7 @@ fn run() -> i32 {
             }
         })
         .with_new_window_req_handler(move |address, _features| {
-            if address == origin || address.starts_with(&format!("{origin}/")) || address.starts_with("blob:") {
+            if is_own_address(&address, &origin) {
                 NewWindowResponse::Allow
             } else {
                 open_outside(&address);

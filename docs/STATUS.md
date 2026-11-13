@@ -26,9 +26,9 @@ commit 4b81c51 byte for byte, and the installers in the USB kit are byte-identic
 
 ## October 31: own window, progress for every long job, Cancel, Home and Reset
 
-- **Own window.** `PDF Remediator.exe` shows the page in Microsoft Edge (or Chrome) in app mode with a profile of its own
-  (`output/review-app/window-profile`), no tabs or address bar. Closing the window, or the Stop application button, stops the
-  program. Without either browser the default browser is used as before. See `docs/WINDOWS-DISTRIBUTION.md`.
+- **Own window.** `PDF Remediator.exe` showed the page in a web browser's app mode with a profile of its own
+  (`output/review-app/window-profile`), no tabs or address bar. Since 12 November 2026 it has its own program window instead.
+  Closing the window, or the Stop application button, stops the program. See `docs/WINDOWS-DISTRIBUTION.md`.
 - **Progress is visible where you look.** Auto-fix shows a live line right under its button (the step now running and a running
   clock). Every other long job (first scan, Retry, Apply, corrected copy, credential-free copy, AI drafts) shows a bar fixed to the
   bottom of the window: its name, the step, a clock and a Cancel button; "N more waiting" appears if several jobs wait. Screen
@@ -1026,7 +1026,7 @@ changing mode/layout requires a separate result. Existing reviews are retained.
 No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
-`C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
+`%USERPROFILE%\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
 This checkpoint does not claim that future receipt exists or invent its hash.
 
 **Prior-build text follows verbatim.** Earlier sections, including earlier
@@ -1286,8 +1286,8 @@ review label, and are not hidden inside the already-completed baseline.
 
 ### AI architecture proposal — not implemented by this work
 
-The proposed direction is API-first, with optional user-selected OpenAI, Claude,
-Gemini and OpenRouter routes. A later, separately evaluated local Qwen option
+The proposed direction is API-first, with optional user-selected hosted AI
+providers. A later, separately evaluated local Qwen option
 would run inside the program workflow. This provider-selection architecture and
 bundled local-model workflow are proposals, not implemented or qualified features.
 AI remains off. No API key, paid request, external document transfer or model

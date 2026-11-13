@@ -132,7 +132,7 @@ external tester can perform that future work. AI and OCR remain off.
    path, current revision, modified files, application venv, selected Java,
    ODL JAR, veraPDF and local runtime TOML. Preserve existing private PDFs, outputs,
    review workspaces, human edits and tools. Home paths are not established by
-   this handoff. The other computer's `C:\Users\Jason\PDFRemediator` path is an
+   this handoff. The other computer's `%USERPROFILE%\PDFRemediator` path is an
    example, not proof of the home layout.
 2. If Git is available, inspect `git status --short --branch` and `git log -1
    --oneline` in the identified checkout. **No reset, clean, forced checkout or

@@ -1,8 +1,8 @@
 ## October 31: own window, progress for every long job, Cancel, Home and Reset
 
-- **Own window.** `PDF Remediator.exe` shows the page in Microsoft Edge (or Chrome) in app mode with a profile of its own
-  (`output/review-app/window-profile`), no tabs or address bar. Closing the window, or the Stop application button, stops the
-  program. Without either browser the default browser is used as before. See `docs/WINDOWS-DISTRIBUTION.md`.
+- **Own window.** `PDF Remediator.exe` showed the page in a web browser's app mode with a profile of its own
+  (`output/review-app/window-profile`), no tabs or address bar. Since 12 November 2026 it has its own program window instead.
+  Closing the window, or the Stop application button, stops the program. See `docs/WINDOWS-DISTRIBUTION.md`.
 - **Progress is visible where you look.** Auto-fix shows a live line right under its button (the step now running and a running
   clock). Every other long job (first scan, Retry, Apply, corrected copy, credential-free copy, AI drafts) shows a bar fixed to the
   bottom of the window: its name, the step, a clock and a Cancel button; "N more waiting" appears if several jobs wait. Screen
@@ -1000,7 +1000,7 @@ changing mode/layout requires a separate result. Existing reviews are retained.
 No graphical, fresh-PC, human/assistive-technology, LMS checker, distribution or release
 gate closes here, and no master-checklist checkbox receives new acceptance.
 The application authority will be written only after reviewed application at
-`C:\Users\Jason\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
+`%USERPROFILE%\PDFRemediator-validation\work\ocr-omissions-20261023-01\source-application-01\source-application.json`.
 This checkpoint does not claim that future receipt exists or invent its hash.
 
 **Prior-build text follows verbatim.** Earlier sections, including earlier
@@ -2941,7 +2941,7 @@ $env:PYTHONPATH = "$PWD\src"
 $env:PYTHONDONTWRITEBYTECODE = '1'
 $trialOutput = Join-Path $PWD ('work\windows-native-recovery-' + [guid]::NewGuid().ToString('N'))
 $harnessFolder = '.\work\windows-native-recovery-1792368590026'
-& '.\.venvs\app\Scripts\python.exe' -B -u "$harnessFolder\windows_lifecycle_check.py" --config 'C:\Users\Jason\PDFRemediator\local-runtime.toml' --output $trialOutput
+& '.\.venvs\app\Scripts\python.exe' -B -u "$harnessFolder\windows_lifecycle_check.py" --config "$env:USERPROFILE\PDFRemediator\local-runtime.toml" --output $trialOutput
 & '.\.venvs\app\Scripts\python.exe' -B -u "$harnessFolder\windows_reopen_check.py" $trialOutput
 ```
 
@@ -3473,7 +3473,7 @@ separately bounded Windows updater/interface tasks. No merge or release.
 
 October 18, 2026. Branch `dev/windows-zip-fixture` continues from `5d91586`.
 The owner cloned the correct source branch into the previously empty home
-`C:\Users\Jason\PDFRemediator` directory, verified Python **3.11.9 x64**, created
+`%USERPROFILE%\PDFRemediator` directory, verified Python **3.11.9 x64**, created
 `.venvs/app`, installed `.[test]`, passed `pip check`, and observed CLI **0.3.0**.
 The first actual Windows source-only run reported **602 passed, 1 failed in
 64.90s**, not 603 passes. Failure: the backslash archive-path refusal fixture
@@ -4434,9 +4434,9 @@ The original synthetic corpus generator is `eval/build_corpus.py`. It requires a
 
 The first cloud task should establish source installation and tests with synthetic data, not import private local documents or start Phase 3. The Windows browser server and installed Ollama service do not move into a cloud environment with a Git push. A laptop's `127.0.0.1` also refers to the laptop, not the home computer or the cloud container.
 
-The current [cloud environment guide](https://learn.chatgpt.com/docs/environments/cloud-environments) describes selecting the repository, choosing **Get started**, letting the setup conversation prepare dependencies, reviewing the setup, choosing **Publish**, and then **Start new task**. Starting a task uses the prepared filesystem and can continue while the home computer is asleep. Browser/Computer Use is not supported in that cloud workflow; use CLI and automated tests there. Personal Codex skills do not transfer automatically, so essential setup and development instructions must live in the repository.
+The cloud coding service's own environment guide describes selecting the repository, choosing **Get started**, letting the setup conversation prepare dependencies, reviewing the setup, choosing **Publish**, and then **Start new task**. Starting a task uses the prepared filesystem and can continue while the home computer is asleep. Browser/Computer Use is not supported in that cloud workflow; use CLI and automated tests there. Personal Codex skills do not transfer automatically, so essential setup and development instructions must live in the repository.
 
-On the laptop, sign in to the same ChatGPT account and choose **Work in > Cloud > PDFRemediator**. Continue the cloud development task or start a task in that published environment. This local desktop chat and its private document workspace are separate from the cloud source checkout. The cloud environment has no proxy secrets or environment variables configured; its saved install script runs the repository setup, dependency check, CLI version check, and exact contract runner.
+On the laptop, sign in to the same account of that cloud coding service and choose **Work in > Cloud > PDFRemediator**. Continue the cloud development task or start a task in that published environment. This local desktop chat and its private document workspace are separate from the cloud source checkout. The cloud environment has no proxy secrets or environment variables configured; its saved install script runs the repository setup, dependency check, CLI version check, and exact contract runner.
 
 On Linux, [scripts/setup-cloud.sh](scripts/setup-cloud.sh) creates a separate `.venv` and installs the pinned application/test dependencies. It requires Python 3.11 or newer; the published preparation uses the available Python 3.12.14. Use these repository-root commands for the tested source-development setup:
 

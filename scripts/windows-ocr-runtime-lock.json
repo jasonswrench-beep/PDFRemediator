@@ -250,12 +250,12 @@
   "python": {
     "abi": "cp314",
     "architecture": "win_amd64",
-    "filename": "python-3.14.9-embed-amd64.zip",
+    "filename": "python-3.14.10-embed-amd64.zip",
     "implementation": "cpython",
-    "origin": "https://www.python.org/ftp/python/3.14.9/python-3.14.9-embed-amd64.zip",
-    "sha256": "3c01d7cfc666f746a6f064f60fb2156ab0ec464d3d738ab796371a46a9bb24a2",
+    "origin": "https://www.python.org/ftp/python/3.14.10/python-3.14.10-embed-amd64.zip",
+    "sha256": "90905e64a840557d8c1bc4f5b74db3d7ee85e3ffb217611cac1c7813acea4159",
     "threading": "standard-GIL",
-    "version": "3.14.9"
+    "version": "3.14.10"
   },
   "schema": "windows-private-ocr-runtime-lock-1",
   "selection_date": "2026-10-22",

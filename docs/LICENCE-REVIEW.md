@@ -1,6 +1,6 @@
 # Licence and redistribution review (draft for Jason's decision)
 
-Written 2026-10-30 by Claude. **This is a working checklist, not legal advice and not a clearance.**
+Written 2026-10-30 with an AI assistant. **This is a working checklist, not legal advice and not a clearance.**
 Nothing here selects a licence for the application or declares anything cleared; the package's own `redistribution_cleared: false`
 stays as it is until you decide.
 
@@ -39,7 +39,7 @@ inside it. Each of those has terms. Reading them all:
 **Smaller things**
 
 * `lxml` bundles an iconv library under LGPL-2.1 (the app's own notes already list this) [file]. Fixable with a notice and a source pointer.
-* The Java runtime is 25.0.4.1; the app's own note says to check for 25.0.5 before sharing [file]. That is a security-update check, not a licence point.
+* The Java runtime was 25.0.4.1; since 2026-11-13 it is 25.0.5+8, pinned in `scripts/windows-native-lock.json` [file]. That is a security-update check, not a licence point.
 * Sixteen Tesseract training programs, a debugging viewer (`ScrollView.jar`), three Java helper jars and 22 libraries ship but are
   never used by the app. Removing them takes away most of the LGPL list (see "Decision 2").
 * The JPEG 2000 reader inside the tagging engine carries a notice that its use "may infringe existing patents" (JJ2000) [file].
@@ -286,7 +286,7 @@ The separate OCR runtime holds 31 packages (six are the same as above), all with
   earlier trial package, the 66 application source files of the work copy, and the notices (this file, `LICENSE`, `NOTICE`, the 37 files of
   `third-party/licenses/`). Nothing was downloaded. Result: a 205 MB installer, 3,756 payload files, 55 Microsoft files left out, 4 pikepdf
   native files redirected, the payload check passed.
-* The installer was run on this PC into a new empty folder (`C:\Users\Jason\PDFR-test`, no administrator access, no registry changes). It
+* The installer was run on this PC into a new empty folder (`%USERPROFILE%\PDFR-test`, no administrator access, no registry changes). It
   checked every file against the package list and wrote its completion marker. The installed folder holds no Microsoft runtime file.
 * The installed copy's own Python ran the application on a 2-page test scan with the turns layout and the standard layout. Status
   (needs-manual), OCR (completed), fidelity, first gate, recognised words per page and the text of both pages were identical to the earlier
