@@ -61,7 +61,22 @@ def _parser():
         elif name=='export':cmd.add_argument('-o','--output',type=Path,required=True)
         elif name=='invalidate':
             cmd.add_argument('record_id');cmd.add_argument('--reason',required=True);cmd.add_argument('--reviewer',required=True);cmd.add_argument('--reviewed-at')
+    child=commands.add_parser('characters',help='Inventory wrong extracted characters and, from the plan of a named reviewer, write a separate corrected copy.')
+    sub=child.add_subparsers(dest='action',required=True)
+    cmd=sub.add_parser('inventory',help='List what each used code of each font extracts as (read-only).');cmd.add_argument('source',type=Path);cmd.add_argument('-o','--output',type=Path)
+    cmd=sub.add_parser('plan',help='Write a correction plan with named acceptance from codes and the text the reviewer says they show.')
+    cmd.add_argument('source',type=Path);cmd.add_argument('--accepted-by',required=True);cmd.add_argument('--accepted-at',required=True,help='Date of acceptance, YYYY-MM-DD.')
+    cmd.add_argument('--set',action='append',dest='sets',required=True,metavar='ID=TEXT',help='A row id from the inventory and the intended text, for example 8:0:65=e or 8:0:65=U+00E9.')
+    cmd.add_argument('-o','--output',type=Path,required=True)
+    cmd=sub.add_parser('apply',help='Write a separate corrected copy and its evidence file; the original is never changed.')
+    cmd.add_argument('source',type=Path);cmd.add_argument('--plan',type=Path,required=True);cmd.add_argument('--plan-sha256');cmd.add_argument('-o','--output',type=Path,required=True)
     return parser
+
+def _character_text(value):
+    import re
+    if re.fullmatch(r'U\+[0-9A-Fa-f]{4,6}(?:\s+U\+[0-9A-Fa-f]{4,6})*',value.strip()):
+        return ''.join(chr(int(part[2:],16)) for part in value.split())
+    return value
 
 def _review_data(report,file):
     payload=json.loads(file.read_text(encoding='utf-8'))
@@ -144,6 +159,33 @@ def main(argv=None):
                 print(packet)
                 if not args.no_open:webbrowser.open(packet.as_uri())
             return 0
+        if args.command=='characters':
+            from . import character_corrections as characters
+            if args.action=='inventory':
+                inventory=characters.get_inventory(args.source)
+                if args.output:
+                    with args.output.open('x',encoding='utf-8') as stream:stream.write(json.dumps(inventory,indent=2,ensure_ascii=False)+'\n')
+                    print(args.output)
+                else:emit(inventory)
+                return 0
+            if args.action=='plan':
+                inventory=characters.get_inventory(args.source)
+                rows={row['id']:row for font in inventory['fonts'] for row in font['rows']}
+                corrections=[]
+                for item in args.sets:
+                    identifier,separator,text=item.partition('=')
+                    if not separator or identifier not in rows:raise ValueError('Unknown row id or missing = in --set: '+identifier)
+                    row=rows[identifier]
+                    corrections.append({'id':identifier,'font':row['font'],'code_hex':row['code_hex'],'previous_text_utf16be_hex':row['text_utf16be_hex'],
+                        'text':_character_text(text),'fingerprint':row['fingerprint']})
+                plan={'schema':characters.PLAN_SCHEMA,'source_sha256':inventory['source_sha256'],'inventory_sha256':inventory['inventory_sha256'],
+                    'accepted_by':args.accepted_by,'accepted_at':args.accepted_at,'corrections':corrections}
+                characters.validate_plan(plan,inventory)
+                with args.output.open('x',encoding='utf-8') as stream:stream.write(json.dumps(plan,indent=2,ensure_ascii=False)+'\n')
+                print(args.output);return 0
+            if args.action=='apply':
+                result=characters.create_corrected_copy(args.source,args.plan,args.output,expected_plan_sha256=args.plan_sha256)
+                emit(result);return 0 if result['status']=='pass' else 1
         if args.command=='decisions':
             from .sidecar import load_sidecar,write_sidecar,bind_approval
             data=load_sidecar(args.sidecar);byid={item['id']:item for item in data['decisions']}

@@ -1744,6 +1744,10 @@ def inspect_pdf(path, cancel=None):
                                   "content": content, "annotations": _annotations(page, page_numbers)})
                 from .small_font import assess as assess_small_font
                 report['small_font'] = assess_small_font(path, cancel=cancel, pdf=pdf, document=pdfium_doc)
+                from .color_meaning import assess as assess_color_meaning
+                report['color_meaning'] = assess_color_meaning(path, cancel=cancel, pdf=pdf, document=pdfium_doc)
+                from .character_meaning import assess as assess_character_meaning
+                report['character_meaning'] = assess_character_meaning(path, cancel=cancel, pdf=pdf, document=pdfium_doc)
             finally:
                 pdfium_doc.close()
             phantom = [{"page": key[0], "stream": key[1], "mcid": key[2], "owners": owners}

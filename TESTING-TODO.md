@@ -4,7 +4,7 @@ Everything a program can check is checked by tests (see `tests/` and `scripts/te
 needs a human: judgement, a real assistive technology, or a computer that is not this one. Tick a box and add the date and who did it when it is done; do not
 delete a line that was never checked.
 
-Last updated 2026-10-31 (late).
+Last updated 2026-11-16 (the section "Development-list round of 2026-11-16" is new).
 
 ## Test runs on an unstable computer
 
@@ -98,3 +98,108 @@ The full suite is expected to end with only the environment failures listed belo
 - [ ] **OCR evidence in plain words.** On a review item that carries the text recognition's page-by-page evidence, the page now shows one sentence per unsure page
   ("Page 3: many words were unsure (40 percent of its 120 words were read confidently).") with the rating rule in words, and keeps the recorded data underneath in a closed section. Tested by running the shipped function alone in Node
   (`scripts/test-plain-evidence.cjs`, 8 cases). Not looked at in a real browser on a real scan: open a scan that has pages the program flagged and read the sentences against the page images.
+
+## Development-list round of 2026-11-16 (things only a person can do)
+
+Written for the 2026-11-15 development list. The program-side work for items 2 to 6 is done and tested as far as a program can test it; these
+are the parts that are a person's, a second computer's, or the owner's decision.
+
+**The three build items (list item 1; software-tested on synthetic documents only, no real document has been judged with any of them)**
+
+*Colour-only meaning* (`docs/COLOR-ONLY-MEANING.md`)
+
+- [ ] **The colour card in the real window.** Process a PDF of your own that has coloured text, a link without an underline and a multi-colour
+  chart. Open the review: the card "Meaning that may depend on color needs review" should list each candidate in plain words with working Page
+  buttons, no edit buttons, and a required pending `color-meaning` item.
+- [ ] **Screen reader and keyboard on that card.** Plain headings, paragraphs and Page buttons: read in order, buttons reachable.
+- [ ] **Judge the candidates on 5 to 10 real course documents.** Are the coloured-text, link, chart and phrase candidates the ones a person cares
+  about? Too many (brand-coloured headings, decorative strips)? Which are missed (a chart saved as a picture is never listed, only the page is
+  flagged)? The thresholds are in `color_meaning.THRESHOLDS` and recorded in every result; tune them from what you see.
+- [ ] **Judge the repair guidance** (`fix_path` and the guide): could an author act on it?
+- [ ] **Decision: is a required colour review on most documents too much?** Pictures, pattern or shading paint, form fields, layers, Type 3 text
+  and anything over 100 pages keep a page under review, so the review is required on most real documents. Decide whether pictures alone should
+  require it.
+
+*Wrong characters and fonts* (`docs/UNICODE-AND-FONT-REPAIR.md`; the in-window editor is not built)
+
+- [ ] **The characters card.** Open a review of a PDF whose extracted text has private-use or replacement characters and read "Some characters may
+  be extracted wrongly": plain words, right pages, announced sensibly by a screen reader?
+- [ ] **A real corrected copy.** With a real PDF, run `remediator characters inventory`, `plan` and `apply` for one wrong code. Open both PDFs: does the
+  corrected one look identical, does copy and paste give the right character, does a screen reader speak it? Only a person can judge that the
+  typed character is the right one.
+- [ ] **A second opinion on the proofs.** A qualified reader should read `character_corrections.canonical_graph` and `_text_proof` and say whether
+  any change other than the ToUnicode maps could pass them (for example through an object the graph walk does not reach).
+- [ ] **False positives and misses on 5 to 10 real documents** (Word, InDesign, LaTeX, scan plus OCR): does the screen flag too much (glyph-name
+  versus mapping on legitimate minus or hyphen choices, ActualText used on purpose) or too little?
+- [ ] **The text proof on a messy long document.** Correct one code in a long book and confirm the proof does not refuse for reasons unrelated to
+  the edit.
+
+*Logo and branding, and the scanned-page sample* (`docs/LOGO-AND-OCR-REVIEW.md`)
+
+- [ ] **Logo and branding on a real document.** Open a real course PDF whose header logo repeats, press "Find logos and repeated branding" and check
+  the list matches what you see. Describe one group (3 to 10 words), mark another decorative, accept by name, Apply, and check the new PDF with a
+  screen reader: each logo reads as chosen or is skipped, and nothing else changed. Does the guidance wording help?
+- [ ] **The scanned-page sample on a real scan.** Run OCR on a real scan of 15 or more pages, open Review checks, and compare each sampled page with its
+  picture. Are the chosen pages sensible (worst first)? Is it easy to see the page and its recognized text together? Record all three checks,
+  confirm the scanned-text review cannot be approved before every page passes and can be after, mark one page a Problem and follow the guidance,
+  and try a cut-off page.
+- [ ] **Screen reader, keyboard and zoom on both panels.** Status line takes focus after Find, Save, Accept and Save record and is read; each radio group
+  is announced with its legend; Tab order; 200 percent and 400 percent zoom, forced colours, dark mode (a 320 px reflow check exists and passes where a
+  headless Edge or Chrome is installed).
+- [ ] **Decisions made for you (keep or change):** the logo thresholds (15 percent repeated, 6 percent margin, 12 and 8 percent bands), the sample size
+  (about 20 percent, 3 to 10), gating only the `image-and-ocr` review, and **`ledger add` now refusing a scanned document that has no complete
+  page records for its sample**.
+
+**Seen while building (not changed)**
+
+- [ ] **Do the small-text and empty-tag cards ever appear in a real review?** `workspace._repair_findings` maps only `metadata-meaning`,
+  `contrast` and the two new ids to a card, so the existing `small-font` and `empty-structure-tags` cards in `app.js` look reachable only from
+  test fixtures. Open a real review of a document with small text and see. If they do not show, mapping `"small-fonts": "small-font"` and
+  `"empty-tags": "empty-structure-tags"` is a two-token change (and `prettyGroup` has no friendly name for them either).
+
+**Alpha 8 (built and signed 2026-11-16)**
+
+- [ ] **Install alpha 8 over alpha 7 on a computer and use it.** The installer was verified (signature, manifest) but never run: installing it on the build PC would have replaced the registry entry of the real alpha 7 copy. Run it over a real alpha 7 install (it should keep saved reviews), open the program window, press Check for updates (it should say you have the newest version once alpha 8 is the newest published), close it, and uninstall from Settings > Apps. Installer SHA-256 `3ce529c7efb630dac01cf4e7a8a2e93a8ba08aae178425a54e37e9d5f53680f3`.
+- [ ] **The uninstaller's signature.** After installing, look at Properties > Digital Signatures of `uninstall.exe` in the install folder: Jason Wrench, timestamped. It exists only after installation, so it was not checked at build time.
+- [ ] **Other tools' copies of `sign_windows.py`.** The same file is shared by the other OpenStage tools' builds; the copy here now asks PowerShell for UTF-8 so a non-ASCII name cannot break the signature reader. Copy the change to the others (it was not made in their repositories).
+- [ ] **Signing quota.** Each signed build uses about 94 signatures of the signing account's allowance; a repeated or failed build uses more.
+
+**Distribution (list item 2)**
+
+- [ ] **Fresh-PC install test.** Follow `docs/FRESH-PC-AND-SIGNING.md`, section 1, on a PC or a virtual machine restored from a clean
+  snapshot that really lacks Microsoft's Visual C++ Redistributable and the WebView2 Runtime (at least once each). Record the table's "Seen"
+  column and the SmartScreen text word for word. (This subsumes the two older "A PC without ..." boxes above; tick those too if the same run
+  settles them.)
+- [ ] **Sign a build and check the signature.** Section 3 of the same file: `az login`, set the four `OPENSTAGE_SIGN_*` variables, build with
+  `--sign`, run `scripts/sign_windows.py --check`, look at Digital Signatures on a second PC. Only the owner can sign in; no program step
+  can. The publisher name on the signature has to match the verified identity on the signing account.
+- [ ] **WebView2 SDK licence text.** Copy Microsoft's licence for the WebView2 SDK (NuGet package `Microsoft.Web.WebView2`, licence page
+  linked in `THIRD-PARTY-NOTICES.md`, "Still to do", item 8) into `third-party/licenses/webview2-sdk-LICENSE.txt` and into the build's notices.
+  It was not copied by the build session because the text has to come from Microsoft, not from memory.
+- [ ] **Licence recheck on release day** (`THIRD-PARTY-NOTICES.md`, items 3, 6 and 7) and counsel's review: unchanged from before, still open.
+
+**The coverage matrix (list item 3)**
+
+- [ ] **A person who knows WCAG and PDF accessibility reads `docs/WCAG-2.1-AA-COVERAGE.md`** and says whether any row claims more than the
+  program does (the "Coverage" word for each criterion), or leaves a criterion out that matters to faculty. It was written from the code and
+  the existing notes, not from a test of real documents.
+
+**Phase 3 (list item 4; deferred until the owner says go)**
+
+- [ ] **Owner's go-ahead**, in writing, for which of the three groups in `docs/PHASE3-TESTERS-AND-NEW-CHECKER.md` may start, and whether the
+  ethics board needs to see the plan before any person is observed.
+- [ ] **Real users:** three to five nontechnical people run the tasks and the facilitator fills in the sheet.
+- [ ] **A screen-reader tester** works through the program's window and the original and candidate PDFs; the two scripted-only items near the
+  top of this file are theirs to repeat.
+- [ ] **The campus's new checker (spring change):** upload each frozen original and candidate to the old checker **before** the switch to get a
+  baseline, then to the new one, with file SHA-256s; name the new checker and keep its published PDF checklist. Records stay outside the
+  repository. No upload happens without the owner's say.
+
+**The core (list items 5 and 6)**
+
+- [ ] **Give `CORE-REQUESTS.md` to the core's session** (C2-1 to C2-3, C8-1 and C8-2). Nothing was built against the core in this round, because
+  C2 is not published and C8 is not specified; the program kept its own contrast, language-tag and AI code.
+- [ ] **Not done in this session:** the instruction to switch PrismQDA to the core's `prismqda-stats-v1.0.0` tag. PrismQDA is another
+  repository and there is no copy of it on this PC under `C:\Dev` (only the core's crate), so it belongs to the PrismQDA session
+  (`CORE-NOTES.md`, "For the PrismQDA session", item 1).
+

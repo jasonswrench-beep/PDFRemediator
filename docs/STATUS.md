@@ -1,3 +1,24 @@
+## November 16: the development-list round (items 1 to 6)
+
+From the 2026-11-15 development list. Built or written, in list order (details in `HANDOFF.md` and the files named):
+
+- **Item 1, the three open development items:** colour-only-meaning screen (built; `docs/COLOR-ONLY-MEANING.md`); character-meaning screen and
+  reviewed ToUnicode correction as a separate corrected copy from the command line (built; the window editor and lineage are not;
+  `docs/UNICODE-AND-FONT-REPAIR.md`); Logo and branding group review and a reproducible scanned-page sample with named-person records
+  (built; `docs/LOGO-AND-OCR-REVIEW.md`). The checklist lines near the end of this file say exactly what is closed and what is open.
+- **Item 2, distribution:** `THIRD-PARTY-NOTICES.md` and `docs/LICENCE-REVIEW.md` corrected (the repository has been public since 2026-11-01);
+  the WebView2 SDK licence text is still to be copied from Microsoft; fresh-PC test and signing are written as human protocols
+  (`docs/FRESH-PC-AND-SIGNING.md`), not run.
+- **Item 3:** `docs/WCAG-2.1-AA-COVERAGE.md`, the matrix the roadmap called for (all 50 level A and AA criteria).
+- **Item 4:** Phase 3 kit for users, a screen-reader tester and the campus's new checker (`docs/PHASE3-TESTERS-AND-NEW-CHECKER.md`);
+  prepared only, still deferred until the owner authorizes it.
+- **Item 5:** contrast math, language-tag handling and status words handed to the core's C2 as vectors and rules in `CORE-REQUESTS.md`,
+  pinned by `tests/test_c2_handover_vectors.py`. Nothing was copied from the core; C2 is not published and is Rust while this program is Python.
+- **Item 6:** the AI plan is local first on the shared C8 runtime, with a hosted provider only later behind it (`docs/AI-PLAN.md`); the
+  old API-first proposal is withdrawn; `tests/test_local_ai_first.py` holds the rules.
+
+Released as 0.3.0 alpha 8 (signed, pre-release `v0.3.0-alpha.8`); installer SHA-256 `3ce529c7efb630dac01cf4e7a8a2e93a8ba08aae178425a54e37e9d5f53680f3`. Not done: switching PrismQDA to the core's statistics tag (another repository, not on this PC); installing the alpha 8 installer on a computer (see `TESTING-TODO.md`).
+
 ## November 1: more of the program reachable from the window, safer leaving, build 15
 
 - **Start-screen options.** "Rebuild a missing letter dictionary by reading each page" (the OCR font-map repair) and the scan layout "Pages stored sideways or upside down"
@@ -1237,7 +1258,9 @@ every check or repair exists. The earlier audit's Link owner-role gap and bounde
 multi-page OCR now have specific software/technical evidence. The live master
 checklist still has **nine acceptance/distribution/final gates**, plus these
 **three remaining requested development items: 12 open items overall**. No dated historical
-nine-item record is rewritten by this expanded scope.
+nine-item record is rewritten by this expanded scope. *(Update 2026-11-16: the three items below
+were each built as a first bounded slice; see the entry at the top of this file and the lines below
+for exactly what is closed and what stays open.)*
 
 - [x] Add bounded source/occurrence-bound decorative/artifact controls, read-only
   Figure bounding-box diagnostics and safe existing Document/Sect role correction.
@@ -1270,34 +1293,48 @@ nine-item record is rewritten by this expanded scope.
   checkpoints and saved reviews are preserved. Software and background native
   checks passed October 27; meaningful removals, readability and genuine
   graphical/keyboard/assistive-technology acceptance remain separate.
-- [ ] Add explicit color-only-meaning review and source-repair guidance; measuring
+- [x] Add explicit color-only-meaning review and source-repair guidance; measuring
   supported digital-text contrast alone cannot establish equivalent meaning.
-- [ ] Support correction of existing wrong OCR/Unicode and source-bound
-  unembedded-font repair beyond the narrow known mapping, with original-paint
-  safeguards; neither extracted text nor OCR rerun proves correct character meaning.
+  Software proof passed 2026-11-16 (`bounded-color-meaning-1`, `docs/COLOR-ONLY-MEANING.md`): a
+  read-only advisory screen that lists candidates, a required pending review item and a window
+  card. No real document has been judged with it; a clean screen is never a Use of Color result.
+- [x] Add a bounded, read-only character-meaning screen (implausible or unverifiable
+  extracted Unicode, partial or missing maps, glyph-name or ActualText disagreement, look-alike
+  scripts, unembedded fonts listed with source-repair guidance only). Software proof passed
+  2026-11-16 (`bounded-character-meaning-1`, `docs/UNICODE-AND-FONT-REPAIR.md`).
+- [x] Add reviewed correction of an existing ToUnicode map in an embedded font as a
+  separate corrected copy from the command line (`remediator characters inventory|plan|apply`),
+  published only if object-graph, map read-back, exact-pixel/page-furniture and extracted-text
+  proofs all pass. Software proof only; no native-tool run and no human acceptance.
+- [ ] Support correction of existing wrong OCR/Unicode and source-bound unembedded-font
+  repair beyond the narrow known mapping: **still open** are the in-window correction editor,
+  the corrected copy entering ordinary review as a recorded new source, and fonts with no
+  Unicode map. Unembedded-font repair stays guidance only (nothing is embedded, substituted or
+  guessed). Neither extracted text nor an OCR rerun proves correct character meaning.
+- [x] Add the Logo and branding group review (deterministic size/position/repetition screen,
+  per-occurrence choices through the ordinary description and decorative decisions) and the
+  reproducible scanned-page sample with human-entered per-page records that gate the required
+  scanned-text review and the ledger (`docs/LOGO-AND-OCR-REVIEW.md`). Software and
+  synthetic-fixture tests passed 2026-11-16.
 - [ ] Complete the actual logo-description workflow and representative OCR
-  word/completeness/order review without inventing human acceptance. Cut-off or
-  unreadable scans may need a better source; preserved pixels cannot recreate
-  missing content.
+  word/completeness/order review without inventing human acceptance: a person decides the logos
+  of a real document and compares the sampled pages of a real scan (`TESTING-TODO.md`) and judges
+  the thresholds. Cut-off or unreadable scans may need a better source; preserved pixels cannot
+  recreate missing content.
 
 Future controls must preserve exact occurrence/source/revision bindings and old
 saved reviews. These gaps do not disappear after a PDF/UA pass or a generic manual
 review label, and are not hidden inside the already-completed baseline.
 
-### AI architecture proposal — not implemented by this work
+### AI plan: local first, on the shared runtime (replaces the earlier hosted-first proposal)
 
-The proposed direction is API-first, with optional user-selected hosted AI
-providers. A later, separately evaluated local Qwen option
-would run inside the program workflow. This provider-selection architecture and
-bundled local-model workflow are proposals, not implemented or qualified features.
-AI remains off. No API key, paid request, external document transfer or model
-download is authorized by recording the proposal. Define explicit per-document
-opt-in, private credentials and visible provider/status/cancellation before use.
-Ordinary suggestions remain source-bound pending drafts. The existing explicitly
-authorized automatic best-guess path may retain automatically accepted values;
-automatic acceptance remains distinct from named human approval and verified
-status. This proposal neither removes that path nor requires individual human
-acceptance for an already-authorized automatic mode.
+Decided in the 2026-11-15 development list and recorded 2026-11-16 in [AI-PLAN.md](AI-PLAN.md). The earlier proposal here was API-first,
+with optional user-selected hosted AI providers and a local model later; it is **withdrawn**. The order is now: AI stays optional and off;
+the existing optional loopback-only client is unchanged; when the shared core's local AI runtime (C8) is specified, PDF Remediator moves
+onto it (what it needs is in `CORE-REQUESTS.md`); a hosted provider could come after that, behind C8, only if the owner decides. No hosted
+route, key store or model download exists or is authorized. Ordinary suggestions remain source-bound pending drafts. The explicitly
+authorized automatic best-guess path may keep automatically accepted values; automatic acceptance remains distinct from named human approval
+and verified status. `tests/test_local_ai_first.py` holds the no-hosted-route, no-key and loopback-only rules.
 
 ## October 23 OCR table recognition and preservation repair
 

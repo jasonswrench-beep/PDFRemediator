@@ -222,7 +222,7 @@ async function boot({hash = '', stored, accepted = VALID, denied = false, docume
     }
     if (options.method && options.method !== 'GET') {
       const expected = remainingMutations[0];
-      if (!expected || options.method !== 'POST' || !(url === '/api/stop' || url === '/api/process' || /^\/api\/jobs\/[A-Za-z0-9_-]+\/cancel$/.test(url) || /\/api\/workspaces\/[a-z0-9]+\/(edit|approve|auto-fix|review|group|retry|ocr-edit|ocr-approve|ocr-apply|ocr-insert|ocr-remove)$/.test(url) || (expected.allowApply === true && url === expected.url && /^\/api\/workspaces\/[a-z0-9]+\/apply$/.test(url)) || (expected.allowCredentialCopy === true && url === expected.url && /^\/api\/workspaces\/[a-z0-9]+\/credential-copy$/.test(url)))) {
+      if (!expected || options.method !== 'POST' || !(url === '/api/stop' || url === '/api/process' || /^\/api\/jobs\/[A-Za-z0-9_-]+\/cancel$/.test(url) || /\/api\/workspaces\/[a-z0-9]+\/(edit|approve|auto-fix|review|group|retry|ocr-edit|ocr-approve|ocr-apply|ocr-insert|ocr-remove)$/.test(url) || (expected.allowApply === true && url === expected.url && /^\/api\/workspaces\/[a-z0-9]+\/apply$/.test(url)) || (expected.allowCredentialCopy === true && url === expected.url && /^\/api\/workspaces\/[a-z0-9]+\/credential-copy$/.test(url)) || (expected.allowReviewExtras === true && url === expected.url && /^\/api\/workspaces\/[a-z0-9]+\/(logo-save|logo-accept|ocr-sample)$/.test(url)))) {
         unexpectedRequests.push({url, method: options.method});
         assert.fail('The named HTTP double forbids unauthored mutation requests: ' + options.method + ' ' + url);
       }
@@ -238,6 +238,15 @@ async function boot({hash = '', stored, accepted = VALID, denied = false, docume
     }
     const authorized = !denied && options.headers['X-Review-Token'] === accepted;
     if (!authorized) return {ok: false, async json() { return {error: REFUSAL_NOTICE}; }};
+    const logoRead = /^\/api\/workspaces\/([a-z0-9]+)\/logo-review$/.exec(url);
+    if (logoRead) {
+      const answer = workspaces[logoRead[1]]?.authoredLogoReview;
+      if (!answer) {
+        unexpectedRequests.push({url, method: 'GET'});
+        assert.fail('The logo review read needs an exact authored response.');
+      }
+      return {ok: true, async json() { return answer; }};
+    }
     if (remainingReads[0]?.url === url) {
       const expected = remainingReads.shift();
       if (expected.fetchFails) throw new TypeError('Failed to fetch');
@@ -6035,4 +6044,379 @@ test('Check for updates says when this is the newest version, without a link', a
   await result.dispatch('update-check', 'click');
   assert.equal(result.getNode('update-result').textContent, answer.message);
   assert.equal(result.getNode('update-result').children.length, 0);
+});
+
+// Color-meaning candidates are advisory evidence: a list to look at, never a result or an action.
+function colorMeaningRecord(){return {policy:'bounded-color-meaning-1',status:'needs-review',advisory:true,source_sha256:'3'.repeat(64),findings:[
+ {kind:'colored-text',status:'needs-review',page:1,hue:'red',color_rgb:[204,0,0],samples:['Overdue'],difference:'hue-and-lightness'},
+ {kind:'link-color-only',status:'needs-review',page:1,hue:'blue',color_rgb:[0,0,204],sample:'See the guide'},
+ {kind:'multi-hue-graphic',status:'needs-review',page:1,hues:['blue','green','red'],path_count:3,text_characters_nearby:0},
+ {kind:'colored-annotation',status:'needs-review',page:1,subtype:'/Highlight',hue:'yellow',color_rgb:[255,230,0],count:2},
+ {kind:'color-reference-text',status:'needs-review',page:1,phrase:'items in red'}],
+ uncertain:[{kind:'page-coverage',page:1,reasons:['raster-image-color-not-assessed']}],coverage:{complete:false},limitations:['Only a bounded set of color uses is screened.'],fix_path:'Add a text label, then export a separate PDF.'};}
+test('DOM color meaning: candidates are advisory, say what they are in plain words and offer no editing action',async()=>{
+ const saved=savedReviewFixture();saved.repair_findings=[{id:'color-meaning',status:'needs-review',evidence:colorMeaningRecord()}];const result=await bootSavedReview(saved);await openSavedReview(result);const text=emptyText(result.getNode('repair-findings'));
+ assert.match(text,/Meaning that may depend on color needs review/);assert.match(text,/candidates, not a result/);assert.match(text,/does not recolor or mark pages/);
+ assert.match(text,/Colored text, red \(RGB 204, 0, 0\): Overdue/);assert.match(text,/differs from the body text in hue and lightness/);assert.match(text,/Link text in blue .* with no underline or border: See the guide/);
+ assert.match(text,/Shapes close together in several hues \(blue, green, red\), 3 shapes/);assert.match(text,/2 Highlight mark\(s\) in yellow/);assert.match(text,/The text points at a color: items in red/);
+ assert.match(text,/pictures are not checked for color/);assert.match(text,/does not show that color is not needed/);assert.match(text,/Add a text label, then export a separate PDF/);
+ assert.equal(descendants(result.getNode('repair-findings')).filter(item=>item.tagName==='BUTTON'&&!/^Page /.test(item.textContent)).length,0);expectOnlyMutations(result,[]);
+});
+test('DOM color meaning: a complete record still says it does not show that color is unneeded',async()=>{
+ const saved=savedReviewFixture(),record=colorMeaningRecord();record.findings=[];record.uncertain=[];record.coverage={complete:true};saved.repair_findings=[{id:'color-meaning',status:'needs-review',evidence:record}];const result=await bootSavedReview(saved);await openSavedReview(result);
+ const text=emptyText(result.getNode('repair-findings'));assert.match(text,/0 candidates and 0 pages/);assert.match(text,/Every supported page was screened\. That does not show that color is not needed anywhere/);assert(!/Some pages or content could not be screened/.test(text));expectOnlyMutations(result,[]);
+});
+for(const defect of ['policy','advisory']){
+ test('DOM color meaning: unproved '+defect+' record cannot claim current candidates',async()=>{
+  const saved=savedReviewFixture(),record=colorMeaningRecord();if(defect==='policy')record.policy='unproved';else record.advisory=false;saved.repair_findings=[{id:'color-meaning',status:'needs-review',evidence:record}];const result=await bootSavedReview(saved);await openSavedReview(result);const text=emptyText(result.getNode('repair-findings'));
+  assert.match(text,/no verified current color-meaning record/);assert(!text.includes('Colored text, red'));expectOnlyMutations(result,[]);
+ });
+}
+test('DOM color meaning: document-derived words are shown as plain text, never as markup',async()=>{
+ const saved=savedReviewFixture(),record=colorMeaningRecord(),hostile='<img src=x onerror=alert(1)>';record.findings[1].sample=hostile;record.findings[4].phrase=hostile;record.findings[0].samples=[hostile];record.uncertain[0].reasons=[hostile];saved.repair_findings=[{id:'color-meaning',status:'needs-review',evidence:record}];
+ const result=await bootSavedReview(saved);await openSavedReview(result);const holder=result.getNode('repair-findings');assert(emptyText(holder).includes(hostile));assert.equal(descendants(holder).filter(item=>item.tagName==='IMG').length,0);expectOnlyMutations(result,[]);
+});
+test('DOM color meaning: malformed candidate records never throw or invent a candidate',async()=>{
+ const saved=savedReviewFixture(),record=colorMeaningRecord();record.findings=[{},{kind:'colored-text',page:'1',color_rgb:'red',samples:[1,{}],hue:7},{},{kind:'unknown-kind'}];record.uncertain=[{page:99,reasons:'no'}];saved.repair_findings=[{id:'color-meaning',status:'needs-review',evidence:record}];
+ const result=await bootSavedReview(saved);await openSavedReview(result);const text=emptyText(result.getNode('repair-findings'));assert.match(text,/4 candidates and 1 pages/);assert.match(text,/A recorded candidate/);assert.equal(descendants(result.getNode('repair-findings')).filter(item=>item.tagName==='BUTTON'&&/^Page /.test(item.textContent)).length,0);expectOnlyMutations(result,[]);
+});
+
+// ---- Logo and branding review and the scanned-page sample (item 1c) ----
+function logoMember(id, purposeId, page, element) {
+  return {id, purpose_id: purposeId, page, element, signals: ['The same picture is a figure on 2 pages and is small on the page.'],
+    area_fraction: 0.009, position: 'header', geometry_source: 'picture-object', current_description: 'Our university',
+    picture_pixels: [4, 4], decorative_available: true, decorative_limitations: []};
+}
+
+function reviewExtrasFixture({logo = true, sample = true} = {}) {
+  const saved = savedReviewFixture();
+  saved.output = {path: '/authored/candidate.pdf', sha256: 'a'.repeat(64)};
+  saved.decisions = [
+    {id: 'figure-a', kind: 'figure-description', page: 1, element: '10:0', current: 'Our university', value: 'Our university', status: 'pending'},
+    {id: 'purpose-a', kind: 'figure-purpose', page: 1, element: '10:0', current: 'Figure', value: 'Figure', status: 'pending', allowed_values: ['Figure', 'Artifact'], structural_eligible: true},
+    {id: 'figure-b', kind: 'figure-description', page: 2, element: '11:0', current: 'Our university', value: 'Our university', status: 'pending'},
+    {id: 'purpose-b', kind: 'figure-purpose', page: 2, element: '11:0', current: 'Figure', value: 'Figure', status: 'pending', allowed_values: ['Figure', 'Artifact'], structural_eligible: true},
+  ];
+  saved.logo_review = {available: logo, figures: 2, decorative_controls: true, schema_version: 'phase2-logo-review-1'};
+  saved.authoredLogoReview = {schema_version: 'phase2-logo-review-1', revision: saved.revision, label: 'Logo and branding', status: 'measured',
+    candidate_count: 2, figures_examined: 2, figures_in_review: 2, partial_reasons: [],
+    guidance: 'For a picture that carries meaning, write a short description: name the organisation or product as the logo shows it.',
+    source_guidance: 'Make the lasting fix where the document is written.', limitations: ['Candidates are found from size, position and repetition only.'],
+    groups: [{id: 'logo-aaa', label: 'Logo and branding', kind: 'same-picture-on-several-pages', asset_sha256: 'd'.repeat(64),
+      member_ids: ['figure-a', 'figure-b'], pages: [1, 2], summary: 'The same picture on 2 pages.', membership_digest: 'm'.repeat(64),
+      members: [logoMember('figure-a', 'purpose-a', 1, '10:0'), logoMember('figure-b', 'purpose-b', 2, '11:0')]}]};
+  saved.ocr_review_sample = sample ? {policy: 'bounded-ocr-review-sample-1', artifact_sha256: 'a'.repeat(64), selection_sha256: 's'.repeat(64),
+    pool_pages: [1, 2, 3, 4], limit: 3, checks: [], recognition_measured: true,
+    limits: 'The sample is a guide to where to look, not proof about the pages it leaves out.',
+    better_source: 'If part of a page is cut off, faint or unreadable in the scan, the program cannot recreate the missing content from its pixels.',
+    pages: [{page: 1, reasons: ['first-scanned-page'], reading: {words: 200, sure_words: 150, mean_confidence: 88, share_sure: 0.75, grade: 'check'}},
+            {page: 2, reasons: ['read-least-surely', 'last-scanned-page'], reading: null}],
+    records: {}, invalidated: [], standing: {applies: true, satisfied: false, summary: 'The scanned-text review cannot be approved yet. Not yet recorded: pages 1, 2.'}} : null;
+  return saved;
+}
+
+const extrasText = node => descendants(node).map(item => item.textContent).join(' ');
+const extrasButton = (root, text) => descendants(root).find(node => node.tagName === 'BUTTON' && node.textContent === text);
+const extrasCheckboxes = root => descendants(root).filter(node => node.tagName === 'INPUT' && node.type === 'checkbox');
+
+async function openExtras(saved, options = {}) {
+  const result = await bootSavedReview(saved, options);
+  await openSavedReview(result);
+  return result;
+}
+
+test('REVIEW logos: the panel is hidden unless the review has figures, and opening a review reads nothing extra', async () => {
+  const hidden = await openExtras(reviewExtrasFixture({logo: false, sample: false}));
+  assert.equal(hidden.getNode('logo-review').hidden, true);
+  assert.equal(hidden.getNode('ocr-sample').hidden, true);
+  const shown = await openExtras(reviewExtrasFixture());
+  assert.equal(shown.getNode('logo-review').hidden, false);
+  assert.equal(shown.requests.filter(request => /logo-review/.test(request.url)).length, 0, 'Looking for logos happens only when asked.');
+  assert.equal(shown.getNode('logo-review-load').textContent, 'Find logos and repeated branding');
+  assert.equal(shown.getNode('logo-groups').children.length, 0);
+});
+
+test('REVIEW logos: asking shows each group with every occurrence unselected and its own state', async () => {
+  const saved = reviewExtrasFixture();
+  const result = await openExtras(saved);
+  await result.dispatch('logo-review-load', 'click');
+  assert.equal(result.requests.filter(request => request.url === '/api/workspaces/' + saved.workspace_id + '/logo-review').length, 1);
+  const text = extrasText(result.getNode('logo-groups'));
+  assert.match(text, /Logo and branding: The same picture on 2 pages\./);
+  assert.match(text, /Page 1, in the header, 0\.9 percent of the page\./);
+  assert.match(text, /Each occurrence below keeps its own decision, acceptance and result/);
+  assert.match(text, /name the organisation or product as the logo shows it/);
+  assert.match(text, /Make the lasting fix where the document is written\./);
+  assert.match(text, /Existing description: Our university/);
+  const boxes = extrasCheckboxes(result.getNode('logo-groups'));
+  assert.equal(boxes.length, 2);
+  assert.deepEqual(boxes.map(box => box.checked), [false, false], 'Nothing is chosen for the reviewer.');
+  assert.match(result.getNode('logo-review-summary').textContent, /2 figure occurrences in 1 group look like logos or branding, from their size, position and repetition\. This is a guess about layout, not about meaning\./);
+  assert.equal(result.document.activeElement, result.getNode('logo-review-summary'));
+  assert.deepEqual(result.unexpectedRequests, []);
+});
+
+test('REVIEW logos: Select all and Select none change the boxes in place and never decide anything', async () => {
+  const result = await openExtras(reviewExtrasFixture());
+  await result.dispatch('logo-review-load', 'click');
+  const group = result.getNode('logo-groups');
+  const boxes = extrasCheckboxes(group);
+  await result.dispatch(extrasButton(group, 'Select all occurrences'), 'click');
+  assert.deepEqual(boxes.map(box => box.checked), [true, true]);
+  assert.equal(extrasCheckboxes(result.getNode('logo-groups'))[0], boxes[0], 'The boxes were not rebuilt, so keyboard focus stays where it was.');
+  await result.dispatch(extrasButton(group, 'Select none'), 'click');
+  assert.deepEqual(boxes.map(box => box.checked), [false, false]);
+  assert.equal(result.mutationRequests.length, 0);
+});
+
+test('REVIEW logos: saving needs a selection, sends exactly the selected occurrences, and never accepts', async () => {
+  const saved = reviewExtrasFixture();
+  const changed = JSON.parse(JSON.stringify(saved));
+  changed.revision = 8;
+  changed.decisions[0].value = 'Northfield University';
+  const payload = {revision: 7, group_id: 'logo-aaa', member_ids: ['figure-a'], membership_digest: 'm'.repeat(64), choice: 'describe', description: 'Northfield University'};
+  const result = await openExtras(saved, {expectedMutations: [{url: '/api/workspaces/' + saved.workspace_id + '/logo-save', payload, response: changed, allowReviewExtras: true}]});
+  await result.dispatch('logo-review-load', 'click');
+  const group = result.getNode('logo-groups');
+  const input = descendants(group).find(node => node.tagName === 'INPUT' && node.type === 'text');
+  input.value = 'Northfield University';
+  await result.dispatch(input, 'input');
+  await result.dispatch(extrasButton(group, 'Save this description for the selected'), 'click');
+  assert.match(result.getNode('notice').textContent, /Select the occurrences this applies to\./);
+  assert.equal(result.mutationRequests.length, 0);
+  const [first] = extrasCheckboxes(group);
+  first.checked = true;
+  await result.dispatch(first, 'change');
+  await result.dispatch(extrasButton(result.getNode('logo-groups'), 'Save this description for the selected'), 'click');
+  assert.deepEqual(result.mutationRequests.map(request => request.payload), [payload]);
+  const after = extrasText(result.getNode('logo-groups'));
+  assert.match(after, /Saved description: Northfield University\. Not accepted yet\./);
+  assert.match(after, /Existing description: Our university/, 'The other occurrence is untouched.');
+  assert.match(result.getNode('logo-review-summary').textContent, /Saved your description as a draft for 1 selected occurrence\. Nothing is accepted yet\./);
+  assert.equal(result.remainingMutations.length, 0);
+});
+
+test('REVIEW logos: decorative marking is its own explicit save, and acceptance needs a name', async () => {
+  const saved = reviewExtrasFixture();
+  const marked = JSON.parse(JSON.stringify(saved));
+  marked.revision = 8;
+  marked.decisions[1].value = 'Artifact';
+  marked.decisions[3].value = 'Artifact';
+  const accepted = JSON.parse(JSON.stringify(marked));
+  accepted.revision = 9;
+  accepted.decisions[1].status = accepted.decisions[3].status = 'approved';
+  accepted.decisions[1].approved_by = accepted.decisions[3].approved_by = 'Avery Tester';
+  const ids = ['figure-a', 'figure-b'];
+  const base = {group_id: 'logo-aaa', member_ids: ids, membership_digest: 'm'.repeat(64)};
+  const url = name => '/api/workspaces/' + saved.workspace_id + '/' + name;
+  const result = await openExtras(saved, {expectedMutations: [
+    {url: url('logo-save'), payload: {revision: 7, ...base, choice: 'decorative'}, response: marked, allowReviewExtras: true},
+    {url: url('logo-accept'), payload: {revision: 8, ...base, reviewer: 'Avery Tester'}, response: accepted, allowReviewExtras: true}]});
+  await result.dispatch('logo-review-load', 'click');
+  for (const box of extrasCheckboxes(result.getNode('logo-groups'))) { box.checked = true; await result.dispatch(box, 'change'); }
+  await result.dispatch(extrasButton(result.getNode('logo-groups'), 'Save as decorative for the selected'), 'click');
+  assert.match(extrasText(result.getNode('logo-groups')), /Saved as decorative\. Not accepted yet\./);
+  assert.match(result.getNode('logo-review-summary').textContent, /The picture stays visible\. Nothing is accepted yet\./);
+  await result.dispatch(extrasButton(result.getNode('logo-groups'), 'Accept the saved choice for the selected'), 'click');
+  assert.match(result.getNode('notice').textContent, /Enter your name before approving a value or check\./);
+  assert.equal(result.mutationRequests.length, 1, 'No acceptance without a name.');
+  result.getNode('reviewer').value = 'Avery Tester';
+  await result.dispatch(extrasButton(result.getNode('logo-groups'), 'Accept the saved choice for the selected'), 'click');
+  assert.equal(result.mutationRequests.length, 2);
+  assert.match(extrasText(result.getNode('logo-groups')), /Accepted as decorative by Avery Tester\. Waiting for Apply\./);
+  assert.match(result.getNode('logo-review-summary').textContent, /The PDF changes only after “Apply accepted edits”\./);
+});
+
+test('REVIEW logos: a stale review leaves every logo control off', async () => {
+  const saved = reviewExtrasFixture();
+  saved.stale = true;
+  const result = await openExtras(saved);
+  assert.equal(result.getNode('logo-review-load').disabled, true);
+  const loaded = reviewExtrasFixture();
+  loaded.stale = false;
+  const live = await openExtras(loaded);
+  await live.dispatch('logo-review-load', 'click');
+  assert.equal(extrasButton(live.getNode('logo-groups'), 'Accept the saved choice for the selected').disabled, false);
+});
+
+test('REVIEW logos: every control has a text label and nothing depends on colour', async () => {
+  const result = await openExtras(reviewExtrasFixture());
+  await result.dispatch('logo-review-load', 'click');
+  const group = result.getNode('logo-groups');
+  const fieldsets = descendants(group).filter(node => node.tagName === 'FIELDSET');
+  assert.equal(fieldsets.length, 1);
+  assert.equal(descendants(fieldsets[0]).filter(node => node.tagName === 'LEGEND').length, 1);
+  for (const box of extrasCheckboxes(group)) assert.equal(box.parentNode.tagName, 'LABEL');
+  const input = descendants(group).find(node => node.tagName === 'INPUT' && node.type === 'text');
+  const label = descendants(group).find(node => node.tagName === 'LABEL' && node.htmlFor === input.id);
+  assert.equal(label.textContent, 'Description for the selected occurrences');
+  assert.equal(input.attributes['aria-describedby'], 'logo-guidance');
+  assert.equal(result.getNode('logo-guidance').textContent.startsWith('For a picture that carries meaning'), true);
+});
+
+test('REVIEW HTML: the logo and scanned-sample panels start hidden, with live status lines that can take focus', () => {
+  const html = fs.readFileSync(path.resolve(__dirname, '../src/pdf_remediator/web_assets/index.html'), 'utf8');
+  for (const id of ['logo-review', 'ocr-sample']) assert.match(html, new RegExp(`<section id="${id}"[^>]* hidden>`));
+  for (const id of ['logo-review-summary', 'ocr-sample-status']) assert.match(html, new RegExp(`<p id="${id}"[^>]*role="status" aria-live="polite" tabindex="-1">`));
+  assert.match(html, /<button id="logo-review-load" class="secondary" type="button">/);
+});
+
+test('REVIEW scanned sample: each sampled page shows why it was chosen and starts as not checked', async () => {
+  const result = await openExtras(reviewExtrasFixture());
+  assert.equal(result.getNode('ocr-sample').hidden, false);
+  assert.match(result.getNode('ocr-sample-note').textContent, /2 of the 4 scanned pages were chosen for you to compare with the scan, the same pages every time for this exact PDF/);
+  assert.match(result.getNode('ocr-sample-status').textContent, /cannot be approved yet\. Not yet recorded: pages 1, 2\./);
+  const cards = result.getNode('ocr-sample-pages').children;
+  assert.equal(cards.length, 2);
+  const first = extrasText(cards[0]);
+  assert.match(first, /First scanned page\./);
+  assert.match(first, /150 of 200 words were read confidently \(75 percent\)\. Rated: some words unsure\./);
+  assert.match(extrasText(cards[1]), /The text recognition was least sure of this page\. Last scanned page\./);
+  assert.match(extrasText(cards[1]), /No recognition measurement was recorded for this page\./);
+  const radios = descendants(cards[0]).filter(node => node.tagName === 'INPUT' && node.type === 'radio');
+  assert.equal(radios.length, 9);
+  assert.deepEqual(radios.filter(radio => radio.checked).map(radio => radio.value), ['not-checked', 'not-checked', 'not-checked']);
+  assert.equal(descendants(cards[0]).filter(node => node.tagName === 'LEGEND').length, 3);
+  assert.match(extrasText(cards[0]), /Not yet recorded\./);
+});
+
+test('REVIEW scanned sample: scanned pages with no recognized text are named, not offered for comparison', async () => {
+  const saved = reviewExtrasFixture();
+  saved.ocr_review_sample.no_text_pages = [3, 4];
+  const result = await openExtras(saved);
+  assert.match(result.getNode('ocr-sample-note').textContent, /Scanned pages 3, 4 have no recognized text in this result, so there is nothing to compare there; they need text recognition or a clearer source\./);
+  assert.equal(result.getNode('ocr-sample-pages').children.length, 2);
+});
+
+test('REVIEW scanned sample: a record needs your name and sends exactly what you chose', async () => {
+  const saved = reviewExtrasFixture();
+  const recorded = JSON.parse(JSON.stringify(saved));
+  recorded.revision = 8;
+  const checks = {words_accurate: 'pass', nothing_missing: 'problem', reading_order_correct: 'pass'};
+  recorded.ocr_review_sample.records = {1: {page: 1, checks, notes: 'The last row of the table is cut off.', reviewer: 'Avery Tester',
+    reviewed_at: '2026-11-16T10:00:00+00:00', origin: 'human-entered', record_sha256: 'r'.repeat(64)}};
+  recorded.ocr_review_sample.standing = {applies: true, satisfied: false, summary: 'The scanned-text review cannot be approved yet. Marked as a problem: page 1.'};
+  const payload = {revision: 7, page: 1, checks, notes: 'The last row of the table is cut off.', reviewer: 'Avery Tester'};
+  const result = await openExtras(saved, {expectedMutations: [{url: '/api/workspaces/' + saved.workspace_id + '/ocr-sample', payload, response: recorded, allowReviewExtras: true}]});
+  const card = result.getNode('ocr-sample-pages').children[0];
+  const pick = async (key, value) => {
+    const radio = descendants(card).find(node => node.tagName === 'INPUT' && node.type === 'radio' && node.name === `ocr-sample-1-${key}` && node.value === value);
+    radio.checked = true;
+    await result.dispatch(radio, 'change');
+  };
+  await pick('words_accurate', 'pass'); await pick('nothing_missing', 'problem'); await pick('reading_order_correct', 'pass');
+  const notes = descendants(card).find(node => node.tagName === 'TEXTAREA');
+  notes.value = 'The last row of the table is cut off.';
+  await result.dispatch(notes, 'input');
+  await result.dispatch(extrasButton(card, 'Save my record for page 1'), 'click');
+  assert.match(result.getNode('notice').textContent, /Enter your name before approving a value or check\./);
+  assert.equal(result.mutationRequests.length, 0);
+  result.getNode('reviewer').value = 'Avery Tester';
+  await result.dispatch(extrasButton(card, 'Save my record for page 1'), 'click');
+  assert.deepEqual(result.mutationRequests.map(request => request.payload), [payload]);
+  const after = result.getNode('ocr-sample-pages').children[0];
+  assert.match(extrasText(after), /Recorded by Avery Tester on 2026-11-16 for this exact PDF\./);
+  assert.match(extrasText(after), /You marked a problem on this page\. If words are wrong or missing, show the recognized text for this page/);
+  assert.match(extrasText(after), /cannot recreate the missing content from its pixels/);
+  assert.match(result.getNode('ocr-sample-status').textContent, /Your record for page 1 is saved for this exact PDF\. The scanned-text review cannot be approved yet\. Marked as a problem: page 1\./);
+  assert.ok(extrasButton(after, 'Save my changed record for page 1'));
+  assert.equal(result.document.activeElement, result.getNode('ocr-sample-status'));
+});
+
+test('REVIEW scanned sample: records from an earlier version are shown as notes, and a stale review cannot be edited', async () => {
+  const saved = reviewExtrasFixture();
+  saved.stale = true;
+  saved.ocr_review_sample.invalidated = [{page: 2, checks: {}, notes: 'Digits read as letters in the table.', reason: 'review-inputs-changed'}];
+  const result = await openExtras(saved);
+  const card = result.getNode('ocr-sample-pages').children[1];
+  assert.match(extrasText(card), /Earlier notes from a version that has since changed \(kept as notes, not as approval\): Digits read as letters in the table\./);
+  assert.ok(descendants(card).filter(node => node.tagName === 'INPUT' && node.type === 'radio').every(radio => radio.disabled));
+  assert.equal(extrasButton(card, 'Save my record for page 2').disabled, true);
+});
+
+// ---- Character meaning screen: advisory, plain words, no repair controls in the window ----
+function characterMeaningRecord() {
+  return {policy: 'bounded-character-meaning-1', status: 'needs-review', advisory: true, source_sha256: '3'.repeat(64),
+    findings: [
+      {issue: 'private-use', font: {object: '8:0', base_font: 'AAAAAA+Example-Roman', subtype: 'TrueType', embedded: true}, pages: [1], page: 1,
+        reviewed_correction_available: true, code_count: 1, omitted_codes: 0,
+        codes: [{code_hex: '65', width: 1, uses: 3, source: 'to-unicode', text: '⟦U+E001⟧', flags: ['private-use'], page: 1, context: LITERAL_CONTEXT}]},
+      {issue: 'mixed-script-word', page: 1, sample: 'Cаfe', note: 'A word mixes Latin letters with look-alike letters.'},
+      {issue: 'actualtext-disagrees', page: 1, fonts: [], shown_text: 'Cafe', declared_actual_text: LITERAL_CONTEXT}],
+    uncertain: [{font: {base_font: 'Example-CJK'}, reasons: ['Used codes cannot be decoded for the CMap UniJIS-UCS2-H; their text is not screened.']}],
+    unembedded_fonts: [{font: {base_font: 'Mystery-Sans', standard_14: false, embedded: false}, note: 'The viewer substitutes a font of its own.',
+      guidance: 'This tool does not embed or substitute fonts.'}],
+    coverage: {complete: false, pages_scanned: 2, pages_total: 3, reasons: ['page-limit']},
+    limitations: ['A mapping with no flag can still name the wrong character.'], fix_path: 'Repair the authoring source and process a new PDF.'};
+}
+test('DOM character meaning: advisory findings are plain words with page buttons and no repair controls', async () => {
+  const saved = savedReviewFixture();
+  saved.repair_findings = [{id: 'character-meaning', status: 'needs-review', evidence: characterMeaningRecord()}];
+  const result = await bootSavedReview(saved);
+  await openSavedReview(result);
+  const text = emptyText(result.getNode('repair-findings'));
+  assert.match(text, /Some characters may be extracted wrongly/);
+  assert.match(text, /advisory check/);
+  assert.match(text, /A mapping with no flag can still be wrong/);
+  assert.match(text, /Private-use characters in the font AAAAAA\+Example-Roman/);
+  assert.match(text, /Code 65 extracts as .*U\+E001.*used 3 times/);
+  assert(text.includes(LITERAL_CONTEXT), 'document text is shown literally, never as markup');
+  assert.match(text, /A word that mixes look-alike letters/);
+  assert.match(text, /Declared ActualText/);
+  assert.match(text, /Mystery-Sans is not embedded/);
+  assert.match(text, /does not embed or substitute fonts/);
+  assert.match(text, /Not checked: Used codes cannot be decoded/);
+  assert.match(text, /remediator characters inventory, plan and apply/);
+  assert.match(text, /OCR text corrections/);
+  assert.match(text, /Running OCR again does not prove/);
+  assert.match(text, /Some pages or content could not be read/);
+  const controls = descendants(result.getNode('repair-findings')).filter(item => item.tagName === 'BUTTON' && !/^Page /.test(item.textContent));
+  assert.equal(controls.length, 0, 'no edit, apply or approve control is offered here');
+  expectOnlyMutations(result, []);
+});
+
+test('DOM character meaning: a complete clean-coverage record says so without claiming correctness', async () => {
+  const saved = savedReviewFixture();
+  const record = characterMeaningRecord();
+  record.coverage = {complete: true, pages_scanned: 3, pages_total: 3};
+  record.findings = record.findings.slice(1, 2);
+  record.uncertain = [];
+  record.unembedded_fonts = [];
+  saved.repair_findings = [{id: 'character-meaning', status: 'needs-review', evidence: record}];
+  const result = await bootSavedReview(saved);
+  await openSavedReview(result);
+  const text = emptyText(result.getNode('repair-findings'));
+  assert.match(text, /Every page was read for this record; this does not establish that the characters are right/);
+  assert(!/separate corrected copy/.test(text), 'no correction path is suggested when no embedded font qualifies');
+  expectOnlyMutations(result, []);
+});
+
+for (const defect of ['policy', 'advisory']) {
+  test('DOM character meaning: an unproved ' + defect + ' record cannot claim a current result', async () => {
+    const saved = savedReviewFixture();
+    const record = characterMeaningRecord();
+    if (defect === 'policy') record.policy = 'unproved'; else record.advisory = false;
+    saved.repair_findings = [{id: 'character-meaning', status: 'needs-review', evidence: record}];
+    const result = await bootSavedReview(saved);
+    await openSavedReview(result);
+    const text = emptyText(result.getNode('repair-findings'));
+    assert.match(text, /no verified current character-meaning record/);
+    assert(!text.includes('recorded problems'));
+    expectOnlyMutations(result, []);
+  });
+}
+
+test('DOM character meaning: malformed fields are ignored rather than rendered as markup or crashing', async () => {
+  const saved = savedReviewFixture();
+  const record = characterMeaningRecord();
+  record.findings = [{issue: 'private-use', codes: [null, {code_hex: 7}, {code_hex: '41', text: 5, uses: 'many', context: {x: 1}}], page: 'one'}, 7, {issue: {}}];
+  record.uncertain = [{reasons: [3, null, 'Kept']}, {reasons: 'text'}];
+  record.unembedded_fonts = [null].concat(record.unembedded_fonts);
+  saved.repair_findings = [{id: 'character-meaning', status: 'needs-review', evidence: record}];
+  const result = await bootSavedReview(saved);
+  await openSavedReview(result);
+  const text = emptyText(result.getNode('repair-findings'));
+  assert.match(text, /Code 41 extracts as nothing/);
+  assert.match(text, /Not checked: Kept/);
+  expectOnlyMutations(result, []);
 });

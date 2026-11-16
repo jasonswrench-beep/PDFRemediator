@@ -9,6 +9,9 @@ not imply broad native qualification or completed accessibility acceptance. The
 one-page Windows visual/clipboard pilot is complete; the rest of Phase 3 remains
 pending. AI/OCR remain off for current development. Cloud-provider proposals in
 this plan are future scope, not enabled features or current work authorization.
+**Update 2026-11-16:** the AI direction is now local first, on the shared core's local AI runtime (C8), with any hosted provider
+only later and only behind it; see [AI-PLAN.md](AI-PLAN.md). Where sections 1 and 9 below speak of cloud providers, read that plan.
+The WCAG coverage matrix that section 3 calls for is [WCAG-2.1-AA-COVERAGE.md](WCAG-2.1-AA-COVERAGE.md).
 
 Build a local program that produces PDFs ready for an accessibility review, with evidence showing what changed, what passed automated checks, and what still needs a person. Start by proving that an existing tagging engine can preserve and improve representative book content. Keep the engine replaceable.
 

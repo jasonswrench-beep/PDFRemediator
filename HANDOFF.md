@@ -1,3 +1,71 @@
+## November 16: the development-list round (items 1 to 6)
+
+Source: the 2026-11-15 development list for PDF Remediator (status 0.3.0). Built on a clean `main` at 6062bde, then committed and released as **0.3.0 alpha 8** (see "Release" at the end of this section).
+The core's `CORE-NOTES.md` was read first; nothing from it was copied (see item 5). What each item did:
+
+**Item 1a, colour-only meaning.** `src/pdf_remediator/color_meaning.py`, policy `bounded-color-meaning-1`, wired in `inspection.py`
+(`report['color_meaning']`) and `checks.py` (advisory row `color-meaning`, a required **pending** manual item of the same name, profile string
+now ends `+color-meaning-1`). It lists candidates only (coloured text unlike the body text, link text told apart by colour alone, nearby shapes in
+several hues, coloured markup, wording that points at a colour), never decides, recolours or approves, and a clean result is not a 1.4.1 result.
+Pictures, patterns/shading, form-field appearances, Type 3 text, layers and pages past the bounds keep a page at `needs-review`, so the
+review is required on most real documents (a decision for the owner, `TESTING-TODO.md`). Thresholds are this build's own and untested on real
+files. Guide: `docs/COLOR-ONLY-MEANING.md`. Tests: `tests/test_color_meaning.py` and six page tests.
+
+**Item 1b, wrong characters and fonts (partly built).** `character_meaning.py` (advisory screen `character-meaning`, policy
+`bounded-character-meaning-1`: private-use, replacement, control, unassigned characters; codes missing from a partial ToUnicode map; mappings
+that disagree with a glyph name or ActualText; look-alike scripts; unembedded fonts **listed with guidance only**), `tounicode.py` (strict bounded
+ToUnicode reader/writer) and `character_corrections.py` plus the CLI `remediator characters inventory | plan | apply`: a reviewed correction of an
+existing ToUnicode map in an **embedded** font, written as a separate corrected copy and published only if the object graph (identical except the
+edited maps), map read-back, exact page pixels and page furniture, and a per-character extracted-text proof all pass. **Not built:** the in-window
+editor, the corrected copy entering ordinary review as a recorded lineage (it needs the same `pipeline.py`/`workspace.py`/`web.py`/`app.js`
+wiring as the OCR corrected copy, and an end-to-end run needs the native tools that are not on this PC), fonts with no ToUnicode map, any font
+embedding or substitution (by design), Type 3 glyph programs, named CMaps. No new inventory/sidecar profile was added. Guide:
+`docs/UNICODE-AND-FONT-REPAIR.md`. Tests: `tests/test_character_meaning.py`, `tests/test_character_corrections.py`.
+
+**Item 1c, logos and OCR review.** `logo_review.py`: a "Logo and branding" group (the same picture as a figure on 2+ pages and small; or small in a
+margin band; or already described as a logo), per-occurrence choices saved through the ordinary description/decorative decisions, named
+acceptance, the ordinary Apply; a group never approves its members. `ocr_review_sample.py`: a reproducible sample of scanned pages (about 20
+percent, 3 to 10, worst-read first, keyed by the result's SHA-256) and per-page named-person records of pass / problem / not-checked for words,
+completeness and order. **Behaviour changes to know about:** `workspace._approve_item` refuses to approve the required `image-and-ocr` review until
+every sampled page has a complete all-pass record, and `ledger` refuses to add a scanned document to the verification ledger without complete
+records for this exact sample; recording a problem after approval withdraws the approval. Export (`review.json`) carries the human-entered records.
+Guide: `docs/LOGO-AND-OCR-REVIEW.md`. Tests: `tests/test_logo_review.py`, `tests/test_ocr_review_sample.py`, `tests/test_review_extras_reflow.py`
+(needs a headless Edge/Chrome, skipped without one) and twelve page tests.
+
+**Item 2, distribution.** `THIRD-PARTY-NOTICES.md` and `docs/LICENCE-REVIEW.md` no longer say the repository is private (public since 2026-11-01,
+rechecked 2026-11-16). The WebView2 SDK licence text is **not** added: a lookup could not return it verbatim and it was not written from memory
+(owner's step). The fresh-PC test and the signing run are protocols for a person (`docs/FRESH-PC-AND-SIGNING.md`); `scripts/sign_windows.py --ready`
+on this PC reports the tools present and only the account variables missing.
+
+**Item 3.** `docs/WCAG-2.1-AA-COVERAGE.md` (revision 2): all 50 level A and AA criteria, the coverage word for each, the checks by id.
+
+**Item 4.** `docs/PHASE3-TESTERS-AND-NEW-CHECKER.md`: kit for 3 to 5 real users, a screen-reader tester, and the old-then-new campus checker
+comparison. Prepared only; Phase 3 stays deferred until the owner authorizes it (`AGENTS.md`).
+
+**Item 5.** `CORE-REQUESTS.md` (new, on the `.gitignore` allowlist): C2-1 contrast, C2-2 language tags, C2-3 status words, with the program's rules
+and vectors; C2-4 to C2-8 notes from the build items. C2 is unpublished and is Rust (this program is Python), so nothing was adopted from it.
+`tests/test_c2_handover_vectors.py` pins the handed-over behaviour. A known inconsistency is recorded there: the `metadata` check's loose language
+plausibility test differs from `language_tags.validate_language_tag`.
+
+**Item 6.** `docs/AI-PLAN.md`: local first on the shared C8 runtime; hosted providers only later, behind it, only if the owner decides. The old
+API-first proposal in `docs/STATUS.md` is replaced. The existing client was already loopback-only with no key store; `tests/test_local_ai_first.py`
+holds that. C8-1a to C8-2 in `CORE-REQUESTS.md` say what the runtime must offer.
+
+**Release (alpha 8).** Built and signed on 2026-11-16 from this round's source, and published as the pre-release `v0.3.0-alpha.8` (see the Release below). `RELEASE` in `scripts/package-windows.py` is `0.3.0-alpha.8`. The locked build inputs were no longer on this PC, so `scripts/make-windows-plan.py` (new, `tests/test_make_windows_plan.py`) fetched the Python archive, 33 wheels and the Temurin Java archive, each kept only if its SHA-256 equalled the checked-in lock (all did), and wrote the plan; Tesseract, its models, OpenDataLoader and veraPDF came from folders that already held exactly the locked trees. `scripts/sign_windows.py` now asks PowerShell for UTF-8 (a console code page had broken the signature reader on a non-ASCII name; the same file is shared with the other OpenStage tools, whose copies still have the fault). Run the builder as an ordinary script, not `python -I` (it imports `sign_windows` from beside itself). Installer SHA-256 `3ce529c7efb630dac01cf4e7a8a2e93a8ba08aae178425a54e37e9d5f53680f3`, 138,896,312 bytes; independent check afterwards: the installer is signed Valid by Jason Wrench with a timestamp, all 205 program files in the payload carry valid timestamped signatures (93 Jason Wrench, 62 Python Software Foundation, 50 Eclipse Foundation, none unsigned), and the payload matches its manifest byte for byte. **Not done for alpha 8:** the installer was not installed on the build PC (it would have overwritten the registry entry of the owner's real alpha 7 copy), so the install, update, uninstall, program-window and update-check runs that alpha 7's notes list were not repeated, and the uninstaller's signature (it exists only after installation) was not looked at; the Visual C++ Redistributable-missing and WebView2-missing paths, SmartScreen and Smart App Control, and every human check remain open (`TESTING-TODO.md`).
+
+**Not done.** Switching PrismQDA to the core's `prismqda-stats-v1.0.0` tag: PrismQDA is another repository and is not on this PC. Nothing in the
+fresh-PC, signing, Phase 3, new-checker or real-document judgement work was run (all of it is in `TESTING-TODO.md`).
+
+**Seen, not changed.** `workspace._repair_findings` maps only `metadata-meaning`, `contrast` and the two new ids to a card, so the existing
+`small-font` and `empty-structure-tags` cards look unreachable from a real review (only fixtures reach them). Worth checking in the real window.
+
+**Tested scope.** Environment: Windows 11, Python 3.11.9 in `.venvs/app` (`python -m venv .venvs/app`, then `pip install -e ".[test]"`), Node 24.
+Before this round: `scripts/test-cloud.py` 1,085 passed; the whole suite file by file (`scripts/run-tests-by-file.py`) 3,491 passed with only the
+8 known environment failures (7 `test_fonts` amsfonts tests, 1 `test_native_tools` jar test). After merging: the figures in the next line. Not run:
+native tools (veraPDF, OpenDataLoader, OCR engines), the real-browser end-to-end, anything with a person.
+
+**Result after merging items 1a, 1b and 1c (2026-11-16, Windows 11, Python 3.11.9, Node 24):** the whole suite one file per process (`scripts/run-tests-by-file.py`, no crashes, every file on its first attempt) **3,742 passed in 17.4 minutes, 8 failed**: exactly the 8 known environment failures of the baseline (7 `test_fonts` tests need the reviewed `amsfonts.zip`; `test_native_tools` needs the local jar). The baseline before the round was 3,491 passed with the same 8, so 251 tests are new. `scripts/test-cloud.py` (now also running the new portable test files) **1,397 passed in 252 s**; the page tests (`node scripts/test-web-assets.cjs`) **726 passed**. `tests/test_review_extras_reflow.py` ran in a real headless Edge. This is source and synthetic-fixture evidence on one PC, not native (veraPDF/OpenDataLoader/OCR) qualification and not human acceptance.
+
 ## October 31: own window, progress for every long job, Cancel, Home and Reset
 
 - **Own window.** `PDF Remediator.exe` showed the page in a web browser's app mode with a profile of its own
@@ -4464,7 +4532,10 @@ Do not expose or rebind the private review server to a public interface to make 
    reproduction and resource limits. Missing prerequisites fail, never skip.
 4. Prepare interface/installer checks and representative permitted document
    trials; keep private inputs and actual review records outside Git.
-5. Actual Windows updater, full usability/keyboard, AT and LMS checker acceptance require
+5. Next build step from the 2026-11-16 round: the in-window character-correction editor and the recorded lineage for its corrected copy
+   (`docs/UNICODE-AND-FONT-REPAIR.md`, "What is not built"); then tune the colour and logo thresholds on real documents.
+   When the shared core publishes C2 or specifies C8, read `CORE-REQUESTS.md` against it before changing contrast, language-tag or AI code.
+6. Actual Windows updater, full usability/keyboard, AT and LMS checker acceptance require
    the selected machine/testers and authorized scope. Prepared tasks are in
    [ACCEPTANCE-TESTS.md](docs/ACCEPTANCE-TESTS.md); no new owner action is needed now.
 
@@ -4475,6 +4546,9 @@ Do not expose or rebind the private review server to a public interface to make 
 | `src/pdf_remediator/pipeline.py` | Processing, checkpoints, release gates, immutable bundles |
 | `src/pdf_remediator/preservation.py`, `fonts.py`, `inspection.py`, `checks.py` | Bounded preservation/mapping repair and independent checks |
 | `src/pdf_remediator/heading_checks.py`, `language.py`, `contrast.py` | Mechanical headings, conservative sampled language and bounded contrast evidence |
+| `src/pdf_remediator/color_meaning.py`, `character_meaning.py` | Advisory screens: colour-only candidates; implausible extracted characters and unembedded fonts |
+| `src/pdf_remediator/tounicode.py`, `character_corrections.py` | Reviewed ToUnicode correction as a separate corrected copy (command line `characters`) |
+| `src/pdf_remediator/logo_review.py`, `ocr_review_sample.py` | Logo and branding group review; scanned-page sample and named-person records |
 | `src/pdf_remediator/validation.py`, `engines.py`, `ocr.py`, `process.py`, `doctor.py` | Native adapters, execution limits, tool inventory |
 | `src/pdf_remediator/sidecar.py`, `workspace.py`, `ledger.py` | Decision authority, review state/automatic records, verification |
 | `src/pdf_remediator/web.py`, `web_assets/` | Private local application, Auto-fix orchestration, browser UI |

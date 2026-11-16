@@ -231,13 +231,15 @@ The separate OCR runtime holds 31 packages (six are the same as above), all with
 * Jason said everything will be on GitHub. The written offer in `THIRD-PARTY-NOTICES.md` now tells people to open an issue at
   https://github.com/jasonswrench-beep/PDFRemediator/issues to ask for the source code of a GPL, LGPL, MPL or CDDL component (valid for
   three years from the day they received the copy).
-* **Condition:** that repository is private today, so the address leads nowhere until it is made public. It must also stay up for at
-  least three years after the last copy goes out, and the address changes if the repository is renamed or moved.
+* **Condition:** the repository was private on that date. **Update 2026-11-16:** it has been public since 2026-11-01 with Issues open (checked
+  on GitHub), so the address leads somewhere. It must also stay up for at least three years after the last copy goes out, and the address
+  changes if the repository is renamed or moved.
 * The GPL-2.0 text also lets the source be offered "from the same place" the programs are downloaded from, so putting the libjbig
   source next to the downloadable package on GitHub would be a simpler second route. Not done; it needs a download, so it waits for a yes.
   (Not legal advice; part of the review by someone qualified.)
-* **Still open now:** Microsoft's terms for the Visual C++ runtime DLLs, the FreeType credit year, making the repository public, adding
-  the notices to a real package build, fresh-machine install, and the review by someone qualified.
+* **Still open now (as of 2026-10-31; the repository part closed 2026-11-01):** Microsoft's terms for the Visual C++ runtime DLLs, the FreeType
+  credit year, making the repository public, adding the notices to a real package build, fresh-machine install, and the review by someone
+  qualified. Later entries and `THIRD-PARTY-NOTICES.md`, "Still to do", hold the current state; the WebView2 SDK licence text is still to be added.
 
 **2026-10-31, Microsoft's runtime files (Jason asked me to start here)**
 

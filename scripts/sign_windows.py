@@ -123,8 +123,10 @@ def timestamp_command(signtool, path):
 
 # Windows' own check of each file (the same one File Properties > Digital Signatures shows), in one PowerShell for all the files. The paths go in
 # through the environment, so no quoting of a path can go wrong.
+# The output is asked to be UTF-8 (without a byte-order mark) so a signer's or a file's non-ASCII name survives, whatever the console's code page is.
 _CHECK_SCRIPT = (
     "$ErrorActionPreference = 'Stop'; "
+    "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false; "
     "$paths = $env:OPENSTAGE_SIGN_PATHS | ConvertFrom-Json; "
     "$out = foreach ($p in $paths) { "
     "  $s = Get-AuthenticodeSignature -LiteralPath $p; "
@@ -144,7 +146,7 @@ def signatures(paths):
     done = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", _CHECK_SCRIPT], capture_output=True, text=True, encoding="utf-8", env=env)
     if done.returncode != 0:
         raise SignError("Windows could not read the signatures:\n" + done.stdout + done.stderr)
-    return json.loads(done.stdout)
+    return json.loads(done.stdout.lstrip("\ufeff"))
 
 
 def problem(info, publisher=None):

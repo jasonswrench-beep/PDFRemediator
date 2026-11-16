@@ -583,6 +583,18 @@ corruption; signing and publisher trust remain separate requirements.
 
 ## Build and local installation
 
+**Making the plan (since 2026-11-16).** `scripts/make-windows-plan.py` writes `LOCAL-PLAN.json` and fetches only what the builder lacks: the Python
+archive, the application and OCR wheels and the Temurin Java archive, from the addresses in the three checked-in locks, over HTTPS from
+python.org, files.pythonhosted.org and GitHub only, keeping a file only if its SHA-256 equals the lock's. It does not download Tesseract,
+its models, OpenDataLoader or veraPDF: you name folders that already hold those trees (each file is checked against the lock), for example
+an earlier package's `runtime` folders. Keep its work folder and the plan outside the repository.
+
+```powershell
+python scripts/make-windows-plan.py --work C:\Dev\PDFR-build-inputs --plan C:\Dev\PDFR-build-inputs\plan.json `
+  --tesseract-source <folder with the 138-file Tesseract tree> --models-source <folder with eng/osd traineddata, LICENSE, README.md> `
+  --odl-source <odl folder> --verapdf-source <verapdf folder>      # add --dry-run to only list what would be fetched
+```
+
 Run `scripts/package-windows.py --inputs LOCAL-PLAN.json --output NEW-DIRECTORY`
 with a Windows Python build environment and the .NET Framework compiler. The
 local schema is `windows-internal-inputs-1`, with `release_status` set to

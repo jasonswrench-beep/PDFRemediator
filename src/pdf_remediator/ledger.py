@@ -99,6 +99,11 @@ def _eligible(report, actual_sha):
                 if isinstance(item, dict) and item.get("required", True) and item.get("id")}
     if not expected.issubset(ids):
         raise LedgerError("Human review omits required supplemental assessment items")
+    # A document with scanned pages needs the person's own page-by-page records, not just an approved line.
+    from .ocr_review_sample import ledger_problem
+    problem = ledger_problem(report, manual, actual_sha)
+    if problem:
+        raise LedgerError(problem)
     return items
 
 
@@ -191,6 +196,11 @@ def add_record(ledger_path, pdf_path, report, reviewer, reviewed_at, checker_sco
               "actual_checker_score": checker_score, "checker_context": checker_context, "selected_threshold": threshold,
               "human_review": human_items, "review_scope": review_scope, "notes": str(notes),
               "historical_status": "verified"}
+    sample_records = report["manual_review"].get("ocr_sample_records")
+    if sample_records:
+        # Entered by a person for this exact result; kept in the record as human-entered evidence, not as verification.
+        record["human_ocr_sample"] = {"selection_sha256": report["manual_review"]["ocr_sample"]["selection_sha256"],
+                                      "records": sample_records, "origin": "human-entered"}
     record["record_id"] = _digest(record)[:24]
     if file_sha256(pdf) != actual_sha:
         raise LedgerError("Candidate changed while verification was being recorded")

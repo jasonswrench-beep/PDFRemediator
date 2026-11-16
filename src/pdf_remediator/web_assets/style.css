@@ -29,3 +29,9 @@ dialog{max-width:36rem;width:calc(100% - 2rem);border:1px solid var(--line);bord
 html{scroll-padding-bottom:7rem}
 .topbar{flex-wrap:wrap;row-gap:.5rem}.topbar-right{flex-wrap:wrap;row-gap:.25rem}@media(max-width:700px){.topbar-right{gap:.25rem .6rem}.topbar-right .quiet{padding:.35rem .5rem}}
 @media(max-width:700px){.dashboard-grid{grid-template-columns:minmax(0,1fr)}.card,.upload-card{min-width:0}}
+.logo-review,.ocr-sample{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line)}.logo-review h3,.ocr-sample h3{margin-top:0}
+.logo-group,.ocr-sample-page{margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:.5rem;min-width:0}.logo-group h4,.ocr-sample-page h4{margin:0 0 .4rem}
+.logo-members,.ocr-sample-check{border:1px solid var(--line);margin:.6rem 0;padding:.5rem .8rem;min-width:0}.logo-members legend,.ocr-sample-check legend{font-weight:600;padding:0 .3rem}
+.logo-member{padding:.45rem 0;border-bottom:1px solid var(--line)}.logo-member:last-child{border-bottom:0}.logo-state{font-weight:600;margin:.3rem 0;overflow-wrap:anywhere}
+.logo-tools,.logo-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0}.ocr-sample-check .check{display:inline-flex;margin:.2rem 1rem .2rem 0}
+.logo-group input[type=text],.ocr-sample-page textarea{width:100%;max-width:100%;margin:.3rem 0 .6rem}#logo-review-summary:focus,#ocr-sample-status:focus{outline:3px solid #995100;outline-offset:2px}

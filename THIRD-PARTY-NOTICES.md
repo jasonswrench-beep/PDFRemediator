@@ -7,7 +7,7 @@ Python, pikepdf and Java (the user installs Microsoft's own copy; see "Still to 
 `_core.pyd` and its bundled qpdf library carry one changed library name (see "How the obligations are met"). PDF Remediator runs Java, veraPDF, OpenDataLoader
 PDF and Tesseract as separate programs, and uses the Python packages as libraries.
 
-**Status: draft, 2026-10-30. Not legal advice and not a clearance.** Items marked **TODO** must be finished before a copy is given to anyone
+**Status: draft, 2026-10-30; written offer and this status rechecked 2026-11-16. Not legal advice and not a clearance.** Items marked **TODO** must be finished before a copy is given to anyone
 (see "Still to do" at the end and `docs/LICENCE-REVIEW.md`). The licence texts named in the tables are in `third-party/licenses/`
 (`README.md` there records the address and checksum of each).
 
@@ -17,10 +17,10 @@ The programs and libraries below are free software. Where their licence asks for
 available from the "Source" links, and the exact version in this package is the one named. Copies in this package are not modified,
 except as the first paragraph says.
 
-> **Written offer (TODO: the repository below is private today; this address works only once it is public).** For three years from
-> the day you received this copy, you may ask for the complete source code of any component of this package that is under the GPL,
-> LGPL, MPL or CDDL, for no more than the cost of copying it. To ask, open an issue at
-> https://github.com/jasonswrench-beep/PDFRemediator/issues
+> **Written offer.** For three years from the day you received this copy, you may ask for the complete source code of any
+> component of this package that is under the GPL, LGPL, MPL or CDDL, for no more than the cost of copying it. To ask, open an
+> issue at https://github.com/jasonswrench-beep/PDFRemediator/issues (the repository has been public with Issues open to everyone
+> since 2026-11-01; checked again on 2026-11-16).
 
 ## FreeType credit
 
@@ -176,9 +176,9 @@ Each package keeps its licence texts in its `*.dist-info/licenses` folder inside
 
 ## Still to do before a copy is given to anyone
 
-1. The written offer points to the GitHub issues page of `jasonswrench-beep/PDFRemediator` (Jason, 2026-10-31: everything will be on GitHub).
-   The repository is private today, so make it public before a copy is given to anyone, keep it up for at least three years after the last
-   copy goes out, and change the address here if the repository is renamed or moved.
+1. The written offer points to the GitHub issues page of `jasonswrench-beep/PDFRemediator`. **Done:** the repository was made public on
+   2026-11-01 and was still public with Issues enabled and the Apache-2.0 licence on 2026-11-16. Still true for as long as copies are out:
+   keep it up for at least three years after the last copy goes out, and change the address here if the repository is renamed or moved.
 2. **Microsoft runtime files: left out of the package (Route A, chosen by Jason on 2026-10-31).** Microsoft's own pages limit who may pass
    on its Visual C++ runtime files (read 2026-10-31: "Redistribute Visual C++ files", the Visual Studio 2022 "Distributable Code" list,
    "Universal CRT deployment" and the licence of the Visual C++ 2015-2022 Runtime; links below). So the package carries none of them, and the
@@ -233,7 +233,13 @@ Each package keeps its licence texts in its `*.dist-info/licenses` folder inside
 8. Program window (since 2026-11-12): `webview2-com`, `webview2-com-macros` and `webview2-com-sys` carry no licence file, only "MIT" in
    their manifests, so `NOTICES/program-window-licences.txt` says so (as the other suite programs' notices do). `webview2-com-sys` links in
    Microsoft's WebView2 loader (`WebView2LoaderStatic.lib` from Microsoft's WebView2 SDK); add the SDK's own licence text before a copy
-   is given to anyone, and have the reviewer in item 7 look at it.
+   is given to anyone, and have the reviewer in item 7 look at it. **Read on 2026-11-16 (not yet added):** the NuGet package
+   `Microsoft.Web.WebView2` (latest stable 1.0.4314.35, published 2026-10-23) names a licence *file* in its manifest, `LICENSE.txt`, and
+   NuGet's own page for it (https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4314.35/License) shows a permissive, BSD-3-Clause-style
+   text under "© Microsoft Corporation". Which SDK version `webview2-com-sys` 0.39.1 carries was not determined, and the verbatim text was
+   not copied into this repository: it is the owner's step to copy it from that page (or from the package's `LICENSE.txt`) into
+   `third-party/licenses/webview2-sdk-LICENSE.txt` and add it to the build's notices, so that the text comes from Microsoft and not
+   from memory. The wording of this item is not a clearance.
 9. Bundled tools, security updates (2026-11-13): Java is Temurin 25.0.5+8 and Python 3.14.10. The exact Java, OpenDataLoader and
    veraPDF trees are pinned file by file in `scripts/windows-native-lock.json`. Tesseract stays at 5.5.3 until a Windows build of
    5.5.4 (released 2026-10-28 as source only, with fixes for memory-safety advisories) is published; then update

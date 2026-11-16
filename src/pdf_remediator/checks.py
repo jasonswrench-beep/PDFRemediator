@@ -8,13 +8,19 @@ from __future__ import annotations
 
 import re
 
-PROFILE = "phase1-core-1.1+lms-pdf-screens-1+bounded-readability-1"
-ADVISORY_SCREENS = ('small-font', 'empty-structure-tags')
+PROFILE = "phase1-core-1.1+lms-pdf-screens-1+bounded-readability-1+color-meaning-1"
+ADVISORY_SCREENS = ('small-font', 'empty-structure-tags', 'color-meaning', 'character-meaning')
 CHECKER_SCREENS = ("marked-headings", "heading-start-level", "heading-depth",
                 "heading-sequence", "language-correctness", "contrast")
 BLOCKING = ("content-linkage", "content-coverage", "link-structure", "metadata",
             "figure-alternatives", "table-header-associations", "font-embedding",
             "font-mapping-shape", "unsupported-features", "scan-text-layer")
+UNKNOWN_SCREEN = {
+    'small-font': 'Unknown coverage cannot establish an empty-free or small-font-free result.',
+    'empty-structure-tags': 'Unknown coverage cannot establish an empty-free or small-font-free result.',
+    'color-meaning': 'The color-meaning screen is missing or unrecognized, so nothing shows that no meaning depends on color; a person still has to look.',
+    'character-meaning': 'The character-meaning screen is missing or unrecognized, so nothing shows that extracted characters match the page; a person still has to compare them.',
+}
 PLACEHOLDER_TITLE = re.compile(r"^(?:untitled(?:\s+document)?|document|pdf|test|unknown|title|new\s+document|[\W\d_]+)(?:\.pdf)?$", re.I)
 PLACEHOLDER_ALT = re.compile(r"^(?:image|figure|picture|photo|graphic|illustration|alt(?:ernative)?\s*text|todo|tbd|placeholder|description(?:\s+here)?)[\s_\-]*\d*[.\s]*$|\.(?:png|jpe?g|gif|tiff?|bmp|svg)$", re.I)
 
@@ -166,8 +172,12 @@ def assess(inspection, source=None):
     for field, policy, name, category, subject, detail in (
         ('small_font', 'bounded-small-font-1', 'small-font', 'small-fonts', 'Text smaller than 9 points',
          'Review measured small text and any uncertain or unmeasured regions in context, including footnotes, superscripts, subscripts and artifacts. Nine points is an optional readability advisory, not a WCAG minimum or vendor result. If enlargement is needed, repair the original authoring document, reflow and export a separate PDF; this tool does not resize text.'),
+        ('character_meaning', 'bounded-character-meaning-1', 'character-meaning', 'character-meaning', 'Characters with implausible or unverifiable Unicode',
+         'Compare each reported character with the visible page. A private-use, replacement or control character, a code with no mapping, a mapping that disagrees with the glyph name in the font or with ActualText, and a word that mixes look-alike scripts are signs of wrong extracted text, not proof of it, and a mapping with no flag can still be wrong. If the visible character is right but its text is wrong, repair the authoring source and export a new PDF with fonts embedded; for an embedded font with an existing ToUnicode map a reviewer can supply the intended text and create a separate corrected copy. OCR text is corrected in the OCR text editor. This tool never embeds or substitutes a font and never guesses a character.'),
         ('empty_tags', 'bounded-empty-structure-1', 'empty-structure-tags', 'empty-tags', 'Empty-looking structure tags',
          'Review each empty-looking tag and its surrounding meaning. MCIDs, object references, replacement text, descriptions and referenced elements are protected. Only an offered, source-bound P/Span leaf can be saved for removal and explicitly accepted before Apply; no tag is deleted automatically.'),
+        ('color_meaning', 'bounded-color-meaning-1', 'color-meaning', 'color-meaning', 'Meaning that may be carried by color alone',
+         'Look at each listed candidate in context: colored text, links told apart only by color, charts and diagrams that use several hues, colored highlights, and sentences that point at a color. Decide whether the same information is also available another way (a text label, a symbol or pattern, an underline, a position). Pictures and other unmeasured content need the same look. If color alone carries meaning, repair the original authoring document and process a separate PDF; this tool does not recolor or mark pages.'),
     ):
         measured = inspection.get(field)
         known = (isinstance(measured, dict) and measured.get('policy') == policy
@@ -180,7 +190,7 @@ def assess(inspection, source=None):
         if status in {'pass', 'not-applicable'} and not clean: status = 'needs-review'
         evidence = measured if known else {'reason': 'No recognized source-bound advisory assessment'}
         row = _entry(name, status, evidence, 'Bounded advisory screen; separate from strict validation and human meaning',
-            measured.get('limitations', []) if known else ['Unknown coverage cannot establish an empty-free or small-font-free result.'], blocking=False)
+            measured.get('limitations', []) if known else [UNKNOWN_SCREEN.get(name, 'Unknown coverage cannot establish a candidate-free ' + name + ' result.')], blocking=False)
         if known and measured.get('fix_path'): row['fix_path'] = measured['fix_path']
         results.append(row)
         if not clean or status not in {'pass', 'not-applicable'}:

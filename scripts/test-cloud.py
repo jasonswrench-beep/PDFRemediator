@@ -46,6 +46,13 @@ TEST_PATHS = (
     "tests/test_source_update.py",
     "tests/test_serve_logging.py",
     "tests/test_review_lifecycle_trial.py",
+    "tests/test_color_meaning.py",
+    "tests/test_character_meaning.py",
+    "tests/test_character_corrections.py",
+    "tests/test_logo_review.py",
+    "tests/test_ocr_review_sample.py",
+    "tests/test_c2_handover_vectors.py",
+    "tests/test_local_ai_first.py",
     "eval/test_validate.py",
     "eval/test_metrics.py",
 )

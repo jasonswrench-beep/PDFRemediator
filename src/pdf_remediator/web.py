@@ -694,11 +694,16 @@ class Handler(BaseHTTPRequestHandler):
                 from .assistance import list_models
                 query=urllib.parse.parse_qs(parsed.query)
                 return self.respond(200,list_models(query.get('endpoint',[''])[0]))
-            match=re.fullmatch(r'/api/workspaces/([a-f0-9]{24})(?:/(page|context|download|ocr|credential-original|credential-record))?',path)
+            match=re.fullmatch(r'/api/workspaces/([a-f0-9]{24})(?:/(page|context|download|ocr|logo-review|credential-original|credential-record))?',path)
             if match:
                 identifier,action=match.groups()
                 if not action:return self.respond(200,self.app.view(identifier))
                 query=urllib.parse.parse_qs(parsed.query)
+                if action=='logo-review':
+                    from .workspace import get_logo_review
+                    if parsed.query:raise ValueError('The logo review does not accept query options.')
+                    with self.app.pdf_lock:result=get_logo_review(self.app.state_path(identifier))
+                    return self.respond(200,result)
                 if action in ('credential-original','credential-record'):
                     if parsed.query:raise ValueError('Content-credentials downloads do not accept file paths or query options.')
                     original=action=='credential-original'
@@ -749,7 +754,7 @@ class Handler(BaseHTTPRequestHandler):
                     if not job:raise ValueError('Unknown processing job.')
                     job['cancel'].set()
                 return self.respond(200,{'status':'cancellation-requested'})
-            match=re.fullmatch(r'/api/workspaces/([a-f0-9]{24})/(edit|approve|review|group|assist|accept-draft|apply|auto-fix|retry|export|ocr-edit|ocr-approve|ocr-apply|ocr-insert|ocr-remove|credential-copy)',path)
+            match=re.fullmatch(r'/api/workspaces/([a-f0-9]{24})/(edit|approve|review|group|assist|accept-draft|apply|auto-fix|retry|export|ocr-edit|ocr-approve|ocr-apply|ocr-insert|ocr-remove|credential-copy|logo-save|logo-accept|ocr-sample)',path)
             if not match:return self.respond(404,{'error':'This action was not found.'})
             identifier,action=match.groups();state=self.app.state_path(identifier)
             from . import workspace
@@ -770,6 +775,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif action=='ocr-remove':result=workspace.remove_ocr_insertion(state,payload['id'],revision,payload['inventory_sha256'],payload['context_sha256'],actor=payload.get('actor','human'),expansion_sha256=payload.get('expansion_sha256'))
                 elif action=='ocr-apply':return self.respond(202,self.app.ocr_apply(identifier,payload))
                 elif action=='credential-copy':return self.respond(202,self.app.credential_copy(identifier,payload))
+                elif action=='logo-save':result=workspace.logo_group_save(state,payload['group_id'],payload['member_ids'],payload['membership_digest'],payload['choice'],payload.get('description',''),revision)
+                elif action=='logo-accept':result=workspace.logo_group_accept(state,payload['group_id'],payload['member_ids'],payload['membership_digest'],reviewer,date,revision)
+                elif action=='ocr-sample':result=workspace.record_ocr_sample_page(state,payload['page'],payload['checks'],payload.get('notes',''),reviewer,date,revision)
                 else:result=workspace.export_workspace(state,self.app.root/'exports'/uuid.uuid4().hex[:12],revision)
             self.respond(200,result)
         except Exception as exc:self.failure(exc)

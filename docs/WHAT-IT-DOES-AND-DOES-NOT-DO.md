@@ -40,3 +40,10 @@ been switched on.
 - A first scan of a long PDF takes minutes; a scan with sideways-page reading takes longer.
 - Every result has a review list. Plan time for a person to go through it. Items marked required are not optional.
 - If a result says it needs manual handling, that is the program being careful, not failing: the original had something it could not repair safely.
+
+## More detail
+
+- [WCAG 2.1 A and AA: what it covers and what it does not](WCAG-2.1-AA-COVERAGE.md) lists each criterion with what the program checks,
+  what it can help repair, and what a person still has to judge. It is not a conformance claim.
+- [AI plan](AI-PLAN.md): AI is optional and off; if you use it, it is a model on your own computer, and a suggestion is only ever a draft
+  for you to accept.

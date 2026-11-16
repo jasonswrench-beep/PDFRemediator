@@ -19,6 +19,7 @@ import threading
 import time
 import uuid
 
+from . import ocr_review_sample
 from .pipeline import verify_bundle
 from .io_utils import atomic_replace
 from .sidecar import (approval_digest, bind_approval, collect_decisions,
@@ -363,11 +364,12 @@ def _invalidate(state, reasons):
     state["manual_approvals"] = {}
     for item in _ocr_saved_items(state).values():
         _clear_ocr_acceptance(item)
+    retained_sample_notes = _archive_ocr_sample_records(state, "review-inputs-changed")
     state["stale"], state["stale_reasons"] = True, reasons
     _record_event(state, "invalidate-stale-inputs", reasons=reasons, invalidated_ids=invalidated,
                   invalidated_automatic_decision_ids=automatic_decisions,
                   invalidated_automatic_ids=[item["item_id"] for item in state.get("automatic_review_records", [])],
-                  retained_manual_notes=retained_notes)
+                  retained_manual_notes=retained_notes, retained_ocr_sample_notes=retained_sample_notes)
     return True
 
 
@@ -469,6 +471,9 @@ def _binding_problems(state):
                 record.get("binding_sha256") != _automatic_binding(state)):
             reasons.append("Automatic review disposition no longer matches its occurrence or artifact")
     reasons.extend(_ocr_stored_problems(state))
+    if state.get("ocr_sample_records"):
+        if ocr_review_sample.record_problems(_ocr_sample(state), list(state["ocr_sample_records"].values())):
+            reasons.append("OCR sample review record no longer matches its page, the sample or the exact result")
     return sorted(set(reasons))
 
 
@@ -1214,7 +1219,7 @@ def record_prior_ocr_review(source_state_path, destination_state_path, expected_
 
 def _repair_findings(state):
     """Read stored screen evidence; opening a view never measures it again."""
-    names = {"metadata-meaning": "language-correctness", "contrast": "contrast"}
+    names = {"metadata-meaning": "language-correctness", "contrast": "contrast", "color-meaning": "color-meaning", "character-meaning": "character-meaning"}
     issues = {item.get("id"): item for item in state["residual_issues"]}
     findings = []
     for item in state["manual_items"]:
@@ -1268,6 +1273,7 @@ def _view(state):
              "credential_lineage": copy.deepcopy(state.get("credential_lineage")),
              "credential_derivative": copy.deepcopy(state.get("credential_derivative")),
              "previous_review": copy.deepcopy(state.get("prior_review_context")),
+            "ocr_review_sample": _ocr_sample_view(state), "logo_review": _logo_summary(state),
             "suggestions": copy.deepcopy(state["suggestions"]), "verification": "not-verified", "history": copy.deepcopy(state["history"])}
 
 
@@ -1400,6 +1406,9 @@ def approve_decision(state_path, identifier, reviewer, reviewed_at, expected_rev
 def _approve_item(state, item, reviewer, reviewed_at, status, notes=""):
     if status == "approved":
         _actionable(state, require_artifact=True, review_approval=True)
+        problem = _ocr_sample_gate(state, item)
+        if problem:
+            raise WorkspaceError(problem)
     item.update(status=status, reviewer=reviewer, reviewed_at=reviewed_at, notes=str(notes))
     state["manual_approvals"].pop(item["id"], None)
     if item["id"] not in state.setdefault("manual_touched", []):
@@ -1636,6 +1645,11 @@ def export_workspace(state_path, destination, expected_revision, *, _ocr_strict=
             if state["artifact_sha256"]:
                 review = {"artifact_sha256": state["artifact_sha256"], "items": copy.deepcopy(state["manual_items"]),
                           "complete": all(item.get("status") == "approved" for item in state["manual_items"] if item.get("required", True))}
+                sample = _ocr_sample_view(state)
+                if sample is not None:
+                    review["ocr_sample"] = {key: copy.deepcopy(sample[key]) for key in
+                                            ("policy", "artifact_sha256", "selection_sha256", "pool_pages", "limit", "pages")}
+                    review["ocr_sample_records"] = [copy.deepcopy(sample["records"][key]) for key in sorted(sample["records"], key=int)]
                 write_sidecar(review, staging / "review.json")
                 review_path = export / "review.json"
             automatic_review_path = None
@@ -1681,3 +1695,261 @@ def export_workspace(state_path, destination, expected_revision, *, _ocr_strict=
 
 
 export = export_workspace
+
+
+# ---------------------------------------------------------------------------
+# Scanned-page sample: a person's own record of comparing sampled pages with the scan.
+# Records are human-entered and bound to the exact result PDF. They allow the required scanned-text review to be
+# approved by a person; they never approve it, and they never create verified status.
+# ---------------------------------------------------------------------------
+_SAMPLE_CACHE = {}
+_SAMPLE_CACHE_LIMIT = 16
+
+
+def _ocr_sample(state):
+    """The sample for this exact result, or None. Derived only from the immutable report and the result's fingerprint."""
+    artifact = state.get("artifact_sha256")
+    if not artifact:
+        return None
+    key = (state["bundle"]["path"], state["bundle"]["report_sha256"], artifact)
+    if key not in _SAMPLE_CACHE:
+        try:
+            sample = ocr_review_sample.choose_sample(_read_json(Path(state["bundle"]["path"]) / "report.json"), artifact)
+        except (OSError, ValueError, KeyError, TypeError):
+            sample = None
+        if len(_SAMPLE_CACHE) >= _SAMPLE_CACHE_LIMIT:
+            _SAMPLE_CACHE.pop(next(iter(_SAMPLE_CACHE)))
+        _SAMPLE_CACHE[key] = sample
+    return copy.deepcopy(_SAMPLE_CACHE[key])
+
+
+def _ocr_sample_view(state):
+    sample = _ocr_sample(state)
+    if sample is None:
+        return None
+    records = copy.deepcopy(state.get("ocr_sample_records") or {})
+    return {**sample, "records": records, "standing": ocr_review_sample.status(sample, list(records.values())),
+            "invalidated": copy.deepcopy(state.get("ocr_sample_invalidated", [])), "human_entered_only": True,
+            "verification": "not-verified"}
+
+
+def _ocr_sample_gate(state, item):
+    """Why the scanned-text review cannot be approved yet, or None. Only the required 'image-and-ocr' review is gated."""
+    if item.get("id") != "image-and-ocr":
+        return None
+    sample = _ocr_sample(state)
+    if sample is None:
+        return None
+    standing = ocr_review_sample.status(sample, list((state.get("ocr_sample_records") or {}).values()))
+    return None if standing["satisfied"] else standing["summary"]
+
+
+def _archive_ocr_sample_records(state, reason):
+    """Move records that no longer have authority aside. Their notes survive; their reviewer and date no longer count."""
+    archived = []
+    for record in list((state.get("ocr_sample_records") or {}).values()):
+        archived.append({"page": record.get("page"), "checks": copy.deepcopy(record.get("checks")), "notes": record.get("notes", ""),
+                         "reason": reason, "previous_record_sha256": record.get("record_sha256"), "at": _now()})
+    if archived:
+        state.setdefault("ocr_sample_invalidated", []).extend(archived)
+    state["ocr_sample_records"] = {}
+    return [{"page": item["page"], "notes": item["notes"]} for item in archived if item["notes"]]
+
+
+def record_ocr_sample_page(state_path, page, checks, notes, reviewer, reviewed_at, expected_revision):
+    """Save one sampled page's human record. It cannot approve the scanned-text review; it can only withdraw an approval it contradicts."""
+    reviewer = _person(reviewer, reviewed_at)
+    def operation(state):
+        _actionable(state, require_artifact=True)
+        sample = _ocr_sample(state)
+        if sample is None:
+            raise WorkspaceError("This review has no scanned pages to sample")
+        try:
+            record = ocr_review_sample.make_record(sample, page, checks, notes, reviewer, reviewed_at)
+        except ValueError as exc:
+            raise WorkspaceError(str(exc)) from exc
+        state.setdefault("ocr_sample_records", {})[str(page)] = record
+        standing = ocr_review_sample.status(sample, list(state["ocr_sample_records"].values()))
+        for item in state["manual_items"]:
+            if item.get("id") == "image-and-ocr" and item.get("status") == "approved" and not standing["satisfied"]:
+                _clear_approval(item, manual=True)
+                state["manual_approvals"].pop(item["id"], None)
+        _record_event(state, "record-ocr-sample-page", page=page, checks=copy.deepcopy(record["checks"]), notes=record["notes"],
+                      reviewer=reviewer, reviewed_at=reviewed_at, record_sha256=record["record_sha256"],
+                      selection_sha256=sample["selection_sha256"])
+    return _change(state_path, expected_revision, operation)
+
+
+# ---------------------------------------------------------------------------
+# Logo and branding: one place to decide a repeated picture, with every occurrence keeping its own decision.
+# Saving and accepting reuse the ordinary figure-description and figure-purpose decisions, so Apply is unchanged.
+# ---------------------------------------------------------------------------
+_LOGO_CACHE = {}
+_LOGO_CACHE_LIMIT = 8
+_LOGO_SCHEMA = "phase2-logo-review-1"
+_LOGO_DESCRIPTION_LIMIT = 1000
+
+
+def _logo_rows(state):
+    return [item for item in state["sidecar"].get("decisions", []) if item.get("kind") in {"figure-description", "figure-purpose"}]
+
+
+def _logo_summary(state):
+    figures = [item for item in _logo_rows(state) if item["kind"] == "figure-description"]
+    return {"available": bool(state["bindings"].get("prepared") and figures), "figures": len(figures),
+            "decorative_controls": any(item["kind"] == "figure-purpose" for item in _logo_rows(state)),
+            "schema_version": _LOGO_SCHEMA}
+
+
+def _logo_assessment(state):
+    from . import logo_review
+    prepared = state["bindings"].get("prepared")
+    rows = _logo_rows(state)
+    if not prepared or not any(item["kind"] == "figure-description" for item in rows):
+        raise WorkspaceError("This review has no figures to examine for logos and branding")
+    key = (prepared["sha256"], _digest(sorted(item["id"] for item in rows)))
+    if key not in _LOGO_CACHE:
+        if len(_LOGO_CACHE) >= _LOGO_CACHE_LIMIT:
+            _LOGO_CACHE.pop(next(iter(_LOGO_CACHE)))
+        _LOGO_CACHE[key] = logo_review.assess(prepared["path"], rows)
+    return copy.deepcopy(_LOGO_CACHE[key])
+
+
+def _logo_groups(state, assessment):
+    rows = {row["id"]: row for row in assessment["occurrences"]}
+    decisions = {item["id"]: item for item in state["sidecar"].get("decisions", [])}
+    purposes = {(item.get("element"), item.get("page")): item for item in decisions.values() if item.get("kind") == "figure-purpose"}
+    groups = []
+    for group in assessment["groups"]:
+        members = []
+        for identifier in group["member_ids"]:
+            row, purpose = rows[identifier], purposes.get((rows[identifier]["element"], rows[identifier]["page"]))
+            members.append({**{key: row[key] for key in ("page", "element", "signals", "area_fraction", "position", "geometry_source",
+                                                         "current_description", "picture_pixels")},
+                            "id": identifier, "purpose_id": purpose["id"] if purpose else None,
+                            "decorative_available": bool(purpose and purpose.get("structural_eligible") is True and "Artifact" in purpose.get("allowed_values", [])),
+                            "decorative_limitations": list(purpose.get("structural_limitations", [])) if purpose else
+                            ["This review does not offer decorative marking. Process the unchanged original again to prepare it."]})
+        digest = _digest({"group_id": group["id"], "artifact_sha256": state["artifact_sha256"],
+                          "members": sorted(({"id": item["id"], "context_sha256": decisions[item["id"]]["context_sha256"]} for item in members),
+                                            key=lambda entry: entry["id"])})
+        groups.append({**copy.deepcopy(group), "members": members, "membership_digest": digest})
+    return groups
+
+
+def get_logo_review(state_path):
+    """Evidence for the Logo and branding groups. Reads only; nothing is saved or decided."""
+    state = load_workspace(state_path)
+    if state["stale"]:
+        raise StaleWorkspace("Review inputs changed; import a fresh bundle before examining logos")
+    assessment = _logo_assessment(state)
+    return {"schema_version": _LOGO_SCHEMA, "revision": state["revision"], "artifact_sha256": state["artifact_sha256"],
+            "policy": assessment["policy"], "label": assessment["label"], "status": assessment["status"],
+            "thresholds": assessment["thresholds"], "figures_examined": assessment["figures_examined"],
+            "figures_in_review": assessment["figures_in_review"], "candidate_count": assessment["candidate_count"],
+            "partial_reasons": assessment["partial_reasons"], "groups": _logo_groups(state, assessment),
+            "guidance": assessment["guidance"], "source_guidance": assessment["source_guidance"],
+            "limitations": assessment["limitations"], "verification": "not-verified"}
+
+
+def _logo_members(state, group_id, member_ids, membership_digest):
+    if (not isinstance(member_ids, list) or not member_ids or any(not isinstance(ident, str) for ident in member_ids)
+            or len(set(member_ids)) != len(member_ids)):
+        raise WorkspaceError("Explicitly select a nonempty list of distinct occurrence IDs")
+    group = next((item for item in _logo_groups(state, _logo_assessment(state)) if item["id"] == group_id), None)
+    if (group is None or membership_digest != group["membership_digest"]
+            or not set(member_ids).issubset(item["id"] for item in group["members"])):
+        raise RevisionConflict("Group membership or context changed, or selected items are outside this group")
+    by_id = {item["id"]: item for item in group["members"]}
+    return [by_id[identifier] for identifier in sorted(member_ids)]
+
+
+def _logo_description(value):
+    from .checks import PLACEHOLDER_ALT
+    if not isinstance(value, str) or not value.strip():
+        raise WorkspaceError("Write the description to save, in your own words")
+    text = value.strip()
+    if len(text) > _LOGO_DESCRIPTION_LIMIT or re.search(r"[\x00-\x1f\x7f]", text):
+        raise WorkspaceError("A description is one line of plain text, at most %d characters" % _LOGO_DESCRIPTION_LIMIT)
+    if PLACEHOLDER_ALT.search(text):
+        raise WorkspaceError("That is a placeholder, not a description. Name the organisation or product the logo shows")
+    return text
+
+
+def _logo_shared_figure_problem(state, members):
+    """One figure tag that appears on several pages must receive one description everywhere, so it cannot be split across a selection."""
+    figures = [item for item in state["sidecar"].get("decisions", []) if item.get("kind") == "figure-description"]
+    selected = {member["id"] for member in members}
+    for member in members:
+        siblings = [item["id"] for item in figures if item.get("element") == member["element"]]
+        if len(siblings) > 1 and not set(siblings) <= selected:
+            return ("The picture on page %d is one shared figure tag that also appears on other pages, so every occurrence of it must "
+                    "receive the same description. Select all of its occurrences together, or describe it from the ordinary figure list." % member["page"])
+    return None
+
+
+def logo_group_save(state_path, group_id, member_ids, membership_digest, choice, description, expected_revision):
+    """Save one choice (describe, or mark decorative) as a pending draft on each selected occurrence. Nothing is accepted."""
+    if choice not in {"describe", "decorative"}:
+        raise WorkspaceError("Choose to describe the picture or to mark it decorative")
+    def operation(state):
+        members = _logo_members(state, group_id, member_ids, membership_digest)
+        decisions = {item["id"]: item for item in state["sidecar"].get("decisions", [])}
+        if choice == "describe":
+            text = _logo_description(description)
+            problem = _logo_shared_figure_problem(state, members)
+            if problem:
+                raise WorkspaceError(problem)
+            for member in members:
+                if member["purpose_id"] and decisions[member["purpose_id"]].get("value") != decisions[member["purpose_id"]].get("current"):
+                    _edit_value(state, member["purpose_id"], decisions[member["purpose_id"]]["current"])
+                _edit_value(state, member["id"], text)
+        else:
+            blocked = [member for member in members if not member["decorative_available"]]
+            if blocked:
+                raise WorkspaceError("Decorative marking is not available for: " + "; ".join(
+                    "page %d (%s)" % (member["page"], (member["decorative_limitations"] or ["not offered"])[0]) for member in blocked))
+            for member in members:
+                description_item = decisions[member["id"]]
+                if description_item.get("value") != description_item.get("current"):
+                    _edit_value(state, member["id"], description_item["current"])
+                _edit_value(state, member["purpose_id"], "Artifact")
+        _record_event(state, "logo-group-save", group_id=group_id, member_ids=[member["id"] for member in members], choice=choice,
+                      membership_digest=membership_digest, description_characters=len(description.strip()) if choice == "describe" else 0)
+    return _change(state_path, expected_revision, operation)
+
+
+def logo_group_accept(state_path, group_id, member_ids, membership_digest, reviewer, reviewed_at, expected_revision):
+    """Accept, by name, the saved choice of each selected occurrence. An occurrence with nothing saved is refused, not skipped."""
+    reviewer = _person(reviewer, reviewed_at)
+    def operation(state):
+        _actionable(state, require_artifact=True)
+        members = _logo_members(state, group_id, member_ids, membership_digest)
+        decisions = {item["id"]: item for item in state["sidecar"].get("decisions", [])}
+        accepted = []
+        if any(decisions[member["id"]].get("value") != decisions[member["id"]].get("current") for member in members):
+            problem = _logo_shared_figure_problem(state, members)
+            if problem:
+                raise WorkspaceError(problem)
+        for member in members:
+            description = decisions[member["id"]]
+            purpose = decisions.get(member["purpose_id"]) if member["purpose_id"] else None
+            description_changed = description.get("value") != description.get("current")
+            purpose_changed = bool(purpose) and purpose.get("value") != purpose.get("current")
+            if description_changed and purpose_changed:
+                raise WorkspaceError("Page %d has both a new description and decorative marking saved; save one choice again" % member["page"])
+            chosen = description if description_changed else purpose if purpose_changed else None
+            if chosen is None:
+                raise WorkspaceError("Nothing is saved for the occurrence on page %d. Save a description or decorative marking first" % member["page"])
+            try:
+                chosen.pop("automatic_application", None)
+                chosen.pop("automatic_acceptance_sha256", None)
+                bind_approval(chosen, reviewer, reviewed_at)
+            except ValueError as exc:
+                raise WorkspaceError(str(exc)) from exc
+            if chosen["id"] not in state["human_touched"]:
+                state["human_touched"].append(chosen["id"])
+            accepted.append(chosen["id"])
+        _record_event(state, "logo-group-accept", group_id=group_id, member_ids=[member["id"] for member in members], decision_ids=accepted,
+                      membership_digest=membership_digest, reviewer=reviewer, reviewed_at=reviewed_at)
+    return _change(state_path, expected_revision, operation)

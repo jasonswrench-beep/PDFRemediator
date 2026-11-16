@@ -530,6 +530,16 @@ For example, after selecting the two bounded options for a suitable book:
 
 An unsupported case remains actionable manual work; turning on an option does not waive the release checks.
 
+**Reviewed character corrections (command line, since 2026-11-16):** when an embedded font's existing Unicode map gives the wrong character for a code,
+a reviewer who has compared the page can supply the intended text for named codes and create a **separate corrected copy**: `remediator characters
+inventory | plan | apply` (see [docs/UNICODE-AND-FONT-REPAIR.md](docs/UNICODE-AND-FONT-REPAIR.md)). Only the named fonts' Unicode maps change; the copy is
+published only if page pixels, page furniture and every other object are proved unchanged, and it carries no earlier approval. The window does not
+offer this yet. Unembedded fonts are listed with guidance and are never embedded, substituted or guessed.
+
+**Other reviews added the same day:** [colour-only meaning](docs/COLOR-ONLY-MEANING.md) (candidates and guidance, never a verdict) and
+[logos and the scanned-page sample](docs/LOGO-AND-OCR-REVIEW.md). What the program covers of WCAG 2.1 A and AA, and what it does not, is in
+[docs/WCAG-2.1-AA-COVERAGE.md](docs/WCAG-2.1-AA-COVERAGE.md).
+
 Declare known content with `--document-kind reading`, `--document-kind slides`, or `--document-kind equations`, or set `document_kind` in TOML. Known slide decks and equation documents are refused by `fix` with `needs-manual` and no PDF output. The default `unknown` and an explicit `reading` declaration both retain a required human review item for visual slide layouts, untagged equations, and other content that PDF object inspection cannot reliably identify. A declaration does not establish mathematical accessibility.
 
 ## Batch, cancellation, and resume

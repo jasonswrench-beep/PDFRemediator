@@ -71,6 +71,26 @@ def _thumbnails(thumbnails):
     return '<section aria-labelledby="visuals"><h2 id="visuals">Visual references</h2>' + "".join(figures) + "</section>"
 
 
+def _sample_section(report):
+    """The scanned pages a person should compare with the scan, with why each was chosen. Empty for documents without scans."""
+    from .ocr_review_sample import REASON_TEXT, choose_sample
+    sample = choose_sample(report, (report.get("output") or {}).get("sha256")) if isinstance(report, dict) else None
+    if sample is None:
+        return ""
+    rows = []
+    for page in sample["pages"]:
+        reading = page.get("reading") or {}
+        evidence = (f"{reading.get('sure_words')} of {reading.get('words')} words read confidently" if reading.get("words") else "no recognition measurement")
+        rows.append(f"<tr><th scope=\"row\">Page {_text(page['page'])}</th><td>{_text(' '.join(REASON_TEXT.get(r, r) for r in page['reasons']))}</td><td>{_text(evidence)}</td></tr>")
+    return ('<section aria-labelledby="ocr-sample"><h2 id="ocr-sample">Scanned pages to compare with the scan</h2>'
+            f"<p>{_text(sample['limits'])}</p><p>{_text(sample['better_source'])}</p>"
+            '<div class="table-wrap"><table><caption>Sampled pages (the same pages are chosen every time for this exact result)</caption>'
+            '<thead><tr><th scope="col">Page</th><th scope="col">Why it was chosen</th><th scope="col">Recognition measurement</th></tr></thead>'
+            f"<tbody>{''.join(rows)}</tbody></table></div>"
+            "<p>In the review window, record for each page whether the words are accurate, whether anything is missing and whether the reading order is right. "
+            "Those records are yours; the program never fills them in.</p></section>")
+
+
 def render_review_packet(report, sidecar, output_path, thumbnails=None):
     """Render evidence without executing document content or fetching assets.
 
@@ -131,6 +151,7 @@ summary{{cursor:pointer;font-weight:600}}details{{margin:.7rem 0}}img{{max-width
 <section aria-labelledby="review-queue"><h2 id="review-queue">Pending human review ({len(pending)})</h2>
 {_items(pending, 'No pending items are listed. Verification still requires an eligible candidate, a named reviewer, review scope, and the actual LMS checker score.')}
 {_details('All human-review items, including completed checks', queue)}</section>
+{_sample_section(report)}
 <section aria-labelledby="decisions"><h2 id="decisions">Explicit reviewer decisions</h2>
 <p>Edit the separate decision sidecar and explicitly approve each selected value through the local review command. Existing text is retained by default. Changed values, source fingerprints, staged document fingerprints, or occurrence context invalidate prior approval.</p>
 <p>Figure descriptions apply to the listed structure element and page occurrence. The same image used under a different caption has a separate decision. Heading purpose, table relationships, and reading order require human assessment.</p>
