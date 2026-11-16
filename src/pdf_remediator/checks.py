@@ -180,6 +180,10 @@ def assess(inspection, source=None):
          'Look at each listed candidate in context: colored text, links told apart only by color, charts and diagrams that use several hues, colored highlights, and sentences that point at a color. Decide whether the same information is also available another way (a text label, a symbol or pattern, an underline, a position). Pictures and other unmeasured content need the same look. If color alone carries meaning, repair the original authoring document and process a separate PDF; this tool does not recolor or mark pages.'),
     ):
         measured = inspection.get(field)
+        if field == 'color_meaning' and isinstance(source, dict):
+            # This program's own tagging marks untagged shapes as artifacts in the processed copy, which the graphic screen skips.
+            from .color_meaning import with_original_graphics
+            measured = with_original_graphics(measured, source.get(field))
         known = (isinstance(measured, dict) and measured.get('policy') == policy
                  and measured.get('advisory') is True
                  and measured.get('status') in {'pass', 'fail', 'needs-review', 'not-applicable', 'error'}

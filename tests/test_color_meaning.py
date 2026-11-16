@@ -670,3 +670,130 @@ def test_a_page_dense_with_colored_shapes_finishes_quickly_and_reports_its_limit
     page = result['pages'][0]
     assert 'chromatic-path-limit' in page['reasons'] and result['coverage']['complete'] is False
     assert result['status'] == 'needs-review'
+
+
+# This program marks untagged shapes /Artifact in its processed copy. The screen of the copy then skips them, so the
+# card takes the graphic findings from the unmodified input (``with_original_graphics``) and nothing else from it.
+
+BODY_LINE = text(40, 700, 'Black body text for the dominant colour of this page')
+HIDDEN_CHART = '/Artifact BMC\n' + CHART + 'EMC\n'
+
+
+def original_and_copy(tmp_path, *, original_extra='', copy_extra='', original_image=False):
+    original = screen(source_pdf(tmp_path / 'original', BODY_LINE + CHART + original_extra, image=original_image))
+    processed = screen(source_pdf(tmp_path / 'copy', BODY_LINE + HIDDEN_CHART + copy_extra))
+    return original, processed
+
+
+def test_the_copys_own_artifact_marks_hide_the_chart_but_the_input_still_shows_it(tmp_path):
+    original, processed = original_and_copy(tmp_path)
+    assert kinds(original) == ['multi-hue-graphic'] and kinds(processed) == []
+    assert processed['counts']['artifact_graphics_skipped'] == 3 and original['counts']['artifact_graphics_skipped'] == 0
+
+
+def test_the_inputs_graphic_findings_are_restored_and_the_record_says_where_they_came_from(tmp_path):
+    original, processed = original_and_copy(tmp_path)
+    before = (copy.deepcopy(original), copy.deepcopy(processed))
+    merged = color_meaning.with_original_graphics(processed, original)
+    assert (original, processed) == before
+    assert kinds(merged) == ['multi-hue-graphic'] and merged['findings'] == original['findings']
+    assert merged['status'] == 'needs-review' and merged['counts']['graphic_regions'] == 1
+    assert merged['counts']['artifact_graphics_skipped'] == 0 and merged['counts']['records'] == 1
+    assert merged['coverage']['complete'] is True
+    assert merged['graphics_from_original'] == {'source_sha256': original['source_sha256'],
+                                                'result_artifact_graphics_skipped': 3,
+                                                'original_artifact_graphics_skipped': 0}
+    assert merged['limitations'][-1] == color_meaning.ORIGINAL_GRAPHICS_NOTE
+    assert merged['source_sha256'] == processed['source_sha256']
+    merged['findings'][0]['hues'].append('marker')
+    assert 'marker' not in original['findings'][0]['hues']
+
+
+def test_a_clean_copy_screen_cannot_hide_a_chart_the_input_has(tmp_path):
+    original, processed = original_and_copy(tmp_path)
+    assert processed['status'] == 'pass' and processed['findings'] == []
+    merged = color_meaning.with_original_graphics(processed, original)
+    assert merged['status'] == 'needs-review'
+
+
+def test_the_copys_own_findings_stay_and_are_not_replaced_by_the_inputs(tmp_path):
+    # An OCR text layer exists only in the copy: its phrase and colour findings must survive.
+    original, processed = original_and_copy(tmp_path, copy_extra=text(40, 640, 'Late', RED) +
+                                            text(40, 620, 'The red items are overdue.'))
+    assert kinds(processed) == ['color-reference-text', 'colored-text']
+    merged = color_meaning.with_original_graphics(processed, original)
+    assert kinds(merged) == ['color-reference-text', 'colored-text', 'multi-hue-graphic']
+    order = [color_meaning.KIND_ORDER[row['kind']] for row in merged['findings']]
+    assert order == sorted(order)
+
+
+def test_when_the_copy_hid_nothing_the_input_did_not_already_hide_the_record_is_returned_unchanged(tmp_path):
+    marked = BODY_LINE + HIDDEN_CHART
+    first = screen(source_pdf(tmp_path / 'a', marked))
+    second = screen(source_pdf(tmp_path / 'b', marked))
+    assert color_meaning.with_original_graphics(second, first) is second
+    plain = screen(source_pdf(tmp_path / 'c', BODY_LINE + CHART))
+    assert color_meaning.with_original_graphics(plain, plain) is plain
+
+
+def test_what_the_input_could_not_measure_still_limits_the_merged_record(tmp_path):
+    original, processed = original_and_copy(tmp_path, original_image=True)
+    assert original['pages'][0]['reasons'] == ['raster-image-color-not-assessed'] and processed['pages'][0]['reasons'] == []
+    merged = color_meaning.with_original_graphics(processed, original)
+    assert merged['pages'][0]['reasons'] == ['raster-image-color-not-assessed'] and merged['pages'][0]['status'] == 'needs-review'
+    assert merged['coverage']['complete'] is False
+    assert [row['kind'] for row in merged['uncertain']] == ['page-coverage'] and merged['uncertain'][0]['page'] == 1
+    assert merged['counts']['records'] == 2
+
+
+@pytest.mark.parametrize('damage', ['policy', 'advisory', 'error', 'pages', 'findings', 'counts', 'coverage', 'page-count'])
+def test_an_unusable_or_mismatched_input_screen_leaves_the_copys_record_alone(tmp_path, damage):
+    original, processed = original_and_copy(tmp_path)
+    broken = copy.deepcopy(original)
+    if damage == 'policy':
+        broken['policy'] = 'something-else'
+    elif damage == 'advisory':
+        broken['advisory'] = False
+    elif damage == 'error':
+        broken['status'] = 'error'
+    elif damage == 'pages':
+        broken['pages'] = 'nope'
+    elif damage == 'findings':
+        broken['findings'] = None
+    elif damage == 'counts':
+        broken['counts'] = []
+    elif damage == 'coverage':
+        broken['coverage'] = {'complete': 'yes', 'unmeasured_pages': []}
+    else:
+        broken['pages'].append({'page': 2, 'status': 'pass', 'reasons': []})
+    assert color_meaning.with_original_graphics(processed, broken) is processed
+    assert color_meaning.with_original_graphics(processed, None) is processed
+    assert color_meaning.with_original_graphics(None, original) is None
+
+
+def test_the_record_limit_is_kept_and_a_truncated_merge_never_looks_complete(tmp_path, monkeypatch):
+    original, processed = original_and_copy(tmp_path, copy_extra=text(40, 640, 'Late', RED))
+    monkeypatch.setitem(color_meaning.LIMITS, 'records', 1)
+    merged = color_meaning.with_original_graphics(processed, original)
+    assert kinds(merged) == ['colored-text'] and merged['coverage']['complete'] is False
+    assert 'record-limit' in merged['coverage']['reasons'] and merged['status'] == 'needs-review'
+
+
+def test_the_checks_use_the_inputs_graphics_only_when_given_the_input_inspection(tmp_path):
+    original_path = source_pdf(tmp_path / 'original', BODY_LINE + CHART)
+    copy_path = source_pdf(tmp_path / 'copy', BODY_LINE + HIDDEN_CHART)
+    original_report, copy_report = inspection.inspect_pdf(original_path), inspection.inspect_pdf(copy_path)
+    assert [row['kind'] for row in copy_report['color_meaning']['findings']] == []
+    plain = checks.assess(copy_report)
+    assert not any(item['category'] == 'color-meaning' for item in plain['manual_queue'])
+    with_input = checks.assess(copy_report, source=original_report)
+    manual = next(item for item in with_input['manual_queue'] if item['category'] == 'color-meaning')
+    assert [row['kind'] for row in manual['evidence']['findings']] == ['multi-hue-graphic']
+    assert manual['status'] == 'pending' and manual['required'] is True
+    row = next(item for item in with_input['checks'] if item['id'] == 'color-meaning')
+    assert row['status'] == 'needs-review' and row['blocking'] is False
+    assert color_meaning.ORIGINAL_GRAPHICS_NOTE in row['limitations']
+    assert with_input['blocking_checks'] == plain['blocking_checks']
+    assert copy_report['color_meaning']['findings'] == []  # the raw inspection of the copy is not edited
+    same = checks.assess(original_report, source=original_report)
+    assert next(item for item in same['checks'] if item['id'] == 'color-meaning')['evidence'] == original_report['color_meaning']

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from collections import Counter
 from contextlib import ExitStack
+import copy
 from ctypes import c_int, c_uint, c_ulong, c_void_p, cast
 import colorsys
 import hashlib
@@ -733,3 +734,80 @@ def assess(path, *, cancel=None, pdf=None, document=None):
         result.update(status='error', error={'type': type(exc).__name__, 'message': str(exc)[:300]})
         result['coverage']['complete'] = False
     return result
+
+
+GRAPHIC_KIND = 'multi-hue-graphic'
+ORIGINAL_GRAPHICS_NOTE = ('Chart-like shapes were read from the unmodified input, because this program marks untagged '
+                          'shapes as artifacts in its processed copy and the graphic screen skips artifacts there.')
+
+
+def _usable(measured):
+    return (isinstance(measured, dict) and measured.get('policy') == POLICY and measured.get('advisory') is True
+            and measured.get('status') in {'pass', 'fail', 'needs-review', 'not-applicable'}
+            and isinstance(measured.get('findings'), list) and isinstance(measured.get('uncertain'), list)
+            and isinstance(measured.get('pages'), list) and isinstance(measured.get('counts'), dict)
+            and isinstance(measured.get('coverage'), dict) and isinstance(measured['coverage'].get('complete'), bool)
+            and isinstance(measured['coverage'].get('unmeasured_pages'), list)
+            and all(isinstance(page, dict) and isinstance(page.get('page'), int) and isinstance(page.get('reasons'), list)
+                    for page in measured['pages']))
+
+
+def with_original_graphics(measured, original):
+    """Return the screen of a processed copy with the graphic findings of the unmodified input.
+
+    The tagging step of this program wraps untagged shapes in ``/Artifact`` in its result, and the graphic screen
+    skips artifacts, so a chart that the author never marked disappears from the result's screen. The input's own
+    screen still sees it. Only the graphic findings (and what limits them) are taken from the input; text, link,
+    annotation and phrase findings stay the result's own (an OCR text layer exists only there). When the result
+    hid nothing that the input did not already hide, or either record is unusable, ``measured`` is returned as is.
+    """
+    if not (_usable(measured) and _usable(original)):
+        return measured
+    hidden = measured['counts'].get('artifact_graphics_skipped')
+    already = original['counts'].get('artifact_graphics_skipped')
+    if not (isinstance(hidden, int) and isinstance(already, int)) or hidden <= already:
+        return measured
+    if [page['page'] for page in measured['pages']] != [page['page'] for page in original['pages']]:
+        return measured
+    merged = copy.deepcopy(measured)
+    graphics = [copy.deepcopy(row) for row in original['findings'] if isinstance(row, dict) and row.get('kind') == GRAPHIC_KIND]
+    kept = [row for row in merged['findings'] if not (isinstance(row, dict) and row.get('kind') == GRAPHIC_KIND)]
+    document_reasons = set(merged['coverage'].get('reasons', [])) | set(original['coverage'].get('reasons', []))
+    by_page = {page['page']: page for page in original['pages']}
+    for page in merged['pages']:
+        page['reasons'] = sorted(set(page['reasons']) | set(by_page[page['page']]['reasons']))
+    unmeasured = sorted(set(merged['coverage']['unmeasured_pages']) | set(original['coverage']['unmeasured_pages']))
+    coverage_records = {row['page']: row for row in merged['uncertain']
+                        if isinstance(row, dict) and row.get('kind') == 'page-coverage' and isinstance(row.get('page'), int)}
+    others = [row for row in merged['uncertain'] if row not in coverage_records.values()]
+    for page in merged['pages']:
+        if page['reasons']:
+            page['status'] = 'needs-review'
+            coverage_records[page['page']] = {'kind': 'page-coverage', 'status': 'needs-review', 'page': page['page'],
+                                              'reasons': list(page['reasons'])}
+    uncertain = others + [coverage_records[number] for number in sorted(coverage_records)]
+    room = LIMITS['records'] - len(kept) - len(uncertain)
+    if len(graphics) > max(room, 0):
+        graphics = graphics[:max(room, 0)]
+        document_reasons.add('record-limit')
+    findings = sorted(kept + graphics, key=lambda row: (row.get('page', 0), KIND_ORDER.get(row.get('kind'), 9)))
+    for page in merged['pages']:
+        if any(row.get('page') == page['page'] for row in findings):
+            page['status'] = 'needs-review'
+    merged['findings'], merged['uncertain'] = findings, uncertain
+    merged['counts'].update(graphic_regions=len(graphics), artifact_graphics_skipped=already,
+                            records=len(findings) + len(uncertain))
+    complete = (measured['coverage']['complete'] and original['coverage']['complete'] and not unmeasured
+                and 'record-limit' not in document_reasons)
+    merged['coverage'].update(complete=complete, unmeasured_pages=unmeasured)
+    if document_reasons:
+        merged['coverage']['reasons'] = sorted(document_reasons)
+    if findings or not complete:
+        merged['status'] = 'needs-review'
+    elif 'pass' in (measured['status'], original['status']):
+        merged['status'] = 'pass'
+    merged['limitations'] = list(merged.get('limitations', [])) + [ORIGINAL_GRAPHICS_NOTE]
+    merged['graphics_from_original'] = {'source_sha256': original.get('source_sha256'),
+                                        'result_artifact_graphics_skipped': hidden,
+                                        'original_artifact_graphics_skipped': already}
+    return merged

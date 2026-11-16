@@ -40,8 +40,8 @@ Luminance ratios use the same WCAG relative-luminance formula as the contrast sc
 
 Skipped on purpose: a filled shape that covers more than half of the page (a background); objects whose larger
 dimension is under 1 point; invisible text (render modes 3 and 7, such as an OCR layer); content marked as an
-Artifact (counted in `artifact_graphics_skipped`; whether a graphic is decorative is a human judgment); hidden or
-not-viewable links; pop-up annotations.
+Artifact (counted in `artifact_graphics_skipped`; whether a graphic is decorative is a human judgment; see "Shapes the
+program itself marks as Artifact" below for the processed copy); hidden or not-viewable links; pop-up annotations.
 
 ### The phrase patterns (exact)
 
@@ -127,13 +127,42 @@ The same text is stored with every record as `fix_path` and shown in the review 
 - Saved reviews and result bundles from earlier builds are not re-assessed or rewritten: the assessment is made when
   a result is produced. Opening an older review shows only what that review already recorded.
 
+### Shapes the program itself marks as Artifact
+
+When it prepares a processed copy of an untagged PDF, this program tags the text and wraps untagged shapes and
+pictures in `/Artifact`. The graphic screen skips Artifact content, so the screen of the *copy* cannot see a chart
+the author never marked. Found with alpha 8 on a test file: the original's screen listed the multi-hue block
+(5 candidates), the card built from the copy listed 4 (`artifact_graphics_skipped` 4, `graphic_regions` 0).
+
+Since the fix after alpha 8, `checks.assess(inspection, source=baseline)` calls `color_meaning.with_original_graphics`
+for this screen:
+
+- It acts only when the copy skipped more Artifact graphics than the unmodified input did, both records are usable
+  (same policy, advisory, a status other than `error`, same page list), and otherwise returns the copy's record
+  untouched. A document whose Artifact marks are the author's own is therefore unchanged.
+- It takes the `multi-hue-graphic` findings from the **input's** screen and keeps every other finding (text, link,
+  annotation, phrase) from the **copy's** screen: an OCR text layer exists only in the copy, so its phrase
+  candidates must survive, and the input has none of them.
+- Whatever the input could not measure (page reasons, unmeasured pages, document reasons) is added to the copy's, so
+  the merged record is complete only if both were. If the combined records pass the record limit, the graphic
+  findings are cut, `record-limit` is listed and coverage is not complete.
+- The record gains `graphics_from_original` (the input's `source_sha256` and the two skipped counts) and one line in
+  `limitations` saying the shapes were read from the unmodified input; `counts.artifact_graphics_skipped` becomes the
+  input's (author-marked only). The saved raw inspection of the copy (`report["inspection"]["color_meaning"]`) and of
+  the input (`report["baseline"]["color_meaning"]`) are not edited; only the supplemental check's evidence (and the
+  manual item's, which is the same record) is merged.
+- This is what a person should compare against: the shapes drawn in the original document the author must fix. A
+  bundle made before this fix is not re-assessed.
+
 ## Checks
 
 `tests/test_color_meaning.py` builds every PDF at run time and covers each candidate kind, its negatives (all-black
 text, gray and pale colors, underlined and bordered links, single-hue, gray, distant and background shapes,
 Artifact-marked shapes, invisible text, ordinary color words), shapes and text inside scaled Form XObjects,
-unsupported content, the bounds, cancellation, source immutability and determinism, the end-to-end check profile and
-the repair-finding view. `scripts/test-web-assets.cjs` covers the card. The test file also checks that this page lists
+unsupported content, the bounds, cancellation, source immutability and determinism, the end-to-end check profile,
+the repair-finding view and the merge with the input's graphic findings (a copy that hides the chart, copy-only
+findings kept, an unchanged record when nothing extra was hidden, unusable or mismatched input records, the record
+limit and the checks wiring). `scripts/test-web-assets.cjs` covers the card. The test file also checks that this page lists
 every phrase pattern, color word and threshold used by the code.
 
 What only a person can check is in `TESTING-TODO.md`: looking at the card in the real window, and judging whether
