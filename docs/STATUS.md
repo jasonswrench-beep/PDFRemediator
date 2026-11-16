@@ -17,7 +17,7 @@ From the 2026-11-15 development list. Built or written, in list order (details i
 - **Item 6:** the AI plan is local first on the shared C8 runtime, with a hosted provider only later behind it (`docs/AI-PLAN.md`); the
   old API-first proposal is withdrawn; `tests/test_local_ai_first.py` holds the rules.
 
-Released as 0.3.0 alpha 8 (signed, pre-release `v0.3.0-alpha.8`); installer SHA-256 `3ce529c7efb630dac01cf4e7a8a2e93a8ba08aae178425a54e37e9d5f53680f3`. Not done: switching PrismQDA to the core's statistics tag (another repository, not on this PC); installing the alpha 8 installer on a computer (see `TESTING-TODO.md`).
+Released as 0.3.0 alpha 8 (signed, pre-release `v0.3.0-alpha.8`); installer SHA-256 `3ce529c7efb630dac01cf4e7a8a2e93a8ba08aae178425a54e37e9d5f53680f3`. Not done: switching PrismQDA to the core's statistics tag (another repository, not on this PC); installing the alpha 8 installer on a computer (see `TESTING-TODO.md`). Released later the same day as 0.3.0 alpha 9 (signed, pre-release `v0.3.0-alpha.9`, installer SHA-256 `48fddc18ad9aed90025cab35be7be8e9d0ade2094d775af634cfc7d9785ccf2f`), which adds only the colour-card fix described in `docs/COLOR-ONLY-MEANING.md`.
 
 ## November 1: more of the program reachable from the window, safer leaving, build 15
 

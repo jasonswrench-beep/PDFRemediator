@@ -134,7 +134,7 @@ pictures in `/Artifact`. The graphic screen skips Artifact content, so the scree
 the author never marked. Found with alpha 8 on a test file: the original's screen listed the multi-hue block
 (5 candidates), the card built from the copy listed 4 (`artifact_graphics_skipped` 4, `graphic_regions` 0).
 
-Since the fix after alpha 8, `checks.assess(inspection, source=baseline)` calls `color_meaning.with_original_graphics`
+Since the fix (released in alpha 9), `checks.assess(inspection, source=baseline)` calls `color_meaning.with_original_graphics`
 for this screen:
 
 - It acts only when the copy skipped more Artifact graphics than the unmodified input did, both records are usable
