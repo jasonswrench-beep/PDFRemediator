@@ -91,7 +91,13 @@ $exe = "<install folder>\runtime\tesseract\tesseract.exe"; $failed = 0
   $p = [Diagnostics.Process]::Start($psi); $o = $p.StandardOutput.ReadToEndAsync(); $e = $p.StandardError.ReadToEndAsync(); $p.WaitForExit()
   if ($p.ExitCode -ne 0 -or ($o.Result + $e.Result) -notmatch 'tesseract') { $failed++ } }
 "$failed of 400 launches failed"
+# 7. Three scans at once, four times over, with the installed program (uses a temporary data folder; your saved reviews are not touched).
+#    Give it a scanned PDF of at least six pages. Expect "PASS: every run finished." and exit code 0.
+powershell -ExecutionPolicy Bypass -File scripts\check-three-scans.ps1 -Pdf "<a scanned PDF>" -Rounds 4
 ```
+
+`scripts/check-three-scans.ps1` was tested on 2026-11-16: on the installed alpha 9 it reported 2 of 12 runs failed ("OCR did not complete", exit code 1);
+on a copy of the alpha 10 package 12 of 12 finished (exit code 0).
 
 **Verify by hand.** On a computer that did not build it: right-click the installer, Properties, Digital Signatures: one signature, the
 expected publisher name, "This digital signature is OK", and a timestamp. Install, then check `PDF Remediator.exe` and the uninstaller the

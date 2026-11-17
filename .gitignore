@@ -49,6 +49,7 @@
 /scripts/*
 !/scripts/*.py
 !/scripts/*.sh
+!/scripts/check-three-scans.ps1
 !/scripts/test-web-assets.cjs
 !/scripts/test-plain-evidence.cjs
 !/scripts/e2e-browser.cjs
