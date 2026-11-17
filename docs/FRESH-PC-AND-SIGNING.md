@@ -52,6 +52,15 @@ in `TESTING-TODO.md`: counsel's review, the WebView2 SDK licence text, and a rec
 `scripts/sign_windows.py`, with a trusted timestamp. A signature proves who published the file and that it has not changed since; it does
 not say the program is safe or accessible, and Windows SmartScreen still builds its reputation for a new publisher over time.
 
+**Makers' signatures are kept.** A program its makers already signed keeps that signature, including one that Windows no longer calls
+Valid because the maker's certificate has expired (it shows as `UnknownError`). Replacing such a signature is not harmless: in alpha 8 and
+alpha 9 the build replaced the signatures on `tesseract.exe` and `libtesseract-5.dll` (Universität Mannheim), and the re-signed
+`tesseract.exe` returned exit code 0 with no output on about 1 to 3 percent of launches, so scanned-page OCR failed at random. Only a file
+with no signature at all, one whose signature no longer matches the file (`HashMismatch`), or one with an invalid signature of ours is
+signed by the build. The files kept are listed in `build-summary.json` as `makers_signatures_kept_not_validating_now` (for the current
+locked inputs: exactly those two Tesseract files). `ArtifactSigner.sign_programs` in `scripts/package-windows.py` does this; `sign_windows.py`
+itself is unchanged because the other OpenStage tools share it.
+
 **What the owner needs.** A verified publisher identity at the signing service, `signtool.exe` from the Windows SDK (10.0.22621 or later),
 Microsoft's signing library, the .NET 8 runtime, and a sign-in. The account details are kept outside the repository (`dist/` is not
 tracked); they are passed in the environment variables `OPENSTAGE_SIGN_ENDPOINT`, `OPENSTAGE_SIGN_ACCOUNT` and `OPENSTAGE_SIGN_PROFILE`.
@@ -73,6 +82,15 @@ $env:OPENSTAGE_SIGN_PUBLISHER = "<the name the signature must show>"
 python scripts/package-windows.py --inputs <plan file> --output <new folder> --sign
 # 5. Check every file the installer carries and the installer itself.
 python scripts/sign_windows.py --check "<installer>.exe" "<folder>\PDF Remediator.exe"
+# 6. After installing (or on the build's payload folder): the bundled Tesseract must start and answer every time. Use the .NET Process
+#    class; Start-Process -PassThru in Windows PowerShell 5.1 loses the exit code. Expect 0 failures out of 400.
+$exe = "<install folder>\runtime\tesseract\tesseract.exe"; $failed = 0
+1..400 | ForEach-Object {
+  $psi = New-Object Diagnostics.ProcessStartInfo $exe, '--version'
+  $psi.RedirectStandardOutput = $psi.RedirectStandardError = $true; $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
+  $p = [Diagnostics.Process]::Start($psi); $o = $p.StandardOutput.ReadToEndAsync(); $e = $p.StandardError.ReadToEndAsync(); $p.WaitForExit()
+  if ($p.ExitCode -ne 0 -or ($o.Result + $e.Result) -notmatch 'tesseract') { $failed++ } }
+"$failed of 400 launches failed"
 ```
 
 **Verify by hand.** On a computer that did not build it: right-click the installer, Properties, Digital Signatures: one signature, the

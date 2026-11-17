@@ -1522,3 +1522,124 @@ def test_launch_portable_runs_the_launcher_functions_with_the_arguments_the_prog
     assert kind == name and kwargs["data_dir"] == root / "output/review-app"
     if name == "launch":
         assert kwargs["open_browser"] is opens and kwargs["config_path"] == root / "local-runtime.toml"
+
+
+# A program its makers signed keeps that signature even when Windows no longer reports it as Valid (an expired maker
+# certificate shows as UnknownError). Replacing it made the Tesseract program return no output on 1 to 3 percent of
+# launches in alpha 8 and alpha 9, which broke scanned-page OCR.
+
+class FakeSigning:
+    """Stands in for scripts/sign_windows.py: a table of file name -> signature info; sign_one makes the file ours and valid."""
+
+    class SignError(Exception):
+        pass
+
+    def __init__(self, table, publisher="Jason Wrench"):
+        import importlib.util as util
+        spec_ = util.spec_from_file_location("sign_windows_real", SOURCE.parent / "sign_windows.py")
+        self.real = util.module_from_spec(spec_)
+        spec_.loader.exec_module(self.real)
+        self.table, self.publisher, self.signed_files, self.METADATA = dict(table), publisher, [], None
+
+    def signatures(self, paths):
+        return [{"path": str(p), **self.table.get(Path(p).name, {"status": "NotSigned", "signer": None, "timestamped": False})} for p in paths]
+
+    def problem(self, info, publisher=None):
+        return self.real.problem(info, publisher)
+
+    def find_signtool(self):
+        return "signtool"
+
+    def find_dlib(self):
+        return "dlib"
+
+    def write_metadata(self):
+        return "metadata"
+
+    def sign_one(self, path, signtool, dlib, metadata, description=None, publisher=None):
+        self.signed_files.append(Path(path).name)
+        self.table[Path(path).name] = {"status": "Valid", "signer": self.publisher, "timestamped": True}
+        return "signed and timestamped"
+
+
+def fake_signer(table, publisher="Jason Wrench", leave_unsigned=()):
+    fake = FakeSigning(table, publisher)
+    if leave_unsigned:
+        original = fake.sign_one
+
+        def sign_one(path, *args, **kwargs):
+            if Path(path).name in leave_unsigned:
+                fake.signed_files.append(Path(path).name)
+                return "tried"
+            return original(path, *args, **kwargs)
+        fake.sign_one = sign_one
+    signer = object.__new__(package.ArtifactSigner)
+    signer.sw, signer.publisher, signer.signed, signer.makers_kept = fake, publisher, 0, []
+    return signer, fake
+
+
+def payload_with(tmp_path, names):
+    payload = tmp_path / "payload"
+    for name in names:
+        target = payload / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"MZ")
+    return payload
+
+
+MAKER = {"status": "UnknownError", "signer": "Universität Mannheim", "timestamped": True}
+FINE = {"status": "Valid", "signer": "Python Software Foundation", "timestamped": True}
+
+
+def test_a_makers_signature_that_no_longer_validates_is_kept_not_replaced(tmp_path):
+    payload = payload_with(tmp_path, ["runtime/tesseract/tesseract.exe", "runtime/tesseract/libtesseract-5.dll",
+                                      "runtime/tesseract/libleptonica.dll", "runtime/python/python.exe", "notes.txt"])
+    signer, fake = fake_signer({"tesseract.exe": MAKER, "libtesseract-5.dll": MAKER, "python.exe": FINE})
+    signer.sign_programs(payload, tmp_path)
+    assert fake.signed_files == ["libleptonica.dll"]  # only the unsigned program; neither maker's file, no non-program file
+    assert signer.signed == 1
+    assert signer.makers_kept == ["runtime/tesseract/libtesseract-5.dll", "runtime/tesseract/tesseract.exe"]
+    assert fake.table["tesseract.exe"] == MAKER and fake.table["python.exe"] == FINE
+
+
+def test_valid_makers_signatures_are_not_listed_as_kept_and_are_not_touched(tmp_path):
+    payload = payload_with(tmp_path, ["a.exe", "b.dll"])
+    signer, fake = fake_signer({"a.exe": FINE})
+    signer.sign_programs(payload, tmp_path)
+    assert fake.signed_files == ["b.dll"] and signer.makers_kept == []
+
+
+@pytest.mark.parametrize("status", ["HashMismatch", "NotSigned"])
+def test_a_file_changed_after_its_makers_signed_it_or_never_signed_is_signed_by_us(tmp_path, status):
+    payload = payload_with(tmp_path, ["changed.exe"])
+    signer, fake = fake_signer({"changed.exe": {"status": status, "signer": "Somebody" if status == "HashMismatch" else None, "timestamped": False}})
+    signer.sign_programs(payload, tmp_path)
+    assert fake.signed_files == ["changed.exe"] and signer.makers_kept == []
+
+
+def test_a_signature_of_ours_that_does_not_validate_is_not_a_makers_signature(tmp_path):
+    payload = payload_with(tmp_path, ["ours.exe"])
+    signer, fake = fake_signer({"ours.exe": {"status": "UnknownError", "signer": "Jason Wrench", "timestamped": False}})
+    signer.sign_programs(payload, tmp_path)
+    assert fake.signed_files == ["ours.exe"] and signer.makers_kept == []
+
+
+def test_without_a_named_publisher_any_other_signer_still_counts_as_the_makers(tmp_path):
+    payload = payload_with(tmp_path, ["maker.exe", "plain.exe"])
+    signer, fake = fake_signer({"maker.exe": MAKER}, publisher=None)
+    fake.publisher = "Jason Wrench"  # what a real signature would show after signing
+    signer.sign_programs(payload, tmp_path)
+    assert fake.signed_files == ["plain.exe"] and signer.makers_kept == ["maker.exe"]
+
+
+def test_the_check_after_signing_still_refuses_a_program_that_stays_unsigned(tmp_path):
+    payload = payload_with(tmp_path, ["stuck.exe", "tesseract.exe"])
+    signer, fake = fake_signer({"tesseract.exe": MAKER}, leave_unsigned={"stuck.exe"})
+    with pytest.raises(package.Refusal, match="still not signed and timestamped: stuck.exe"):
+        signer.sign_programs(payload, tmp_path)
+
+
+def test_the_build_summary_reports_the_makers_signatures_that_were_kept():
+    source = SOURCE.read_text(encoding="utf-8")
+    assert '"makers_signatures_kept_not_validating_now": signer.makers_kept if signer else []' in source
+    assert "signer.sign_programs(payload, output)" in source

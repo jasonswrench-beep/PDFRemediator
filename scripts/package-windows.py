@@ -794,10 +794,14 @@ def runtime_config(ocr_enabled):
 
 class ArtifactSigner:
     """Signs program files with Azure Artifact Signing, each signature timestamped, through scripts/sign_windows.py (which says what
-    it needs: three OPENSTAGE_SIGN_ settings and a sign-in). Files their makers signed keep those signatures."""
+    it needs: three OPENSTAGE_SIGN_ settings and a sign-in). Files their makers signed keep those signatures, including a maker's
+    signature that Windows no longer reports as Valid (for example because the maker's certificate has expired): replacing it
+    made the Tesseract program return no output on 1 to 3 percent of launches (alpha 8 and 9), which broke scanned-page OCR."""
 
     PROGRAMS = (".exe", ".dll", ".pyd")
     DESCRIPTION = "PDF Remediator"
+    # Not counted as a maker's signature: no signature at all, one that is fine, and one the file no longer matches (it was changed).
+    NOT_MAKERS = ("Valid", "NotSigned", "HashMismatch")
 
     def __init__(self):
         import sign_windows  # beside this script
@@ -806,6 +810,11 @@ class ArtifactSigner:
         require(ready, "Signing cannot start:\n" + "\n".join(lines))
         self.publisher = os.environ.get("OPENSTAGE_SIGN_PUBLISHER") or None
         self.signed = 0
+        self.makers_kept = []  # program files whose makers' signature does not validate now and was left as it is
+
+    def makers_signature(self, info):
+        """Whether a file carries someone else's signature that is still there but does not validate now (kept, never replaced)."""
+        return bool(info.get("signer")) and info["status"] not in self.NOT_MAKERS and info["signer"] != self.publisher
 
     def sign(self, files, metadata_dir):
         self.sw.METADATA = Path(metadata_dir) / "sign-metadata.json"  # beside the build, never in the payload
@@ -829,10 +838,16 @@ class ArtifactSigner:
         return found
 
     def sign_programs(self, payload, metadata_dir):
-        """Signs every program file in the payload that nobody has signed. Runs before the manifest records the files' hashes."""
-        files = sorted(p for p in Path(payload).rglob("*") if p.is_file() and p.suffix.lower() in self.PROGRAMS)
-        self.sign([Path(info["path"]) for info in self.statuses(files) if info["status"] != "Valid"], metadata_dir)
-        left = [info for info in self.statuses(files) if self.sw.problem(info) is not None]
+        """Signs every program file in the payload that nobody has signed. Runs before the manifest records the files' hashes.
+
+        A file that carries its makers' signature is never re-signed, even when Windows no longer reports that signature as Valid
+        (an expired maker certificate shows as UnknownError); such files are listed in ``makers_kept`` and in the build summary."""
+        payload = Path(payload)
+        files = sorted(p for p in payload.rglob("*") if p.is_file() and p.suffix.lower() in self.PROGRAMS)
+        before = self.statuses(files)
+        self.makers_kept = sorted(Path(info["path"]).relative_to(payload).as_posix() for info in before if self.makers_signature(info))
+        self.sign([Path(info["path"]) for info in before if info["status"] != "Valid" and not self.makers_signature(info)], metadata_dir)
+        left = [info for info in self.statuses(files) if self.sw.problem(info) is not None and not self.makers_signature(info)]
         require(not left, "Program files still not signed and timestamped: " + ", ".join(Path(i["path"]).name for i in left[:5]))
 
 
@@ -1004,6 +1019,7 @@ def build(plan, output, cargo=None, sign=False, makensis=None):
                "ocr_runtime_lock_sha256": ocr["sha256"] if ocr else "",
                "no_runtime_downloads": True, "publisher_authenticated": bool(signer),
                "signed_program_files": signer.signed if signer else 0,
+               "makers_signatures_kept_not_validating_now": signer.makers_kept if signer else [],
                "source_plan_sha256": metadata["input_plan_sha256"]}
     write_new(output / "build-summary.json", json.dumps(summary, indent=2) + "\n")
     return summary
