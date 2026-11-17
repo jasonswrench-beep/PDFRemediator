@@ -58,7 +58,7 @@ FREETYPE_CREDIT = ("Portions of this software are copyright © 2026 The FreeType
 APP_VERSION = "0.3.0"  # keep equal to pyproject.toml; the installer and Settings > Apps show it
 # The exact release this package is (its GitHub release tag without the "v"). The Check for updates button compares it with the
 # newest published release, so raise it for every release.
-RELEASE = "0.3.0-alpha.9"
+RELEASE = "0.3.0-alpha.10"
 PRODUCT_NAME = "PDF Remediator"
 PUBLISHER = "PDF Remediator"
 COPYRIGHT = "Copyright 2026 Jason S. Wrench and the PDF Remediator contributors"
