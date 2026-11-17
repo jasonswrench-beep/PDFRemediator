@@ -3,6 +3,7 @@
 !/.gitignore
 !/.gitattributes
 !/AGENTS.md
+!/CLAUDE.md
 !/HANDOFF.md
 !/TESTING-TODO.md
 !/CORE-REQUESTS.md
