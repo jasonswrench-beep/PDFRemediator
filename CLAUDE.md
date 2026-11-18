@@ -45,7 +45,8 @@ Every release tag must point at the exact commit the installer was built from.
    `git rev-parse HEAD`. The tag stays local until the release is published (then push the commit and the tag together).
 3. **Only then build** (`scripts/package-windows.py`), from that clean tree. After the build `git status --short` must still print
    nothing; if the build or anything else needs a source change, commit it, delete the unpublished local tag and tag the new commit
-   before building again. Never move or delete a tag that has been pushed.
+   before building again. Never move or delete a tag that has been pushed. (One recorded exception: on 2026-11-17 the owner ordered the
+   history rewritten, which moved all ten pushed tags; see `docs/HISTORY-REWRITE.md`. It is not a precedent.)
 4. The release notes' "Built from" line names the tag's commit. Notes written after the build go in a later commit; that commit does
    not move the tag.
 
